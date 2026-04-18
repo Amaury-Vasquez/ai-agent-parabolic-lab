@@ -1,8 +1,11 @@
 "use client";
 import { Input, Modal } from "amvasdev-ui";
 import { useState } from "react";
+import { useCookies } from "react-cookie";
 import useModalFormConfirm from "@/hooks/useModalFormConfirm";
 import { Hash, Lightbulb } from "lucide-react";
+import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import { unirseASalon } from "@/fetchers/salones";
 
 interface JoinClassroomModalProps {
   isOpen: boolean;
@@ -12,13 +15,15 @@ interface JoinClassroomModalProps {
 const JoinClassroomModal = ({ isOpen, onClose }: JoinClassroomModalProps) => {
   const [classroomCode, setClassroomCode] = useState("");
   const { formRef, handleConfirmClick } = useModalFormConfirm();
+  const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement classroom join logic
-    console.log("Joining classroom with code:", classroomCode);
+    const token = cookies[ACCESS_TOKEN_COOKIE];
+    await unirseASalon(token, classroomCode);
     setClassroomCode("");
     onClose();
+    window.location.reload();
   };
 
   const handleCancel = () => {
