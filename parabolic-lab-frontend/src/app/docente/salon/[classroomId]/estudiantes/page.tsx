@@ -4,22 +4,22 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 import { cookies } from "next/headers";
-import ClassroomDetail from "@/modules/ClassroomDetail";
+import GestionEstudiantes from "@/modules/GestionEstudiantes";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import {
-  fetchSalonProgreso,
-  SALON_PROGRESO_QUERY_KEY,
+  fetchEstudiantesBySalon,
+  SALON_ESTUDIANTES_QUERY_KEY,
 } from "@/fetchers/salones";
 
-interface ClassroomDetailPageProps {
+interface EstudiantesPageProps {
   params: Promise<{
     classroomId: string;
   }>;
 }
 
-export default async function ClassroomDetailPage({
+export default async function EstudiantesPage({
   params,
-}: ClassroomDetailPageProps) {
+}: EstudiantesPageProps) {
   const { classroomId } = await params;
   const queryClient = new QueryClient();
   const cookieStore = await cookies();
@@ -27,14 +27,14 @@ export default async function ClassroomDetailPage({
 
   if (token) {
     await queryClient.prefetchQuery({
-      queryKey: SALON_PROGRESO_QUERY_KEY(classroomId),
-      queryFn: () => fetchSalonProgreso(token, classroomId),
+      queryKey: SALON_ESTUDIANTES_QUERY_KEY(classroomId),
+      queryFn: () => fetchEstudiantesBySalon(token, classroomId),
     });
   }
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <ClassroomDetail classroomId={classroomId} />
+      <GestionEstudiantes salonId={classroomId} />
     </HydrationBoundary>
   );
 }
