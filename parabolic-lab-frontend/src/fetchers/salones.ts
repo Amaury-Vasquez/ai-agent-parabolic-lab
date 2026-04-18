@@ -1,4 +1,4 @@
-import { get, post, patch } from "@/services/api";
+import { del, get, patch, post } from "@/services/api";
 import { Salon } from "@/types/salon";
 
 export const MY_SALONES_QUERY_KEY = ["salones", "me"];
@@ -24,6 +24,22 @@ export const SALON_PROGRESO_QUERY_KEY = (salonId: string) => [
   "progreso",
 ];
 
+export const SALON_ESTUDIANTES_QUERY_KEY = (salonId: string) => [
+  "salones",
+  salonId,
+  "estudiantes",
+];
+
+export interface EstudianteEnSalon {
+  idalumno: string;
+  nombre: string;
+  apellido: string;
+  correo: string;
+  ultimo_acceso: string | null;
+  escenarios_completados: number;
+  total_escenarios: number;
+}
+
 export async function fetchMySalones(token: string): Promise<Salon[]> {
   return get<Salon[]>("/salones/me", { token });
 }
@@ -36,8 +52,16 @@ export async function fetchSalonProgreso(
     `/salones/${salonId}/progreso`,
     { token }
   );
-  // Asegurar que siempre retorna un array, nunca undefined
   return data?.estudiantes ?? [];
+}
+
+export async function fetchEstudiantesBySalon(
+  token: string,
+  salonId: string
+): Promise<EstudianteEnSalon[]> {
+  return get<EstudianteEnSalon[]>(`/salones/${salonId}/estudiantes`, {
+    token,
+  });
 }
 
 export async function createSalon(
@@ -55,29 +79,11 @@ export async function updateSalon(
   return patch<Salon>(`/salones/${idsalon}`, data, { token });
 }
 
-export const SALON_ESTUDIANTES_QUERY_KEY = (salonId: string) => [
-  "salones",
-  salonId,
-  "estudiantes",
-];
-
-export interface EstudianteEnSalon {
-  idalumno: string;
-  nombre: string;
-  apellido: string;
-  correo: string;
-  ultimo_acceso: string | null;
-  escenarios_completados: number;
-  total_escenarios: number;
-}
-
-export async function fetchEstudiantesBySalon(
+export async function unirseASalon(
   token: string,
-  salonId: string
-): Promise<EstudianteEnSalon[]> {
-  return get<EstudianteEnSalon[]>(`/salones/${salonId}/estudiantes`, {
-    token,
-  });
+  codigoacceso: string
+): Promise<void> {
+  return post<void>("/alumnos-en-salon/unirse", { codigoacceso }, { token });
 }
 
 export async function agregarEstudianteASalon(

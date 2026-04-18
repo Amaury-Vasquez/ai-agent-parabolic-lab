@@ -56,6 +56,7 @@ const ManageSalonModal = ({
               <span className="label-text">Nombre del Salón</span>
             </label>
             <Input
+              id="nombre-salon"
               type="text"
               value={nuevoNombre}
               onChange={(e) => {

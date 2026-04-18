@@ -18,10 +18,10 @@ export function sanitizeData<T extends Record<string, unknown>>(data: T): Partia
 
     // Si es un objeto (pero no es una función), incluirlo
     if (typeof value === "object" && !(value instanceof Date)) {
-      sanitized[key as keyof T] = value;
+      sanitized[key as keyof T] = value as T[keyof T];
     } else if (typeof value !== "function") {
       // Incluir primitivos (strings, numbers, booleans, etc.)
-      sanitized[key as keyof T] = value;
+      sanitized[key as keyof T] = value as T[keyof T];
     }
   }
 
