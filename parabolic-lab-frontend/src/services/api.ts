@@ -12,18 +12,57 @@ async function request<T>(
   fetchOptions: RequestInit = {},
   { token, headers }: ApiOptions = {},
 ): Promise<T> {
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...fetchOptions,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { [AUTH_HEADER]: token } : {}),
-      ...headers,
-    },
-  });
+  const url = `${API_URL}${endpoint}`;
+  
+  if (!API_URL) {
+    throw new Error(
+      "API_URL no está configurada. Verifica que NEXT_PUBLIC_API_URL esté definida en las variables de entorno."
+    );
+  }
+
+  let response: Response;
+  
+  try {
+    response = await fetch(url, {
+      ...fetchOptions,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { [AUTH_HEADER]: token } : {}),
+        ...headers,
+      },
+    });
+  } catch (fetchError) {
+    const errorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+    console.error(`Error de conexión a ${url}:`, errorMsg);
+    throw new Error(`Fallo en la conexión al servidor: ${errorMsg}`);
+  }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => null);
-    throw new Error(error?.detail ?? `Error ${response.status}`);
+    let errorDetail = `Error ${response.status}`;
+    let responseBody = null;
+    
+    try {
+      responseBody = await response.json();
+      // FastAPI retorna los errores en 'detail'
+      errorDetail = responseBody?.detail || JSON.stringify(responseBody);
+    } catch {
+      try {
+        // Si no es JSON, intenta obtener el texto
+        const text = await response.text();
+        errorDetail = text || errorDetail;
+      } catch {
+        // Si falla todo, usa el mensaje genérico
+      }
+    }
+
+    console.error(`Error en ${response.status} para ${url}:`, {
+      status: response.status,
+      statusText: response.statusText,
+      detail: errorDetail,
+      body: responseBody,
+    });
+
+    throw new Error(`${response.status} - ${errorDetail}`);
   }
 
   if (response.status === 204) return undefined as T;
