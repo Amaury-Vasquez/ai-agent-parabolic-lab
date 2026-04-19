@@ -8,3 +8,6 @@ python-dotenv
 PyJWT[crypto]
 httpx
 email-validator
+reportlab
+Pillow
+python-dateutil

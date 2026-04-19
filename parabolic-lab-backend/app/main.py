@@ -14,6 +14,7 @@ from app.routes import (
     escenarios_en_actividad,
     instituciones,
     interacciones_escenario,
+    reportes,
     salones,
     usuarios,
 )
@@ -53,6 +54,7 @@ app.include_router(actividades_interactivas.router, prefix=API_PREFIX)
 app.include_router(actividades_alumno.router, prefix=API_PREFIX)
 app.include_router(interacciones_escenario.router, prefix=API_PREFIX)
 app.include_router(escenarios_en_actividad.router, prefix=API_PREFIX)
+app.include_router(reportes.router, prefix=API_PREFIX)
 
 
 def custom_openapi():
