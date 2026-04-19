@@ -140,7 +140,7 @@ export async function fetchEstudiantesGlobales(
   if (options?.idsalon) params.append("idsalon", options.idsalon);
 
   const queryString = params.toString();
-  const endpoint = `/api/v1/docentes/me/estudiantes-global${queryString ? `?${queryString}` : ""}`;
+  const endpoint = `/docentes/me/estudiantes-global${queryString ? `?${queryString}` : ""}`;
 
   const data = await get<EstudiantesGlobalesResponse>(endpoint, { token });
   return data?.estudiantes ?? [];
