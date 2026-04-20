@@ -61,6 +61,7 @@ const AgregarEstudianteModal = ({
               <span className="label-text">Correo Electrónico del Estudiante</span>
             </label>
             <Input
+              id="estudiante-correo"
               type="email"
               value={correo}
               onChange={(e) => {

@@ -12,6 +12,10 @@ class DocenteRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class DocenteUpdate(BaseModel):
+    gradoacademico: str | None = None
+
+
 class EstudianteGlobalStats(BaseModel):
     """Información de un estudiante con estadísticas globales de todos sus salones."""
 

@@ -20,3 +20,9 @@ class InstitucionRead(BaseModel):
     telefono: str
 
     model_config = {"from_attributes": True}
+
+
+class InstitucionUpdate(BaseModel):
+    nombre: str | None = None
+    direccion: str | None = None
+    telefono: str | None = None

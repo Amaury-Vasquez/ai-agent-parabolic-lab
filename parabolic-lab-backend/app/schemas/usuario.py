@@ -19,3 +19,9 @@ class UsuarioRead(BaseModel):
     tipousuario: str
 
     model_config = {"from_attributes": True}
+
+
+class UsuarioUpdate(BaseModel):
+    nombre: str | None = None
+    apellidopaterno: str | None = None
+    apellidomaterno: str | None = None

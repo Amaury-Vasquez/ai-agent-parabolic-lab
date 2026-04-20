@@ -12,7 +12,7 @@ from app.models.docente import Docente
 from app.models.interaccion_escenario import InteraccionEscenario
 from app.models.salon import Salon
 from app.models.usuario import Usuario
-from app.schemas.docente import DocenteRead, EstudianteGlobalStats
+from app.schemas.docente import DocenteRead, DocenteUpdate, EstudianteGlobalStats
 
 router = APIRouter(prefix="/docentes", tags=["Docentes"])
 
@@ -170,6 +170,35 @@ async def obtener_estudiantes_global(
         estudiantes.append(estudiante)
 
     return estudiantes
+
+
+@router.get("/me", response_model=DocenteRead)
+async def obtener_docente_actual(
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """Obtiene el perfil del docente actual autenticado."""
+    _require_docente(current_user)
+    return current_user.docente
+
+
+@router.patch("/me", response_model=DocenteRead)
+async def actualizar_docente_actual(
+    docente_update: DocenteUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """Actualiza el perfil del docente actual con los campos proporcionados."""
+    _require_docente(current_user)
+    docente = current_user.docente
+
+    if docente_update.gradoacademico is not None:
+        docente.gradoacademico = docente_update.gradoacademico
+
+    db.add(docente)
+    await db.commit()
+    await db.refresh(docente)
+    return docente
 
 
 @router.get("/", response_model=list[DocenteRead])
