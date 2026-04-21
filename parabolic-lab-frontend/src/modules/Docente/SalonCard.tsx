@@ -1,5 +1,8 @@
 import { Badge, Button } from "amvasdev-ui";
+import { useState } from "react";
 import Card from "@/components/Card";
+import SeleccionarEscenarioModal from "./SeleccionarEscenarioModal";
+import { useRouter } from "next/navigation";
 import { Salon } from "@/types/salon";
 
 interface SalonCardProps {
@@ -9,6 +12,8 @@ interface SalonCardProps {
 const SalonCard = ({ salon }: SalonCardProps) => {
   const hasScenarios = salon.escenarios.length > 0;
   const hasMultipleScenarios = salon.escenarios.length > 1;
+  const router = useRouter();
+  const [isSeleccionarEscenarioModalOpen, setIsSeleccionarEscenarioModalOpen] = useState(false);
 
   return (
     <Card contentClassName="justify-between">
@@ -115,7 +120,7 @@ const SalonCard = ({ salon }: SalonCardProps) => {
 
       {/* Action Buttons */}
       <div className="card-actions flex-col mt-6 w-full">
-        <Button variant="primary" className="w-full">
+        <Button variant="primary" className="w-full" onClick={() => setIsSeleccionarEscenarioModalOpen(true)}>
           <svg
             className="w-4 h-4"
             fill="none"
@@ -130,8 +135,13 @@ const SalonCard = ({ salon }: SalonCardProps) => {
             />
           </svg>
           Asignar Escenario
+          
         </Button>
-        <Button outlined className="w-full">
+        <Button
+          outlined
+          className="w-full"
+          onClick={() => router.push(`/docente/salon/${salon.idsalon}`)}
+        >
           <svg
             className="w-4 h-4"
             fill="none"
@@ -148,6 +158,11 @@ const SalonCard = ({ salon }: SalonCardProps) => {
           Ver Progreso
         </Button>
       </div>
+      <SeleccionarEscenarioModal
+        isOpen={isSeleccionarEscenarioModalOpen}
+        onClose={() => setIsSeleccionarEscenarioModalOpen(false)}
+        salon={salon}
+      />
     </Card>
   );
 };

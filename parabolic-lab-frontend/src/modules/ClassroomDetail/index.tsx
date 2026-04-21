@@ -1,33 +1,67 @@
 "use client";
 import { useState } from "react";
-import { STUDENTS, Student } from "@/constants/students";
+import { useRouter } from "next/navigation";
+import { Student } from "@/constants/students";
 import { UserType } from "@/models/users";
 import { searchIgnoreAccents } from "@/utils/string";
+import { useSalonProgreso } from "@/queries/useSalonProgreso";
+import { SalonProgresoEstudiante } from "@/fetchers/salones";
 import FiltersSection, {
   DifficultyFilter,
   RankingType,
 } from "./FiltersSection";
 import HeaderSection from "./HeaderSection";
 import RankingSection from "./RankingSection";
+import ManageSalonModal from "./ManageSalonModal";
+import { useMySalones } from "@/queries/useMySalones";
 
 interface ClassroomDetailProps {
   classroomId: string;
   userType?: UserType;
 }
 
+const mapProgresoToStudent = (progreso: SalonProgresoEstudiante): Student => ({
+  id: progreso.idalumno,
+  nombre: progreso.nombre,
+  apellido: progreso.apellidopaterno,
+  totalScore: progreso.promedio_puntuacion,
+  activitiesCompleted: progreso.escenarios_completados,
+  totalAttempts: progreso.total_intentos,
+  averageTime: progreso.tiempo_total_minutos,
+  maxScore: progreso.mejor_puntuacion,
+  difficultyLevel: "Intermedio",
+  lastAccess: new Date(),
+  scenariosCompleted: [],
+});
+
 const ClassroomDetail = ({
   classroomId,
   userType = "docente",
 }: ClassroomDetailProps) => {
+  const router = useRouter();
   const [rankingType, setRankingType] = useState<RankingType>("totalScore");
   const [difficultyFilter, setDifficultyFilter] =
     useState<DifficultyFilter>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isManageSalonModalOpen, setIsManageSalonModalOpen] = useState(false);
 
   const isStudent = userType === "alumno";
 
-  const filterStudents = (students: Student[]): Student[] => {
-    let filtered = students;
+  // Fetch progreso data
+  const { data: progresoData, isLoading: isProgresoLoading } =
+    useSalonProgreso(classroomId);
+
+  // Fetch salon name
+  const { data: salones } = useMySalones();
+  const salonNombre = salones?.find(
+    (s) => s.idsalon === classroomId
+  )?.nombresalon;
+
+  // Map progreso to Student interface
+  const students: Student[] = (progresoData || []).map(mapProgresoToStudent);
+
+  const filterStudents = (studentsToFilter: Student[]): Student[] => {
+    let filtered = studentsToFilter;
 
     // Filter by search term (ignoring accents)
     if (searchTerm.trim()) {
@@ -48,8 +82,8 @@ const ClassroomDetail = ({
     return filtered;
   };
 
-  const sortStudents = (students: Student[]): Student[] => {
-    const sorted = [...students];
+  const sortStudents = (studentsToSort: Student[]): Student[] => {
+    const sorted = [...studentsToSort];
 
     switch (rankingType) {
       case "activitiesCompleted":
@@ -80,15 +114,35 @@ const ClassroomDetail = ({
     }
   };
 
-  const filteredAndSortedStudents = sortStudents(filterStudents(STUDENTS));
+  const filteredAndSortedStudents = sortStudents(filterStudents(students));
+
+  if (isProgresoLoading) {
+    return (
+      <div className="p-4 md:p-8 flex justify-center py-12">
+        <span className="loading loading-spinner loading-lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-8">
       <HeaderSection
         classroomId={classroomId}
-        studentsCount={STUDENTS.length}
+        studentsCount={students.length}
         userType={userType}
+        nombre={salonNombre}
+        onEstudiantesClick={!isStudent ? () => router.push(`/docente/salon/${classroomId}/estudiantes`) : undefined}
+        onSettingsClick={!isStudent ? () => setIsManageSalonModalOpen(true) : undefined}
       />
+
+      {salonNombre && !isStudent ? (
+        <ManageSalonModal
+          isOpen={isManageSalonModalOpen}
+          onClose={() => setIsManageSalonModalOpen(false)}
+          salonId={classroomId}
+          salonNombre={salonNombre}
+        />
+      ) : null}
 
       <FiltersSection
         rankingType={rankingType}
