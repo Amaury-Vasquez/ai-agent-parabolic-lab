@@ -12,12 +12,14 @@ interface SimuladorWrapperProps {
   idactividad: string;
   idescenario: string;
   scenario: Scenario | null;
+  returnUrl?: string;
 }
 
 const SimuladorWrapper = ({
   idactividad,
   idescenario,
   scenario,
+  returnUrl,
 }: SimuladorWrapperProps) => {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);
   const token = cookies[ACCESS_TOKEN_COOKIE];
@@ -66,7 +68,7 @@ const SimuladorWrapper = ({
       console.error("Error al terminar interacción:", error);
     }
 
-    router.push(`/alumno/actividad/${idactividad}`);
+    router.push(returnUrl ?? `/alumno/actividad/${idactividad}`);
   };
 
   if (loading) {
