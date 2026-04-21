@@ -35,8 +35,7 @@ async def actualizar_usuario_actual(
     if usuario_update.apellidomaterno is not None:
         current_user.apellidomaterno = usuario_update.apellidomaterno
 
-    current_user.fechamodificacion = datetime.now(timezone.utc)
-
+    current_user.fechamodificacion = datetime.now()
     db.add(current_user)
     await db.commit()
     await db.refresh(current_user)
