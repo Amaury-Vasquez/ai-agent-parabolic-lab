@@ -6,6 +6,8 @@ import { Scenario } from "@/models/scenario";
 
 interface ScenarioCardProps {
   scenario: Scenario;
+  idactividad?: string;
+  salonId?: string;
 }
 
 const DIFFICULTY_VARIANT_MAP: Record<string, "success" | "warning" | "error" | "neutral"> = {
@@ -14,9 +16,13 @@ const DIFFICULTY_VARIANT_MAP: Record<string, "success" | "warning" | "error" | "
   Avanzado: "error",
 };
 
-const ScenarioCard = ({ scenario }: ScenarioCardProps) => {
+const ScenarioCard = ({ scenario, idactividad: idactividadProp, salonId }: ScenarioCardProps) => {
   const params = useParams();
-  const idactividad = params.idactividad as string;
+  const idactividad = idactividadProp ?? (params.idactividad as string);
+
+  const href = salonId
+    ? `/alumno/salon/${salonId}/escenario/${scenario.idescenario}`
+    : `/alumno/actividad/${idactividad}/escenario/${scenario.idescenario}`;
 
   return (
     <div className="bg-base-200 rounded-lg p-4 flex flex-col gap-4 md:p-6 md:gap-6">
@@ -30,7 +36,7 @@ const ScenarioCard = ({ scenario }: ScenarioCardProps) => {
             <Badge variant="neutral">{scenario.tipoescenario}</Badge>
           </div>
         </div>
-        <Link href={`/alumno/actividad/${idactividad}/escenario/${scenario.idescenario}`} className="btn btn-primary hidden md:flex">
+        <Link href={href} className="btn btn-primary hidden md:flex">
           Comenzar
         </Link>
       </div>
@@ -51,7 +57,7 @@ const ScenarioCard = ({ scenario }: ScenarioCardProps) => {
         {scenario.tiempolimite ? <span>{scenario.tiempolimite} min</span> : null}
         {scenario.intentospermitidos ? <span>{scenario.intentospermitidos} intentos</span> : null}
       </div>
-      <Link href={`/alumno/actividad/${idactividad}/escenario/${scenario.idescenario}`} className="btn btn-primary w-full md:hidden">
+      <Link href={href} className="btn btn-primary w-full md:hidden">
         Comenzar
       </Link>
     </div>
