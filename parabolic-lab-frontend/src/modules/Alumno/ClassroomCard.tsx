@@ -32,7 +32,7 @@ const ClassroomCard = ({ salon }: ClassroomCardProps) => {
             <div className="flex items-center gap-2">
               <div className="flex flex-wrap gap-2 flex-1">
                 <Badge variant="primary" size="md" soft>
-                  {salon.escenarios[0]}
+                  {salon.escenarios[0].nombre}
                 </Badge>
                 {hasMultipleScenarios ? (
                   <Badge variant="primary" borderType="outline" size="md">

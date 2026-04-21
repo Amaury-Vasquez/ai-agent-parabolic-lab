@@ -18,6 +18,7 @@ from app.models.salon import Salon
 from app.models.usuario import Usuario
 from app.schemas.salon import (
     AgregarEstudianteRequest,
+    EscenarioEnSalon,
     EstudianteEnSalon,
     SalonCreate,
     SalonProgresoAlumno,
@@ -90,7 +91,7 @@ async def mis_salones(
             nombresalon=s.nombresalon,
             codigoacceso=s.codigoacceso,
             activo=s.activo,
-            escenarios=[e.nombre for e in s.escenarios if e.activo],
+            escenarios=[EscenarioEnSalon(idescenario=e.idescenario, nombre=e.nombre) for e in s.escenarios if e.activo],
             num_estudiantes=sum(1 for a in s.alumnos if a.activo),
         )
         for s in salones

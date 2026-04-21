@@ -2,6 +2,7 @@ import { Badge, Button } from "amvasdev-ui";
 import { useState } from "react";
 import Card from "@/components/Card";
 import SeleccionarEscenarioModal from "./SeleccionarEscenarioModal";
+import SalonConfigModal from "./SalonConfigModal";
 import { useRouter } from "next/navigation";
 import { Salon } from "@/types/salon";
 
@@ -14,14 +15,15 @@ const SalonCard = ({ salon }: SalonCardProps) => {
   const hasMultipleScenarios = salon.escenarios.length > 1;
   const router = useRouter();
   const [isSeleccionarEscenarioModalOpen, setIsSeleccionarEscenarioModalOpen] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
   return (
     <Card contentClassName="justify-between">
       {/* Card Header with Settings */}
       <div className="flex justify-between items-start">
         <h2 className="card-title">{salon.nombresalon}</h2>
-        <div className="dropdown dropdown-end">
-          <Button tabIndex={0} variant="ghost" size="sm" className="btn-square">
+        <div>
+          <Button variant="ghost" size="sm" className="btn-square" onClick={() => setIsConfigModalOpen(true)}>
             <svg
               className="w-5 h-5"
               fill="none"
@@ -84,7 +86,7 @@ const SalonCard = ({ salon }: SalonCardProps) => {
             <div className="flex items-center gap-2">
               <div className="flex flex-wrap gap-2 flex-1">
                 <Badge variant="primary" size="md" soft>
-                  {salon.escenarios[0]}
+                  {salon.escenarios[0].nombre}
                 </Badge>
                 {hasMultipleScenarios ? (
                   <Badge variant="primary" borderType="outline" size="md">
@@ -135,7 +137,7 @@ const SalonCard = ({ salon }: SalonCardProps) => {
             />
           </svg>
           Asignar Escenario
-          
+
         </Button>
         <Button
           outlined
@@ -161,6 +163,11 @@ const SalonCard = ({ salon }: SalonCardProps) => {
       <SeleccionarEscenarioModal
         isOpen={isSeleccionarEscenarioModalOpen}
         onClose={() => setIsSeleccionarEscenarioModalOpen(false)}
+        salon={salon}
+      />
+      <SalonConfigModal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
         salon={salon}
       />
     </Card>

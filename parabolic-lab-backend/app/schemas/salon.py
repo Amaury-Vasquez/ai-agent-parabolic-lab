@@ -35,12 +35,18 @@ class SalonRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class EscenarioEnSalon(BaseModel):
+    idescenario: UUID
+    nombre: str
+    model_config = {"from_attributes": True}
+
+
 class SalonWithDetails(BaseModel):
     idsalon: UUID
     nombresalon: str
     codigoacceso: str
     activo: bool | None = None
-    escenarios: list[str] = []
+    escenarios: list[EscenarioEnSalon] = []
     num_estudiantes: int = 0
 
 
