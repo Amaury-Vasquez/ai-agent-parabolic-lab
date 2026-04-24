@@ -5,11 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_current_user, get_db
-from app.models.alumno import Alumno
 from app.models.alumno_en_salon import AlumnoEnSalon
-from app.models.salon import Salon
 from app.models.usuario import Usuario
 from app.schemas.alumno_en_salon import AlumnoEnSalonJoin, AlumnoEnSalonRead
+from app.services.alumno_en_salon import unirse
 
 router = APIRouter(prefix="/alumnos-en-salon", tags=["AlumnosEnSalon"])
 
@@ -48,31 +47,7 @@ async def unirse_a_salon(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    salon_result = await db.execute(
-        select(Salon).where(Salon.codigoacceso == data.codigoacceso)
-    )
-    salon = salon_result.scalar_one_or_none()
-    if not salon:
-        raise HTTPException(status_code=404, detail="Salon no encontrado")
-
-    alumno_result = await db.execute(
-        select(Alumno).where(Alumno.idusuario == current_user.idusuario)
-    )
-    alumno = alumno_result.scalar_one_or_none()
-    if not alumno:
-        raise HTTPException(status_code=404, detail="Alumno no encontrado")
-
-    existing = await db.execute(
-        select(AlumnoEnSalon).where(
-            AlumnoEnSalon.idalumno == alumno.idalumno,
-            AlumnoEnSalon.idsalon == salon.idsalon,
-        )
-    )
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Ya estás inscrito en este salón")
-
-    registro = AlumnoEnSalon(idalumno=alumno.idalumno, idsalon=salon.idsalon)
-    db.add(registro)
-    await db.commit()
-    await db.refresh(registro)
-    return registro
+    try:
+        return await unirse(db, current_user, data.codigoacceso)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

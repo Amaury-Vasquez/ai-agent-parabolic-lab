@@ -9,7 +9,7 @@ import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import {
   fetchEstudiantesBySalon,
   SALON_ESTUDIANTES_QUERY_KEY,
-} from "@/fetchers/salones";
+} from "@/queries/useEstudiantesBySalon";
 
 interface EstudiantesPageProps {
   params: Promise<{

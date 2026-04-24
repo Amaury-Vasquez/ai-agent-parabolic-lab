@@ -66,7 +66,7 @@ async def actualizar_interaccion_escenario(
     if not interaccion:
         raise HTTPException(status_code=404, detail="Interaccion de escenario no encontrada")
 
-    for field, value in data.model_dump(exclude_none=True).items():
+    for field, value in data.model_dump(exclude_unset=True).items():
         setattr(interaccion, field, value)
 
     await db.commit()

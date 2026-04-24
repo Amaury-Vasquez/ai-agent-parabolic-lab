@@ -1,8 +1,14 @@
-"use client";
 import { useQuery } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
-import { fetchMySalones, MY_SALONES_QUERY_KEY } from "@/fetchers/salones";
+import { get } from "@/services/api";
+import { Salon } from "@/types/salon";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+
+export const MY_SALONES_QUERY_KEY = ["salones", "me"];
+
+export async function fetchMySalones(token: string): Promise<Salon[]> {
+  return get<Salon[]>("/salones/me", { token });
+}
 
 export function useMySalones() {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);

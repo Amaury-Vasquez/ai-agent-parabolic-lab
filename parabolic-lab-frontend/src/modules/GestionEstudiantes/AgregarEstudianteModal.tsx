@@ -14,7 +14,7 @@ const AgregarEstudianteModal = ({
   onClose,
   salonId,
 }: AgregarEstudianteModalProps) => {
-  const { mutateAsync: agregarEstudiante, isPending } =
+  const { agregarEstudiante, isPending } =
     useAgregarEstudiante();
   const [correo, setCorreo] = useState("");
   const [error, setError] = useState<string | null>(null);

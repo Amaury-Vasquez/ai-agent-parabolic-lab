@@ -27,7 +27,7 @@ const Biblioteca = () => {
   const router = useRouter();
   const { data: escenarios, isLoading } = useMisEscenarios();
   const { data: salones } = useMySalones();
-  const { mutateAsync: eliminarEscenario } = useDeleteEscenario();
+  const { deleteEscenario: eliminarEscenario } = useDeleteEscenario();
   
   const [isAsignarModalOpen, setIsAsignarModalOpen] = useState(false);
   const [escenarioSeleccionado, setEscenarioSeleccionado] = useState<Scenario | null>(null);

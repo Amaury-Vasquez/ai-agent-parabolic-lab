@@ -68,7 +68,7 @@ const ScenarioEditorForm = ({
   const [errors, setErrors] = useState<ScenarioFormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   const { mutateAsync: crearEscenario } = useCreateEscenario();
-  const { mutateAsync: actualizarEscenario } = useUpdateEscenario();
+  const { updateEscenario: actualizarEscenario } = useUpdateEscenario();
   // Sync context physics config with form data
   useEffect(() => {
     setFormData((prev) => ({

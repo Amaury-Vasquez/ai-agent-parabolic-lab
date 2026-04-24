@@ -10,14 +10,6 @@ class SalonCreate(BaseModel):
 
 
 class SalonUpdate(BaseModel):
-    """Schema para actualizar el nombre de un salón (PATCH endpoint)."""
-
-    nombresalon: str = Field(..., min_length=1, max_length=100)
-
-
-class SalonUpdateFull(BaseModel):
-    """Schema para actualización completa de un salón (PUT endpoint)."""
-
     nombresalon: str | None = Field(None, min_length=1, max_length=100)
     activo: bool | None = None
 

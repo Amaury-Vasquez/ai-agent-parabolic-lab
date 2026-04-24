@@ -1,8 +1,16 @@
-"use client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
-import { createSalon, MY_SALONES_QUERY_KEY } from "@/fetchers/salones";
+import { post } from "@/services/api";
+import { Salon } from "@/types/salon";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import { MY_SALONES_QUERY_KEY } from "@/queries/useMySalones";
+
+export async function createSalon(
+  token: string,
+  data: { nombresalon: string }
+): Promise<Salon> {
+  return post<Salon>("/salones/", data, { token });
+}
 
 export function useCreateSalon() {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);

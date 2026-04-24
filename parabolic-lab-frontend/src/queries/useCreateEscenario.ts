@@ -1,8 +1,28 @@
-"use client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
-import { createEscenario, MIS_ESCENARIOS_QUERY_KEY } from "@/fetchers/escenarios";
+import { post } from "@/services/api";
+import { Scenario } from "@/models/scenario";
+import { sanitizeData } from "@/utils/sanitizeData";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import { MIS_ESCENARIOS_QUERY_KEY } from "@/queries/useMisEscenarios";
+
+export async function createEscenario(
+  token: string,
+  data: {
+    idsalon: string;
+    nombre: string;
+    descripcion?: string;
+    niveldificultad: string;
+    tipoescenario: string;
+    objetivosaprendizaje?: string;
+    instrucciones?: string;
+    tiempolimite?: number;
+    intentospermitidos?: number;
+    configuracionescenario?: Record<string, unknown>;
+  }
+): Promise<Scenario> {
+  return post<Scenario>("/escenarios/", sanitizeData(data), { token });
+}
 
 export function useCreateEscenario() {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);
@@ -13,7 +33,6 @@ export function useCreateEscenario() {
     mutationFn: (data: Parameters<typeof createEscenario>[1]) =>
       createEscenario(token, data),
     onSuccess: () => {
-      // Invalidar el cache de mis escenarios para que se refleje el nuevo escenario
       queryClient.invalidateQueries({ queryKey: MIS_ESCENARIOS_QUERY_KEY });
     },
   });

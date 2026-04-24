@@ -1,12 +1,11 @@
 "use client";
-import { useState } from "react";
 import { Button, Badge } from "amvasdev-ui";
 import { Plus, Trash2, Eye } from "lucide-react";
-import { useEstudiantesBySalon } from "@/queries/useEstudiantesBySalon";
-import { useDarDeBajaEstudiante } from "@/mutations/useDarDeBajaEstudiante";
-import AgregarEstudianteModal from "./AgregarEstudianteModal";
-import { EstudianteEnSalon } from "@/fetchers/salones";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import AgregarEstudianteModal from "./AgregarEstudianteModal";
+import { useDarDeBajaEstudiante } from "@/mutations/useDarDeBajaEstudiante";
+import { EstudianteEnSalon, useEstudiantesBySalon } from "@/queries/useEstudiantesBySalon";
 
 interface GestionEstudiantesProps {
   salonId: string;
@@ -16,7 +15,7 @@ const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
   const router = useRouter();
   const [isAgregarModalOpen, setIsAgregarModalOpen] = useState(false);
   const { data: estudiantes, isLoading } = useEstudiantesBySalon(salonId);
-  const { mutateAsync: darDeBaja } = useDarDeBajaEstudiante();
+  const { darDeBajaEstudiante: darDeBaja } = useDarDeBajaEstudiante();
 
   const handleDarDeBaja = async (estudiante: EstudianteEnSalon) => {
     if (

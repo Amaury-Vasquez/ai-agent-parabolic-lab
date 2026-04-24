@@ -3,7 +3,7 @@ import { Modal } from "amvasdev-ui";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
-import { asignarEscenario } from "@/fetchers/escenarios";
+import { asignarEscenario } from "@/mutations/useAsignarEscenario";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import type { Scenario } from "@/models/scenario";
 import type { Salon } from "@/types/salon";

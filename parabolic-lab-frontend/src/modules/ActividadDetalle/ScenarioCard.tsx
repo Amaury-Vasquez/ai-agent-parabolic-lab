@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { Badge } from "amvasdev-ui";
 import Link from "next/link";
 import { useParams } from "next/navigation";

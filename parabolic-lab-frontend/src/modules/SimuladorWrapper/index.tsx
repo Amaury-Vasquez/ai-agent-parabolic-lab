@@ -5,7 +5,8 @@ import { useCookies } from "react-cookie";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import { Scenario } from "@/models/scenario";
 import SimuladorTiroParabolico from "@/modules/SimuladorTiroParabolico";
-import { createInteraccion, updateInteraccion } from "@/fetchers/interacciones";
+import { createInteraccion } from "@/mutations/useCreateInteraccion";
+import { updateInteraccion } from "@/mutations/useUpdateInteraccion";
 import { useUser } from "@stackframe/stack";
 
 interface SimuladorWrapperProps {

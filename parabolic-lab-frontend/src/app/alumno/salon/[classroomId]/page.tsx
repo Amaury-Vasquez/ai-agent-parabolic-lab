@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-import { fetchMySalones, MY_SALONES_QUERY_KEY } from "@/fetchers/salones";
-import { fetchEscenariosBySalon, ESCENARIOS_SALON_QUERY_KEY } from "@/fetchers/escenarios";
+import { fetchMySalones, MY_SALONES_QUERY_KEY } from "@/queries/useMySalones";
+import { fetchEscenariosBySalon, ESCENARIOS_SALON_QUERY_KEY } from "@/queries/useEscenario";
 import SalonAlumno from "@/modules/SalonAlumno";
 
 interface SalonPageProps {

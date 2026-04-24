@@ -12,6 +12,10 @@ from app.schemas.actividad_alumno import (
     ActividadAlumnoRead,
     ActividadAlumnoUpdate,
 )
+from app.services.actividad_alumno import (
+    crear_actividad_alumno,
+    actualizar_actividad_alumno,
+)
 
 router = APIRouter(prefix="/actividades-alumno", tags=["ActividadesAlumno"])
 
@@ -39,36 +43,22 @@ async def obtener_actividad_alumno(
 
 
 @router.post("/", response_model=ActividadAlumnoRead, status_code=201)
-async def crear_actividad_alumno(
+async def crear_actividad_alumno_route(
     data: ActividadAlumnoCreate,
     db: AsyncSession = Depends(get_db),
     _: Usuario = Depends(get_current_user),
 ):
-    registro = ActividadAlumno(
-        idactividad=data.idactividad,
-        idalumno=data.idalumno,
-    )
-    db.add(registro)
-    await db.commit()
-    await db.refresh(registro)
-    return registro
+    return await crear_actividad_alumno(db, data)
 
 
 @router.patch("/{idactividadalumno}", response_model=ActividadAlumnoRead)
-async def actualizar_actividad_alumno(
+async def actualizar_actividad_alumno_route(
     idactividadalumno: UUID,
     data: ActividadAlumnoUpdate,
     db: AsyncSession = Depends(get_db),
     _: Usuario = Depends(get_current_user),
 ):
-    result = await db.execute(select(ActividadAlumno).where(ActividadAlumno.idactividadalumno == idactividadalumno))
-    registro = result.scalar_one_or_none()
+    registro = await actualizar_actividad_alumno(db, idactividadalumno, data)
     if not registro:
         raise HTTPException(status_code=404, detail="Actividad de alumno no encontrada")
-
-    for field, value in data.model_dump(exclude_none=True).items():
-        setattr(registro, field, value)
-
-    await db.commit()
-    await db.refresh(registro)
     return registro

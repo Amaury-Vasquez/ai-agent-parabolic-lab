@@ -6,7 +6,7 @@ import {
   PROTECTED_ROUTES,
   REFRESH_TOKEN_COOKIE,
 } from "@/constants/auth";
-import { fetchMe } from "@/fetchers/auth";
+import { fetchMe } from "@/queries/useMe";
 import { post } from "@/services/api";
 import { matchesRoutes } from "@/utils/routes";
 

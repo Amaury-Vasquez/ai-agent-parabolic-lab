@@ -23,7 +23,6 @@ from app.schemas.salon import (
     SalonProgresoAlumno,
     SalonRead,
     SalonUpdate,
-    SalonUpdateFull,
     SalonWithDetails,
 )
 
@@ -158,7 +157,7 @@ async def crear_salon(
 @router.put("/{idsalon}", response_model=SalonRead)
 async def actualizar_salon(
     idsalon: UUID,
-    data: SalonUpdateFull,
+    data: SalonUpdate,
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):

@@ -18,7 +18,7 @@ const ManageSalonModal = ({
   salonNombre,
 }: ManageSalonModalProps) => {
   const router = useRouter();
-  const { mutateAsync: actualizarSalon, isPending } = useUpdateSalon();
+  const { updateSalon: actualizarSalon, isPending } = useUpdateSalon();
   const [nuevoNombre, setNuevoNombre] = useState(salonNombre);
   const [error, setError] = useState<string | null>(null);
 
