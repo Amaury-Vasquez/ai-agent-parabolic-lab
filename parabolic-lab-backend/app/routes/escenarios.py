@@ -10,6 +10,7 @@ from app.models.escenario import Escenario
 from app.models.salon import Salon
 from app.models.usuario import Usuario
 from app.schemas.escenario import AsignarEscenarioRequest, EscenarioCreate, EscenarioRead, EscenarioUpdate
+from app.services.escenario import actualizar_escenario, assert_es_dueno_del_salon
 
 router = APIRouter(prefix="/escenarios", tags=["Escenarios"])
 
@@ -22,18 +23,14 @@ def _require_docente(current_user: Usuario) -> None:
         )
 
 
-async def _verificar_salon_del_docente(idsalon: UUID, docente_id: UUID, db: AsyncSession) -> Salon:
-    """Verifica que el salón existe y pertenece al docente."""
-    result = await db.execute(select(Salon).where(Salon.idsalon == idsalon))
-    salon = result.scalar_one_or_none()
-    if not salon:
-        raise HTTPException(status_code=404, detail="Salon no encontrado")
-    if salon.iddocente != docente_id:
-        raise HTTPException(status_code=403, detail="No tienes permiso sobre este salon")
-    return salon
+def _service_exc_to_http(exc: LookupError | PermissionError) -> None:
+    if isinstance(exc, LookupError):
+        raise HTTPException(status_code=404, detail=str(exc))
+    raise HTTPException(status_code=403, detail=str(exc))
 
 
 # ── READ ──────────────────────────────────────────────────────────────────────
+
 @router.get("/me", response_model=list[EscenarioRead])
 async def mis_escenarios(
     db: AsyncSession = Depends(get_db),
@@ -76,7 +73,6 @@ async def obtener_escenario(
 
 # ── WRITE ─────────────────────────────────────────────────────────────────────
 
-
 @router.post("/", response_model=EscenarioRead, status_code=status.HTTP_201_CREATED)
 async def crear_escenario(
     data: EscenarioCreate,
@@ -85,7 +81,10 @@ async def crear_escenario(
 ):
     """Crea un escenario en un salón. Solo el docente dueño del salón."""
     _require_docente(current_user)
-    await _verificar_salon_del_docente(data.idsalon, current_user.docente.iddocente, db)
+    try:
+        await assert_es_dueno_del_salon(db, current_user, data.idsalon)
+    except (LookupError, PermissionError) as e:
+        _service_exc_to_http(e)
 
     escenario = Escenario(
         idsalon=data.idsalon,
@@ -115,19 +114,17 @@ async def asignar_escenario(
     """Copia un escenario a otro salón. Solo el docente dueño de ambos salones."""
     _require_docente(current_user)
 
-    # Obtener el escenario original
     result = await db.execute(select(Escenario).where(Escenario.idescenario == idescenario))
     escenario_original = result.scalar_one_or_none()
     if not escenario_original:
         raise HTTPException(status_code=404, detail="Escenario no encontrado")
 
-    # Verificar que el docente es dueño del salón actual del escenario
-    await _verificar_salon_del_docente(escenario_original.idsalon, current_user.docente.iddocente, db)
+    try:
+        await assert_es_dueno_del_salon(db, current_user, escenario_original.idsalon)
+        await assert_es_dueno_del_salon(db, current_user, data.idsalon)
+    except (LookupError, PermissionError) as e:
+        _service_exc_to_http(e)
 
-    # Verificar que el docente es dueño del salón destino
-    await _verificar_salon_del_docente(data.idsalon, current_user.docente.iddocente, db)
-
-    # Crear una copia del escenario en el salón destino
     nuevo_escenario = Escenario(
         idsalon=data.idsalon,
         nombre=escenario_original.nombre,
@@ -146,32 +143,6 @@ async def asignar_escenario(
     return nuevo_escenario
 
 
-async def _actualizar_escenario_impl(
-    idescenario: UUID,
-    data: EscenarioUpdate,
-    db: AsyncSession,
-    current_user: Usuario,
-):
-    """Implementación compartida de actualización para PUT y PATCH."""
-    _require_docente(current_user)
-
-    result = await db.execute(select(Escenario).where(Escenario.idescenario == idescenario))
-    escenario = result.scalar_one_or_none()
-    if not escenario:
-        raise HTTPException(status_code=404, detail="Escenario no encontrado")
-
-    await _verificar_salon_del_docente(escenario.idsalon, current_user.docente.iddocente, db)
-
-    campos = data.model_dump(exclude_unset=True)
-    for campo, valor in campos.items():
-        setattr(escenario, campo, valor)
-    escenario.fechamodificacion = datetime.now(UTC).replace(tzinfo=None)
-
-    await db.commit()
-    await db.refresh(escenario)
-    return escenario
-
-
 @router.put("/{idescenario}", response_model=EscenarioRead)
 async def actualizar_escenario_put(
     idescenario: UUID,
@@ -180,7 +151,19 @@ async def actualizar_escenario_put(
     current_user: Usuario = Depends(get_current_user),
 ):
     """Edita un escenario (PUT). Solo el docente dueño del salón al que pertenece."""
-    return await _actualizar_escenario_impl(idescenario, data, db, current_user)
+    _require_docente(current_user)
+
+    result = await db.execute(select(Escenario).where(Escenario.idescenario == idescenario))
+    escenario = result.scalar_one_or_none()
+    if not escenario:
+        raise HTTPException(status_code=404, detail="Escenario no encontrado")
+
+    try:
+        await assert_es_dueno_del_salon(db, current_user, escenario.idsalon)
+    except (LookupError, PermissionError) as e:
+        _service_exc_to_http(e)
+
+    return await actualizar_escenario(db, escenario, data)
 
 
 @router.patch("/{idescenario}", response_model=EscenarioRead)
@@ -191,7 +174,19 @@ async def actualizar_escenario_patch(
     current_user: Usuario = Depends(get_current_user),
 ):
     """Edita un escenario (PATCH). Solo el docente dueño del salón al que pertenece."""
-    return await _actualizar_escenario_impl(idescenario, data, db, current_user)
+    _require_docente(current_user)
+
+    result = await db.execute(select(Escenario).where(Escenario.idescenario == idescenario))
+    escenario = result.scalar_one_or_none()
+    if not escenario:
+        raise HTTPException(status_code=404, detail="Escenario no encontrado")
+
+    try:
+        await assert_es_dueno_del_salon(db, current_user, escenario.idsalon)
+    except (LookupError, PermissionError) as e:
+        _service_exc_to_http(e)
+
+    return await actualizar_escenario(db, escenario, data)
 
 
 @router.delete("/{idescenario}", status_code=status.HTTP_204_NO_CONTENT)
@@ -208,7 +203,10 @@ async def eliminar_escenario(
     if not escenario:
         raise HTTPException(status_code=404, detail="Escenario no encontrado")
 
-    await _verificar_salon_del_docente(escenario.idsalon, current_user.docente.iddocente, db)
+    try:
+        await assert_es_dueno_del_salon(db, current_user, escenario.idsalon)
+    except (LookupError, PermissionError) as e:
+        _service_exc_to_http(e)
 
     escenario.activo = False
     escenario.fechamodificacion = datetime.now(UTC).replace(tzinfo=None)

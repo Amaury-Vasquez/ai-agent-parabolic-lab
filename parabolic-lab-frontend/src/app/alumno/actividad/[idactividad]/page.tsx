@@ -5,8 +5,8 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-import { fetchActividad, ACTIVIDAD_QUERY_KEY } from "@/fetchers/actividades";
-import { fetchEscenariosBySalon, ESCENARIOS_SALON_QUERY_KEY } from "@/fetchers/escenarios";
+import { fetchActividad, ACTIVIDAD_QUERY_KEY } from "@/queries/useActividad";
+import { fetchEscenariosBySalon, ESCENARIOS_SALON_QUERY_KEY } from "@/queries/useEscenario";
 import ActividadDetalle from "@/modules/ActividadDetalle";
 
 interface ActividadPageProps {

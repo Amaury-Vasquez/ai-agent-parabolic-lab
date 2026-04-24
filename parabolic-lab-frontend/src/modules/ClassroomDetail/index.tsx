@@ -5,7 +5,7 @@ import { Student } from "@/constants/students";
 import { UserType } from "@/models/users";
 import { searchIgnoreAccents } from "@/utils/string";
 import { useSalonProgreso } from "@/queries/useSalonProgreso";
-import { SalonProgresoEstudiante } from "@/fetchers/salones";
+import { SalonProgresoEstudiante } from "@/queries/useSalonProgreso";
 import FiltersSection, {
   DifficultyFilter,
   RankingType,

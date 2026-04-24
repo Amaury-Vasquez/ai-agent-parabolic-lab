@@ -6,7 +6,7 @@ import {
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import Alumno from "@/modules/Alumno";
-import { fetchMySalones, MY_SALONES_QUERY_KEY } from "@/fetchers/salones";
+import { fetchMySalones, MY_SALONES_QUERY_KEY } from "@/queries/useMySalones";
 
 export default async function AlumnoPage() {
   const queryClient = new QueryClient();

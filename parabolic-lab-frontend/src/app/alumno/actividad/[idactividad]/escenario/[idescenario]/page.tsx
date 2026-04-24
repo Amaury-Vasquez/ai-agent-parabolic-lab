@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-import { fetchEscenario } from "@/fetchers/escenarios";
+import { fetchEscenario } from "@/queries/useEscenario";
 import SimuladorWrapper from "@/modules/SimuladorWrapper";
 
 interface SimuladorPageProps {

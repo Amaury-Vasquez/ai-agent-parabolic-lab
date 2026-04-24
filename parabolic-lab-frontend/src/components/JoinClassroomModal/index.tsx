@@ -5,7 +5,7 @@ import { useCookies } from "react-cookie";
 import useModalFormConfirm from "@/hooks/useModalFormConfirm";
 import { Hash, Lightbulb } from "lucide-react";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-import { unirseASalon } from "@/fetchers/salones";
+import { unirseASalon } from "@/mutations/useUnirseASalon";
 
 interface JoinClassroomModalProps {
   isOpen: boolean;

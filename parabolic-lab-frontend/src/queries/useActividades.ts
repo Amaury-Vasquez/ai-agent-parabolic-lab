@@ -1,8 +1,14 @@
-"use client";
 import { useQuery } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
-import { fetchActividades, ACTIVIDADES_QUERY_KEY } from "@/fetchers/actividades";
+import { get } from "@/services/api";
+import { Activity } from "@/models/activity";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+
+export const ACTIVIDADES_QUERY_KEY = ["actividades"];
+
+export async function fetchActividades(token: string): Promise<Activity[]> {
+  return get<Activity[]>("/actividades-interactivas/", { token });
+}
 
 export function useActividades() {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);

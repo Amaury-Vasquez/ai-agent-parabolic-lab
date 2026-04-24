@@ -1,8 +1,8 @@
 import { Badge, Button } from "amvasdev-ui";
-import { useState } from "react";
-import Card from "@/components/Card";
-import SeleccionarEscenarioModal from "./SeleccionarEscenarioModal";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import SeleccionarEscenarioModal from "./SeleccionarEscenarioModal";
+import Card from "@/components/Card";
 import { Salon } from "@/types/salon";
 
 interface SalonCardProps {

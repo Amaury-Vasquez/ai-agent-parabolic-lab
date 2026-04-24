@@ -9,7 +9,7 @@ import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import {
   fetchSalonProgreso,
   SALON_PROGRESO_QUERY_KEY,
-} from "@/fetchers/salones";
+} from "@/queries/useSalonProgreso";
 
 interface ClassroomDetailPageProps {
   params: Promise<{

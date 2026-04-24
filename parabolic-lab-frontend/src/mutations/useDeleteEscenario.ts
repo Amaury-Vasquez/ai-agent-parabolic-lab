@@ -1,19 +1,24 @@
-"use client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
-import { deleteEscenario, MIS_ESCENARIOS_QUERY_KEY } from "@/fetchers/escenarios";
+import { del } from "@/services/api";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import { MIS_ESCENARIOS_QUERY_KEY } from "@/queries/useMisEscenarios";
+
+export async function deleteEscenario(token: string, idescenario: string): Promise<void> {
+  return del<void>(`/escenarios/${idescenario}`, { token });
+}
+const deleteEscenarioFn = deleteEscenario;
 
 export function useDeleteEscenario() {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);
   const token = cookies[ACCESS_TOKEN_COOKIE];
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (idescenario: string) => deleteEscenario(token, idescenario),
+  const { mutateAsync: deleteEscenario, ...rest } = useMutation({
+    mutationFn: (idescenario: string) => deleteEscenarioFn(token, idescenario),
     onSuccess: () => {
-      // Invalidar el cache de mis escenarios
       queryClient.invalidateQueries({ queryKey: MIS_ESCENARIOS_QUERY_KEY });
     },
   });
+  return { deleteEscenario, ...rest };
 }
