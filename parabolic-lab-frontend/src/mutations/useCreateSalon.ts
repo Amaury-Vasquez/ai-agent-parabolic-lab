@@ -4,8 +4,7 @@ import { useCookies } from "react-cookie";
 import { post } from "@/services/api";
 import { Salon } from "@/types/salon";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-
-export const MY_SALONES_QUERY_KEY = ["salones", "me"];
+import { MY_SALONES_QUERY_KEY } from "@/fetchers/salones";
 
 async function createSalon(
   token: string,

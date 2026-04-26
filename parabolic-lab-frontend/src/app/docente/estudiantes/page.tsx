@@ -21,7 +21,7 @@ export default async function EstudiantesPage() {
   if (token) {
     // Prefetch estudiantes globales (sin filtros inicialmente)
     await queryClient.prefetchQuery({
-      queryKey: ESTUDIANTES_GLOBALES_QUERY_KEY("nombre", "asc", undefined),
+      queryKey: getEstudiantesGlobalesQueryKey("nombre", "asc", undefined),
       queryFn: () =>
         fetchEstudiantesGlobales(token, {
           sort_by: "nombre",

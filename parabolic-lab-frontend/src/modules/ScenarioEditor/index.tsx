@@ -7,7 +7,7 @@ import PhysicsConfigBuilder from "@/components/PhysicsConfigBuilder";
 import { DIFFICULTY_LEVELS } from "@/constants/difficultyLevels";
 import { PHYSICS_DEFAULTS } from "@/constants/physicsDefaults";
 import { SCENARIO_TYPES } from "@/constants/scenarioTypes";
-import { useCreateEscenario } from "@/queries/useCreateEscenario";
+import { useCreateEscenario } from "@/mutations/useCreateEscenario";
 import { useUpdateEscenario } from "@/mutations/useUpdateEscenario";
 import { DIFFICULTY_MAP, TYPE_MAP } from "@/utils/scenarioMappers";
 import {
