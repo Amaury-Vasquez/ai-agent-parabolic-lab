@@ -1,10 +1,4 @@
-"use client";
-
-import dynamic from "next/dynamic";
-
-const Biblioteca = dynamic(() => import("@/modules/Biblioteca"), {
-  ssr: false,
-});
+import Biblioteca from "@/modules/Biblioteca";
 
 export default function BibliotecaPage() {
   return <Biblioteca />;
