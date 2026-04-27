@@ -8,7 +8,7 @@ import GestionEstudiantesGlobal from "@/modules/GestionEstudiantesGlobal";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import {
   fetchEstudiantesGlobales,
-  ESTUDIANTES_GLOBALES_QUERY_KEY,
+  getEstudiantesGlobalesQueryKey,
   fetchMySalones,
   MY_SALONES_QUERY_KEY,
 } from "@/fetchers/salones";

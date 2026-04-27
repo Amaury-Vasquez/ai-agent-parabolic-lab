@@ -1,9 +1,9 @@
-import { get } from "@/services/api";
+import { get, post, patch, del } from "@/services/api";
 import { Salon } from "@/types/salon";
 
 export const MY_SALONES_QUERY_KEY = ["salones", "me"];
 
-export const ESTUDIANTES_GLOBALES_QUERY_KEY = (
+export const getEstudiantesGlobalesQueryKey = (
   sortBy?: string,
   order?: string,
   salonId?: string
