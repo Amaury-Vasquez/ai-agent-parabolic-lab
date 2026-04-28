@@ -1,11 +1,8 @@
 "use client";
 import { Modal } from "amvasdev-ui";
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { useCookies } from "react-cookie";
-import { asignarEscenario } from "@/fetchers/escenarios";
+import { useAsignarEscenario } from "@/mutations/useAsignarEscenario";
 import { useMisEscenarios } from "@/queries/useMisEscenarios";
-import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import type { Salon } from "@/types/salon";
 
 interface SeleccionarEscenarioModalProps {
@@ -20,18 +17,13 @@ const SeleccionarEscenarioModal = ({
   salon,
 }: SeleccionarEscenarioModalProps) => {
   const [selectedEscenario, setSelectedEscenario] = useState<string>("");
-  const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);
-  const token = cookies[ACCESS_TOKEN_COOKIE];
   const { data: escenarios } = useMisEscenarios();
 
-  const { mutate: asignar, isPending } = useMutation({
-    mutationFn: (idescenario: string) =>
-      asignarEscenario(token, idescenario, salon.idsalon),
-  });
+  const { mutate: asignar, isPending } = useAsignarEscenario();
 
   const handleConfirm = () => {
     if (selectedEscenario.trim() === "") return;
-    asignar(selectedEscenario, {
+    asignar({ idescenario: selectedEscenario, idsalon: salon.idsalon }, {
       onSuccess: () => {
         setSelectedEscenario("");
         onClose();

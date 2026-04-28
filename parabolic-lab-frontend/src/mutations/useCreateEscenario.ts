@@ -5,8 +5,7 @@ import { post } from "@/services/api";
 import { sanitizeData } from "@/utils/sanitizeData";
 import { Scenario } from "@/models/scenario";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-
-export const MIS_ESCENARIOS_QUERY_KEY = ["escenarios", "mis"];
+import { MIS_ESCENARIOS_QUERY_KEY } from "@/fetchers/escenarios";
 
 async function createEscenario(
   token: string,

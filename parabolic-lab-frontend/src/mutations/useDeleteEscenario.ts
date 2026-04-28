@@ -1,8 +1,16 @@
 "use client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
-import { deleteEscenario, MIS_ESCENARIOS_QUERY_KEY } from "@/fetchers/escenarios";
+import { del } from "@/services/api";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import { MIS_ESCENARIOS_QUERY_KEY } from "@/fetchers/escenarios";
+
+async function deleteEscenario(
+  token: string,
+  idescenario: string
+): Promise<void> {
+  return del<void>(`/escenarios/${idescenario}`, { token });
+}
 
 export function useDeleteEscenario() {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);

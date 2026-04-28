@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
 import {
   fetchEstudiantesGlobales,
-  ESTUDIANTES_GLOBALES_QUERY_KEY,
+  getEstudiantesGlobalesQueryKey,
   EstudianteGlobal,
 } from "@/fetchers/salones";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
@@ -19,7 +19,7 @@ export function useEstudiantesGlobales(options?: UseEstudiantesGlobalesOptions) 
   const token = cookies[ACCESS_TOKEN_COOKIE];
 
   return useQuery<EstudianteGlobal[]>({
-    queryKey: ESTUDIANTES_GLOBALES_QUERY_KEY(options?.sort_by, options?.order, options?.idsalon),
+    queryKey: getEstudiantesGlobalesQueryKey(options?.sort_by, options?.order, options?.idsalon),
     queryFn: () =>
       fetchEstudiantesGlobales(token, {
         sort_by: options?.sort_by,

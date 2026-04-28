@@ -1,7 +1,8 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
-import { fetchMe, ME_QUERY_KEY, UserProfile } from "@/fetchers/auth";
+import { fetchMe, ME_QUERY_KEY } from "@/fetchers/auth";
+import type { UserProfile } from "@/models/user";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 
 export function useMe() {

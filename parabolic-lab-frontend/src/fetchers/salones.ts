@@ -3,7 +3,7 @@ import { Salon } from "@/types/salon";
 
 export const MY_SALONES_QUERY_KEY = ["salones", "me"];
 
-export const ESTUDIANTES_GLOBALES_QUERY_KEY = (
+export const getEstudiantesGlobalesQueryKey = (
   sortBy?: string,
   order?: string,
   salonId?: string
@@ -46,21 +46,6 @@ export async function fetchSalonProgreso(
   return data?.estudiantes ?? [];
 }
 
-export async function createSalon(
-  token: string,
-  data: { nombresalon: string }
-): Promise<Salon> {
-  return post<Salon>("/salones/", data, { token });
-}
-
-export async function updateSalon(
-  token: string,
-  idsalon: string,
-  data: { nombresalon: string }
-): Promise<Salon> {
-  return patch<Salon>(`/salones/${idsalon}`, data, { token });
-}
-
 export const SALON_ESTUDIANTES_QUERY_KEY = (salonId: string) => [
   "salones",
   salonId,
@@ -84,26 +69,6 @@ export async function fetchEstudiantesBySalon(
   return get<EstudianteEnSalon[]>(`/salones/${salonId}/estudiantes`, {
     token,
   });
-}
-
-export async function agregarEstudianteASalon(
-  token: string,
-  salonId: string,
-  correoAlumno: string
-): Promise<EstudianteEnSalon> {
-  return post<EstudianteEnSalon>(
-    `/salones/${salonId}/agregar-estudiante`,
-    { correo: correoAlumno },
-    { token }
-  );
-}
-
-export async function darDeBajaEstudiante(
-  token: string,
-  salonId: string,
-  idalumno: string
-): Promise<void> {
-  return del<void>(`/salones/${salonId}/estudiantes/${idalumno}`, { token });
 }
 
 // Estudiantes Globales

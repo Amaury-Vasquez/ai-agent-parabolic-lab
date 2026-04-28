@@ -1,7 +1,7 @@
 "use client";
 import { Input, Modal } from "amvasdev-ui";
 import { useState } from "react";
-import { useCreateSalon } from "@/queries/useCreateSalon";
+import { useCreateSalon } from "@/mutations/useCreateSalon";
 
 interface CreateClassroomModalProps {
   isOpen: boolean;
@@ -10,19 +10,27 @@ interface CreateClassroomModalProps {
 
 const CreateClassroomModal = ({ isOpen, onClose }: CreateClassroomModalProps) => {
   const [classroomName, setClassroomName] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(false);
   const { mutate: crearSalon, isPending } = useCreateSalon();
 
-  const handleConfirm = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (classroomName.trim() === "") return;
+    setError(false);
     crearSalon(
       { nombresalon: classroomName.trim() },
       {
         onSuccess: () => {
+          setSuccess(true);
           setClassroomName("");
-          onClose();
+          setTimeout(() => {
+            setSuccess(false);
+            onClose();
+          }, 1500);
         },
         onError: () => {
-          alert("Error al crear el salón. Intenta de nuevo.");
+          setError(true);
         },
       }
     );
@@ -30,6 +38,8 @@ const CreateClassroomModal = ({ isOpen, onClose }: CreateClassroomModalProps) =>
 
   const handleCancel = () => {
     setClassroomName("");
+    setSuccess(false);
+    setError(false);
     onClose();
   };
 
@@ -40,11 +50,14 @@ const CreateClassroomModal = ({ isOpen, onClose }: CreateClassroomModalProps) =>
       confirmButton={{
         children: isPending ? "Creando..." : "Crear Salón",
         variant: "primary",
-        onClick: handleConfirm,
-        disabled: classroomName.trim() === "" || isPending,
+        onClick: handleSubmit,
+        disabled: classroomName.trim() === "" || isPending || success,
       }}
     >
-      <div className="flex flex-col py-4 gap-4">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col py-4 gap-4"
+      >
         <Input
           id="classroom-name"
           label="Nombre del Salón"
@@ -52,7 +65,17 @@ const CreateClassroomModal = ({ isOpen, onClose }: CreateClassroomModalProps) =>
           value={classroomName}
           onChange={(e) => setClassroomName(e.currentTarget.value)}
         />
-      </div>
+        {success ? (
+          <p className="text-success text-sm">
+            ✓ Salón creado exitosamente
+          </p>
+        ) : null}
+        {error ? (
+          <p className="text-error text-sm">
+            ✗ Error al crear el salón. Intenta de nuevo.
+          </p>
+        ) : null}
+      </form>
     </Modal>
   ) : null;
 };

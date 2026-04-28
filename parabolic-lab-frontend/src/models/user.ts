@@ -1,0 +1,19 @@
+export type UserType = "docente" | "alumno" | "admin";
+
+export interface UserProfile {
+  idusuario: string;
+  authid: string;
+  email: string;
+  nombre: string;
+  apellidopaterno: string;
+  apellidomaterno?: string | null;
+  tipousuario: UserType;
+  idinstitucion: string;
+  activo?: boolean | null;
+}
+
+export interface DocenteProfile {
+  iddocente: string;
+  idusuario: string;
+  gradoacademico?: string | null;
+}
