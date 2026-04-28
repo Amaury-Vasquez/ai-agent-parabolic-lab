@@ -22,6 +22,15 @@ class InteraccionEscenarioRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ProgresoAlumnoRead(BaseModel):
+    total_escenarios: int
+    escenarios_completados: int
+    puntuacion_promedio: float | None
+    mejor_puntuacion: float | None
+    tiempo_total_minutos: float
+    interacciones: list[InteraccionEscenarioRead]
+
+
 class InteraccionEscenarioCreate(BaseModel):
     idescenario: UUID
     idalumno: UUID
