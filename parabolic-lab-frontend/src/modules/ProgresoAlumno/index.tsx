@@ -46,7 +46,7 @@ const InteraccionRow = ({ interaccion }: InteraccionRowProps) => (
           Completado
         </Badge>
       ) : (
-        <Badge variant="ghost">
+        <Badge variant="neutral">
           En progreso
         </Badge>
       )}

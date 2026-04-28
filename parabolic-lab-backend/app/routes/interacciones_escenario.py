@@ -11,9 +11,41 @@ from app.schemas.interaccion_escenario import (
     InteraccionEscenarioCreate,
     InteraccionEscenarioRead,
     InteraccionEscenarioUpdate,
+    ProgresoAlumnoRead,
 )
 
 router = APIRouter(prefix="/interacciones-escenario", tags=["InteraccionesEscenario"])
+
+
+def _require_alumno(current_user: Usuario) -> None:
+    if current_user.tipousuario != "alumno" or not current_user.alumno:
+        raise HTTPException(status_code=403, detail="Acceso restringido a alumnos")
+
+
+@router.get("/me", response_model=ProgresoAlumnoRead)
+async def obtener_progreso_alumno(
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    _require_alumno(current_user)
+    idalumno = current_user.alumno.idalumno
+
+    result = await db.execute(
+        select(InteraccionEscenario).where(InteraccionEscenario.idalumno == idalumno)
+    )
+    interacciones = result.scalars().all()
+
+    puntuaciones = [float(i.puntuacion) for i in interacciones if i.puntuacion is not None]
+    tiempos = [i.tiempototal for i in interacciones if i.tiempototal is not None]
+
+    return ProgresoAlumnoRead(
+        total_escenarios=len({i.idescenario for i in interacciones}),
+        escenarios_completados=len({i.idescenario for i in interacciones if i.completado}),
+        puntuacion_promedio=sum(puntuaciones) / len(puntuaciones) if puntuaciones else None,
+        mejor_puntuacion=max(puntuaciones) if puntuaciones else None,
+        tiempo_total_minutos=sum(tiempos) / 60 if tiempos else 0.0,
+        interacciones=list(interacciones),
+    )
 
 
 @router.get("/", response_model=list[InteraccionEscenarioRead])
