@@ -3,8 +3,6 @@ Router para reportes de desempeño.
 Genera reportes CSV y PDF para docentes.
 """
 
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
@@ -12,9 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.dependencies import get_current_user, get_db
-from app.models.usuario import Usuario
-from app.models.salon import Salon
 from app.models.alumno import Alumno
+from app.models.salon import Salon
+from app.models.usuario import Usuario
 from app.services.reports import ReportService
 
 router = APIRouter(prefix="/reportes", tags=["Reportes"])
@@ -140,9 +138,7 @@ async def get_student_csv_report(
 
     # Generar reporte
     try:
-        csv_data = await ReportService.generate_student_csv_report(
-            db, alumno_id, salon_id
-        )
+        csv_data = await ReportService.generate_student_csv_report(db, alumno_id, salon_id)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -150,20 +146,14 @@ async def get_student_csv_report(
         )
 
     # Obtener nombre del estudiante
-    result = await db.execute(
-        select(Alumno)
-        .where(Alumno.idalumno == alumno_id)
-        .options(selectinload(Alumno.usuario))
-    )
+    result = await db.execute(select(Alumno).where(Alumno.idalumno == alumno_id).options(selectinload(Alumno.usuario)))
     alumno = result.scalar_one_or_none()
     nombre_alumno = alumno.usuario.nombre.replace(" ", "_") if alumno else "estudiante"
 
     return StreamingResponse(
         iter([csv_data]),
         media_type="text/csv",
-        headers={
-            "Content-Disposition": f'attachment; filename="expediente_{nombre_alumno}.csv"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="expediente_{nombre_alumno}.csv"'},
     )
 
 
@@ -201,9 +191,7 @@ async def get_student_pdf_report(
 
     # Generar reporte
     try:
-        pdf_data = await ReportService.generate_student_pdf_report(
-            db, alumno_id, salon_id
-        )
+        pdf_data = await ReportService.generate_student_pdf_report(db, alumno_id, salon_id)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -211,18 +199,12 @@ async def get_student_pdf_report(
         )
 
     # Obtener nombre del estudiante
-    result = await db.execute(
-        select(Alumno)
-        .where(Alumno.idalumno == alumno_id)
-        .options(selectinload(Alumno.usuario))
-    )
+    result = await db.execute(select(Alumno).where(Alumno.idalumno == alumno_id).options(selectinload(Alumno.usuario)))
     alumno = result.scalar_one_or_none()
     nombre_alumno = alumno.usuario.nombre.replace(" ", "_") if alumno else "estudiante"
 
     return StreamingResponse(
         iter([pdf_data]),
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": f'attachment; filename="expediente_{nombre_alumno}.pdf"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="expediente_{nombre_alumno}.pdf"'},
     )

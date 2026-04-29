@@ -1,69 +1,47 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useCookies } from "react-cookie";
-import { useMySalones } from "@/queries/useMySalones";
-import { fetchSalonProgreso } from "@/fetchers/salones";
-import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-import { downloadReport } from "@/services/api";
 import { Button } from "amvasdev-ui";
-import { Download, FileText, File } from "lucide-react";
+import { File, FileText } from "lucide-react";
+import { useState } from "react";
+import { useCookies } from "react-cookie";
+import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import { useMySalones } from "@/queries/useMySalones";
+import { useSalonProgreso } from "@/queries/useSalonProgreso";
+import { downloadReport } from "@/services/api";
 
-interface Estudiante {
-  idalumno: string;
-  nombre: string;
-  apellidopaterno: string;
-  promedio_puntuacion: number;
-  escenarios_completados: number;
-  total_intentos: number;
-  tiempo_total_minutos: number;
-  mejor_puntuacion: number;
-}
+type ReportFormat = "csv" | "pdf";
 
 const Reportes = () => {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);
   const token = cookies[ACCESS_TOKEN_COOKIE];
   const { data: salones = [] } = useMySalones();
 
-  const [selectedSalonId, setSelectedSalonId] = useState<string>("");
-  const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
-  const [loadingEstudiantes, setLoadingEstudiantes] = useState(false);
+  const [selectedSalonId, setSelectedSalonId] = useState("");
   const [loadingReport, setLoadingReport] = useState<string | null>(null);
-  const [selectedSalonName, setSelectedSalonName] = useState<string>("");
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
-  // Cargar estudiantes cuando se selecciona un salón
-  useEffect(() => {
-    if (selectedSalonId && token) {
-      setLoadingEstudiantes(true);
-      const salonSeleccionado = salones.find(
-        (s) => s.idsalon === selectedSalonId
-      );
-      setSelectedSalonName(salonSeleccionado?.nombresalon || "");
+  const { data: estudiantes = [], isLoading: isLoadingEstudiantes } =
+    useSalonProgreso(selectedSalonId);
 
-      fetchSalonProgreso(token, selectedSalonId)
-        .then(setEstudiantes)
-        .catch((error) => {
-          console.error("Error cargando estudiantes:", error);
-          setEstudiantes([]);
-        })
-        .finally(() => setLoadingEstudiantes(false));
-    }
-  }, [selectedSalonId, token, salones]);
+  const selectedSalon = salones.find((s) => s.idsalon === selectedSalonId);
+  const selectedSalonName = selectedSalon?.nombresalon ?? "";
 
-  const handleDownloadSalonReport = async (format: "csv" | "pdf") => {
+  const handleDownloadSalonReport = async (format: ReportFormat) => {
     if (!selectedSalonId || !token) return;
 
     setLoadingReport(`salon-${format}`);
+    setDownloadError(null);
     try {
       const filename = `reporte_salon_${selectedSalonName.replace(/\s+/g, "_")}.${format}`;
       await downloadReport(
         `/reportes/salon/${selectedSalonId}/${format}`,
         token,
-        filename
+        filename,
       );
-    } catch (error) {
-      console.error(`Error descargando reporte ${format}:`, error);
-      alert(`Error al descargar el reporte ${format.toUpperCase()}`);
+    } catch {
+      setDownloadError(
+        `No se pudo descargar el reporte ${format.toUpperCase()}. Intenta de nuevo.`,
+      );
     } finally {
       setLoadingReport(null);
     }
@@ -72,24 +50,23 @@ const Reportes = () => {
   const handleDownloadStudentReport = async (
     alumnoId: string,
     alumnoNombre: string,
-    format: "csv" | "pdf"
+    format: ReportFormat,
   ) => {
     if (!selectedSalonId || !token) return;
 
     setLoadingReport(`student-${alumnoId}-${format}`);
+    setDownloadError(null);
     try {
       const filename = `expediente_${alumnoNombre.replace(/\s+/g, "_")}.${format}`;
       await downloadReport(
         `/reportes/estudiante/${alumnoId}/salon/${selectedSalonId}/${format}`,
         token,
-        filename
+        filename,
       );
-    } catch (error) {
-      console.error(
-        `Error descargando expediente ${format}:`,
-        error
+    } catch {
+      setDownloadError(
+        `No se pudo descargar el expediente ${format.toUpperCase()}. Intenta de nuevo.`,
       );
-      alert(`Error al descargar el expediente ${format.toUpperCase()}`);
     } finally {
       setLoadingReport(null);
     }
@@ -97,25 +74,26 @@ const Reportes = () => {
 
   return (
     <div className="p-8">
-      {/* Header Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Reportes de Desempeño</h1>
-        <p className="text-base-content/60">
-          Descarga reportes consolidados y expedientes individuales de tus estudiantes
+        <p className="opacity-60">
+          Descarga reportes consolidados y expedientes individuales de tus
+          estudiantes
         </p>
       </div>
 
-      {/* Salon Selector */}
       <div className="card bg-base-100 shadow-md border border-base-300 rounded-xl mb-6">
         <div className="card-body">
           <label className="form-control w-full">
             <div className="label">
-              <span className="label-text font-semibold">Seleccionar Salón</span>
+              <span className="label-text font-semibold">
+                Seleccionar Salón
+              </span>
             </div>
             <select
               value={selectedSalonId}
               onChange={(e) => setSelectedSalonId(e.target.value)}
-              className="select select-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary"
+              className="select select-bordered w-full"
             >
               <option value="">-- Elige un salón --</option>
               {salones.map((salon) => (
@@ -128,12 +106,19 @@ const Reportes = () => {
         </div>
       </div>
 
-      {selectedSalonId && (
+      {downloadError ? (
+        <div className="alert alert-error mb-6">
+          <p>{downloadError}</p>
+        </div>
+      ) : null}
+
+      {selectedSalonId ? (
         <>
-          {/* Reporte Consolidado */}
-          <div className="card bg-base-100 shadow-md border border-primary/20 rounded-xl mb-6 bg-gradient-to-br from-base-100 to-primary/5">
+          <div className="card bg-base-100 shadow-md border border-base-300 rounded-xl mb-6">
             <div className="card-body">
-              <h2 className="card-title text-lg mb-4">Reporte Consolidado del Grupo</h2>
+              <h2 className="card-title text-lg mb-4">
+                Reporte Consolidado del Grupo
+              </h2>
               <div className="flex flex-wrap gap-3">
                 <Button
                   onClick={() => handleDownloadSalonReport("csv")}
@@ -143,7 +128,7 @@ const Reportes = () => {
                 >
                   {loadingReport === "salon-csv" ? (
                     <>
-                      <span className="loading loading-spinner loading-sm"></span>
+                      <span className="loading loading-spinner loading-sm" />
                       Descargando...
                     </>
                   ) : (
@@ -161,7 +146,7 @@ const Reportes = () => {
                 >
                   {loadingReport === "salon-pdf" ? (
                     <>
-                      <span className="loading loading-spinner loading-sm"></span>
+                      <span className="loading loading-spinner loading-sm" />
                       Descargando...
                     </>
                   ) : (
@@ -175,17 +160,18 @@ const Reportes = () => {
             </div>
           </div>
 
-          {/* Expedientes de Estudiantes */}
           <div className="card bg-base-100 shadow-md border border-base-300 rounded-xl">
             <div className="card-body">
-              <h2 className="card-title text-lg mb-4">Expedientes de Estudiantes</h2>
+              <h2 className="card-title text-lg mb-4">
+                Expedientes de Estudiantes
+              </h2>
 
-              {loadingEstudiantes ? (
+              {isLoadingEstudiantes ? (
                 <div className="flex justify-center py-12">
-                  <span className="loading loading-spinner loading-lg"></span>
+                  <span className="loading loading-spinner loading-lg" />
                 </div>
               ) : estudiantes.length === 0 ? (
-                <div className="text-center py-12 text-base-content/60">
+                <div className="text-center py-12 opacity-60">
                   <p>No hay estudiantes en este salón.</p>
                 </div>
               ) : (
@@ -203,70 +189,73 @@ const Reportes = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {estudiantes.map((estudiante) => (
-                        <tr key={estudiante.idalumno} className="hover">
-                          <td className="font-medium">
-                            {estudiante.nombre} {estudiante.apellidopaterno}
-                          </td>
-                          <td className="text-center">{estudiante.escenarios_completados}</td>
-                          <td className="text-center">{estudiante.total_intentos}</td>
-                          <td className="text-center">
-                            {estudiante.promedio_puntuacion.toFixed(1)}
-                          </td>
-                          <td className="text-center">
-                            {estudiante.mejor_puntuacion.toFixed(1)}
-                          </td>
-                          <td className="text-center">{estudiante.tiempo_total_minutos}m</td>
-                          <td className="text-center">
-                            <div className="flex justify-center gap-2">
-                              <button
-                                onClick={() =>
-                                  handleDownloadStudentReport(
-                                    estudiante.idalumno,
-                                    `${estudiante.nombre} ${estudiante.apellidopaterno}`,
-                                    "csv"
-                                  )
-                                }
-                                disabled={
-                                  loadingReport ===
-                                  `student-${estudiante.idalumno}-csv`
-                                }
-                                className="btn btn-xs btn-ghost"
-                                title="Descargar CSV"
-                              >
-                                {loadingReport ===
-                                `student-${estudiante.idalumno}-csv` ? (
-                                  <span className="loading loading-spinner loading-xs"></span>
-                                ) : (
-                                  <File size={14} />
-                                )}
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleDownloadStudentReport(
-                                    estudiante.idalumno,
-                                    `${estudiante.nombre} ${estudiante.apellidopaterno}`,
-                                    "pdf"
-                                  )
-                                }
-                                disabled={
-                                  loadingReport ===
-                                  `student-${estudiante.idalumno}-pdf`
-                                }
-                                className="btn btn-xs btn-ghost"
-                                title="Descargar PDF"
-                              >
-                                {loadingReport ===
-                                `student-${estudiante.idalumno}-pdf` ? (
-                                  <span className="loading loading-spinner loading-xs"></span>
-                                ) : (
-                                  <FileText size={14} />
-                                )}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {estudiantes.map((estudiante) => {
+                        const fullName = `${estudiante.nombre} ${estudiante.apellidopaterno}`;
+                        const csvKey = `student-${estudiante.idalumno}-csv`;
+                        const pdfKey = `student-${estudiante.idalumno}-pdf`;
+                        return (
+                          <tr key={estudiante.idalumno} className="hover">
+                            <td className="font-medium">{fullName}</td>
+                            <td className="text-center">
+                              {estudiante.escenarios_completados}
+                            </td>
+                            <td className="text-center">
+                              {estudiante.total_intentos}
+                            </td>
+                            <td className="text-center">
+                              {estudiante.promedio_puntuacion.toFixed(1)}
+                            </td>
+                            <td className="text-center">
+                              {estudiante.mejor_puntuacion.toFixed(1)}
+                            </td>
+                            <td className="text-center">
+                              {estudiante.tiempo_total_minutos}m
+                            </td>
+                            <td className="text-center">
+                              <div className="flex justify-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="xs"
+                                  onClick={() =>
+                                    handleDownloadStudentReport(
+                                      estudiante.idalumno,
+                                      fullName,
+                                      "csv",
+                                    )
+                                  }
+                                  disabled={loadingReport === csvKey}
+                                  title="Descargar CSV"
+                                >
+                                  {loadingReport === csvKey ? (
+                                    <span className="loading loading-spinner loading-xs" />
+                                  ) : (
+                                    <File size={14} />
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="xs"
+                                  onClick={() =>
+                                    handleDownloadStudentReport(
+                                      estudiante.idalumno,
+                                      fullName,
+                                      "pdf",
+                                    )
+                                  }
+                                  disabled={loadingReport === pdfKey}
+                                  title="Descargar PDF"
+                                >
+                                  {loadingReport === pdfKey ? (
+                                    <span className="loading loading-spinner loading-xs" />
+                                  ) : (
+                                    <FileText size={14} />
+                                  )}
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -274,7 +263,7 @@ const Reportes = () => {
             </div>
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 };

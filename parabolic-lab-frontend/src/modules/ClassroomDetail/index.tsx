@@ -2,18 +2,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Student } from "@/constants/students";
+import type { SalonProgresoEstudiante } from "@/models/estudiante";
 import { UserType } from "@/models/users";
-import { searchIgnoreAccents } from "@/utils/string";
+import { useMySalones } from "@/queries/useMySalones";
 import { useSalonProgreso } from "@/queries/useSalonProgreso";
-import { SalonProgresoEstudiante } from "@/fetchers/salones";
+import { searchIgnoreAccents } from "@/utils/string";
 import FiltersSection, {
   DifficultyFilter,
   RankingType,
 } from "./FiltersSection";
 import HeaderSection from "./HeaderSection";
-import RankingSection from "./RankingSection";
 import ManageSalonModal from "./ManageSalonModal";
-import { useMySalones } from "@/queries/useMySalones";
+import RankingSection from "./RankingSection";
 
 interface ClassroomDetailProps {
   classroomId: string;

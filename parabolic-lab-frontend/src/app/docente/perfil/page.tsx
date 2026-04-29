@@ -5,8 +5,15 @@ import {
 } from "@tanstack/react-query";
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import {
+  DOCENTE_QUERY_KEY,
+  fetchDocente,
+  fetchInstitucion,
+  fetchMe,
+  ME_QUERY_KEY,
+} from "@/fetchers/auth";
 import PerfilDocente from "@/modules/PerfilDocente";
-import { fetchMe, ME_QUERY_KEY, fetchDocente, DOCENTE_QUERY_KEY } from "@/fetchers/auth";
+import { INSTITUCION_QUERY_KEY } from "@/mutations/useUpdateInstitucion";
 
 export default async function PerfilPage() {
   const queryClient = new QueryClient();
@@ -14,20 +21,21 @@ export default async function PerfilPage() {
   const token = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
 
   if (token) {
-    try {
-      await queryClient.prefetchQuery({
-        queryKey: ME_QUERY_KEY,
-        queryFn: () => fetchMe(token),
-      });
+    const me = await queryClient.fetchQuery({
+      queryKey: ME_QUERY_KEY,
+      queryFn: () => fetchMe(token),
+    });
 
-      // Prefetch docente profile for docentes
-      await queryClient.prefetchQuery({
+    await Promise.all([
+      queryClient.prefetchQuery({
         queryKey: DOCENTE_QUERY_KEY,
         queryFn: () => fetchDocente(token),
-      });
-    } catch {
-      // Silently fail, let the client handle errors
-    }
+      }),
+      queryClient.prefetchQuery({
+        queryKey: INSTITUCION_QUERY_KEY(me.idinstitucion),
+        queryFn: () => fetchInstitucion(token, me.idinstitucion),
+      }),
+    ]);
   }
 
   return (

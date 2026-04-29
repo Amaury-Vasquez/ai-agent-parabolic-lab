@@ -1,8 +1,8 @@
 "use client";
 import { Modal } from "amvasdev-ui";
 import { useState } from "react";
-import { useAsignarEscenario } from "@/mutations/useAsignarEscenario";
 import type { Scenario } from "@/models/scenario";
+import { useAsignarEscenario } from "@/mutations/useAsignarEscenario";
 import type { Salon } from "@/types/salon";
 
 interface AsignarEscenarioModalProps {
@@ -18,27 +18,30 @@ const AsignarEscenarioModal = ({
   escenario,
   salones,
 }: AsignarEscenarioModalProps) => {
-  const [selectedSalon, setSelectedSalon] = useState<string>("");
-
+  const [selectedSalon, setSelectedSalon] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const { mutate: asignar, isPending } = useAsignarEscenario();
 
   const handleConfirm = () => {
     if (selectedSalon.trim() === "") return;
-    asignar({ idescenario: escenario.idescenario, idsalon: selectedSalon }, {
-      onSuccess: () => {
-        setSelectedSalon("");
-        onClose();
+    setError(null);
+    asignar(
+      { idescenario: escenario.idescenario, idsalon: selectedSalon },
+      {
+        onSuccess: () => {
+          setSelectedSalon("");
+          onClose();
+        },
+        onError: () => {
+          setError("Error al asignar el escenario. Intenta de nuevo.");
+        },
       },
-      onError: () => {
-        alert(
-          "Error al asignar el escenario. Por favor, intenta de nuevo."
-        );
-      },
-    });
+    );
   };
 
   const handleCancel = () => {
     setSelectedSalon("");
+    setError(null);
     onClose();
   };
 
@@ -72,6 +75,7 @@ const AsignarEscenarioModal = ({
             ))}
           </select>
         </div>
+        {error ? <p className="text-error text-sm">{error}</p> : null}
       </div>
     </Modal>
   ) : null;

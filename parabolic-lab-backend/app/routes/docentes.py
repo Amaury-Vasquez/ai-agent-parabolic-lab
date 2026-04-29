@@ -37,19 +37,19 @@ async def obtener_estudiantes_global(
     """
     Obtiene todos los estudiantes de todos los salones del docente actual.
     Devuelve una lista única de alumnos con estadísticas globales de interacciones.
-    
+
     Query parameters:
     - sort_by: Campo por el que ordenar (nombre, promedio, interacciones, salon) - default: nombre
     - order: Dirección de ordenamiento (asc, desc) - default: asc
     - idsalon: UUID opcional para filtrar por un salón específico
-    
+
     Cada estudiante se lista una sola vez, asociado a su salón.
-    
+
     Responde con:
     - nombre, apellidopaterno, apellidomaterno
     - email, matricula
     - nombresalon (del salón al que pertenece)
-    - Estadísticas: total_interacciones, promedio_puntuacion, mejor_puntuacion, 
+    - Estadísticas: total_interacciones, promedio_puntuacion, mejor_puntuacion,
       total_intentos, escenarios_completados, tiempo_total_minutos
     - progreso_total (calculado como promedio de puntuación normalizado)
     """
@@ -122,22 +122,22 @@ async def obtener_estudiantes_global(
 
     if sort_by == "promedio":
         query = query.order_by(
-            func.avg(InteraccionEscenario.puntuacion).desc() if desc_order
+            func.avg(InteraccionEscenario.puntuacion).desc()
+            if desc_order
             else func.avg(InteraccionEscenario.puntuacion).asc()
         )
     elif sort_by == "interacciones":
         query = query.order_by(
-            func.count(InteraccionEscenario.idinteraccion).desc() if desc_order
+            func.count(InteraccionEscenario.idinteraccion).desc()
+            if desc_order
             else func.count(InteraccionEscenario.idinteraccion).asc()
         )
     elif sort_by == "salon":
-        query = query.order_by(
-            Salon.nombresalon.desc() if desc_order else Salon.nombresalon.asc()
-        )
+        query = query.order_by(Salon.nombresalon.desc() if desc_order else Salon.nombresalon.asc())
     else:  # nombre (default)
         query = query.order_by(
             Usuario.nombre.desc() if desc_order else Usuario.nombre.asc(),
-            Usuario.apellidopaterno.desc() if desc_order else Usuario.apellidopaterno.asc()
+            Usuario.apellidopaterno.desc() if desc_order else Usuario.apellidopaterno.asc(),
         )
 
     result = await db.execute(query)

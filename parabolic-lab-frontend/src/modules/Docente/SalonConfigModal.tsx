@@ -1,11 +1,8 @@
 "use client";
-import { Modal, Input, Button } from "amvasdev-ui";
+import { Button, Input, Modal } from "amvasdev-ui";
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCookies } from "react-cookie";
-import { patch, del } from "@/services/api";
-import { MY_SALONES_QUERY_KEY } from "@/fetchers/salones";
-import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import { useDeleteEscenario } from "@/mutations/useDeleteEscenario";
+import { useUpdateSalon } from "@/mutations/useUpdateSalon";
 import type { Salon } from "@/types/salon";
 
 interface SalonConfigModalProps {
@@ -14,50 +11,21 @@ interface SalonConfigModalProps {
   salon: Salon;
 }
 
-const SalonConfigModal = ({
-  isOpen,
-  onClose,
-  salon,
-}: SalonConfigModalProps) => {
+const SalonConfigModal = ({ isOpen, onClose, salon }: SalonConfigModalProps) => {
   const [nombreSalon, setNombreSalon] = useState(salon.nombresalon);
-  const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);
-  const token = cookies[ACCESS_TOKEN_COOKIE];
-  const queryClient = useQueryClient();
-
-  const { mutate: updateName, isPending: isUpdating } = useMutation({
-    mutationFn: () =>
-      patch(`/salones/${salon.idsalon}`, { nombresalon: nombreSalon }, { token }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: MY_SALONES_QUERY_KEY });
-    },
-  });
-
-  const { mutate: deleteEscenario } = useMutation({
-    mutationFn: (idescenario: string) =>
-      del(`/escenarios/${idescenario}`, { token }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: MY_SALONES_QUERY_KEY });
-    },
-  });
+  const { mutate: updateSalon, isPending: isUpdating } = useUpdateSalon();
+  const { mutate: deleteEscenario } = useDeleteEscenario();
 
   const handleSaveName = () => {
     if (nombreSalon.trim() === "") return;
-    updateName();
-  };
-
-  const handleDeleteEscenario = (idescenario: string) => {
-    deleteEscenario(idescenario);
+    updateSalon({ idsalon: salon.idsalon, nombresalon: nombreSalon });
   };
 
   if (!isOpen) return null;
 
   return (
-    <Modal
-      onClose={onClose}
-      title={`Configuración de "${salon.nombresalon}"`}
-    >
+    <Modal onClose={onClose} title={`Configuración de "${salon.nombresalon}"`}>
       <div className="flex flex-col py-4 gap-6">
-        {/* Editar nombre del salón */}
         <div>
           <label className="label">
             <span className="label-text font-semibold">Nombre del salón</span>
@@ -84,7 +52,6 @@ const SalonConfigModal = ({
           </div>
         </div>
 
-        {/* Lista de escenarios */}
         <div>
           <label className="label">
             <span className="label-text font-semibold">
@@ -106,9 +73,7 @@ const SalonConfigModal = ({
                   <Button
                     variant="error"
                     size="sm"
-                    onClick={() =>
-                      handleDeleteEscenario(escenario.idescenario)
-                    }
+                    onClick={() => deleteEscenario(escenario.idescenario)}
                   >
                     Eliminar
                   </Button>

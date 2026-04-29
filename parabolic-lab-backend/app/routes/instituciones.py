@@ -1,5 +1,5 @@
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -72,7 +72,7 @@ async def actualizar_institucion(
     if institucion_update.telefono is not None:
         institucion.telefono = institucion_update.telefono
 
-    institucion.fechamodificacion = datetime.now(timezone.utc)
+    institucion.fechamodificacion = datetime.now(UTC).replace(tzinfo=None)
 
     db.add(institucion)
     await db.commit()

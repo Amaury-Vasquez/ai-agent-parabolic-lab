@@ -1,12 +1,12 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
+import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import {
   fetchSalonProgreso,
   SALON_PROGRESO_QUERY_KEY,
-  SalonProgresoEstudiante,
 } from "@/fetchers/salones";
-import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import type { SalonProgresoEstudiante } from "@/models/estudiante";
 
 export function useSalonProgreso(salonId: string) {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);

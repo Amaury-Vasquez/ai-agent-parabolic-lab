@@ -1,71 +1,71 @@
 "use client";
-import { useState } from "react";
-import { Button, Badge } from "amvasdev-ui";
-import { Plus, Trash2, Eye } from "lucide-react";
-import { useEstudiantesBySalon } from "@/queries/useEstudiantesBySalon";
-import { useDarDeBajaEstudiante } from "@/mutations/useDarDeBajaEstudiante";
-import AgregarEstudianteModal from "./AgregarEstudianteModal";
-import { EstudianteEnSalon } from "@/fetchers/salones";
+import { Button, Modal } from "amvasdev-ui";
+import { Eye, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import type { EstudianteEnSalon } from "@/models/estudiante";
+import { useDarDeBajaEstudiante } from "@/mutations/useDarDeBajaEstudiante";
+import { useEstudiantesBySalon } from "@/queries/useEstudiantesBySalon";
+import AgregarEstudianteModal from "./AgregarEstudianteModal";
 
 interface GestionEstudiantesProps {
   salonId: string;
 }
 
+const formatearFecha = (fecha: string | null): string => {
+  if (!fecha) return "Sin acceso";
+  const date = new Date(fecha);
+  if (Number.isNaN(date.getTime())) return "Fecha inválida";
+  return date.toLocaleDateString("es-ES", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+const calcularPorcentajeProgreso = (
+  completados: number,
+  total: number,
+): number => (total > 0 ? (completados / total) * 100 : 0);
+
 const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
   const router = useRouter();
   const [isAgregarModalOpen, setIsAgregarModalOpen] = useState(false);
+  const [estudianteABajar, setEstudianteABajar] =
+    useState<EstudianteEnSalon | null>(null);
+  const [bajaError, setBajaError] = useState<string | null>(null);
+
   const { data: estudiantes, isLoading } = useEstudiantesBySalon(salonId);
-  const { mutateAsync: darDeBaja } = useDarDeBajaEstudiante();
+  const { mutate: darDeBaja, isPending: isBajaPending } =
+    useDarDeBajaEstudiante();
 
-  const handleDarDeBaja = async (estudiante: EstudianteEnSalon) => {
-    if (
-      window.confirm(
-        `¿Estás seguro de que deseas dar de baja a ${estudiante.nombre} ${estudiante.apellido}? Esta acción no se puede deshacer.`
-      )
-    ) {
-      try {
-        await darDeBaja({ salonId, idalumno: estudiante.idalumno });
-      } catch (error) {
-        console.error("Error al dar de baja:", error);
-        alert("Hubo un error al dar de baja al estudiante.");
-      }
-    }
+  const handleConfirmarBaja = () => {
+    if (!estudianteABajar) return;
+    setBajaError(null);
+    darDeBaja(
+      { salonId, idalumno: estudianteABajar.idalumno },
+      {
+        onSuccess: () => setEstudianteABajar(null),
+        onError: () =>
+          setBajaError("No se pudo dar de baja al estudiante. Intenta nuevamente."),
+      },
+    );
   };
 
-  const handleVerDetalle = (idalumno: string) => {
-    router.push(`/docente/salon/${salonId}/estudiantes/${idalumno}`);
-  };
-
-  const formatearFecha = (fecha: string | null): string => {
-    if (!fecha) return "Sin acceso";
-    try {
-      const date = new Date(fecha);
-      const options: Intl.DateTimeFormatOptions = {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      };
-      return date.toLocaleDateString("es-ES", options);
-    } catch {
-      return "Fecha inválida";
-    }
-  };
-
-  const calcularPorcentajeprogreso = (
-    completados: number,
-    total: number
-  ): number => {
-    return total > 0 ? (completados / total) * 100 : 0;
+  const handleCerrarBaja = () => {
+    setEstudianteABajar(null);
+    setBajaError(null);
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <span className="loading loading-spinner loading-lg"></span>
+        <span className="loading loading-spinner loading-lg" />
       </div>
     );
   }
+
+  const total = estudiantes?.length ?? 0;
 
   return (
     <div className="p-8">
@@ -73,8 +73,7 @@ const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
         <div>
           <h1 className="text-3xl font-bold mb-2">Gestión de Estudiantes</h1>
           <p className="opacity-60">
-            Total: {estudiantes?.length || 0} estudiante
-            {estudiantes && estudiantes.length !== 1 ? "s" : ""}
+            Total: {total} estudiante{total !== 1 ? "s" : ""}
           </p>
         </div>
         <Button
@@ -108,7 +107,7 @@ const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
               className="gap-2 mt-4"
             >
               <Plus size={16} />
-              Agregar primero estudiante
+              Agregar primer estudiante
             </Button>
           </div>
         </div>
@@ -133,7 +132,9 @@ const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
                     </div>
                   </td>
                   <td>
-                    <div className="text-sm opacity-60">{estudiante.correo}</div>
+                    <div className="text-sm opacity-60">
+                      {estudiante.correo}
+                    </div>
                   </td>
                   <td>
                     <span className="text-sm">
@@ -144,12 +145,12 @@ const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
                     <div className="flex items-center gap-2">
                       <progress
                         className="progress progress-primary h-2 w-28"
-                        value={calcularPorcentajeprogreso(
+                        value={calcularPorcentajeProgreso(
                           estudiante.escenarios_completados,
-                          estudiante.total_escenarios
+                          estudiante.total_escenarios,
                         )}
                         max="100"
-                      ></progress>
+                      />
                       <span className="text-sm min-w-fit">
                         {estudiante.escenarios_completados}/
                         {estudiante.total_escenarios}
@@ -161,7 +162,11 @@ const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleVerDetalle(estudiante.idalumno)}
+                        onClick={() =>
+                          router.push(
+                            `/docente/salon/${salonId}/estudiantes/${estudiante.idalumno}`,
+                          )
+                        }
                         title="Ver detalle del estudiante"
                       >
                         <Eye size={14} />
@@ -169,7 +174,10 @@ const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDarDeBaja(estudiante)}
+                        onClick={() => {
+                          setEstudianteABajar(estudiante);
+                          setBajaError(null);
+                        }}
                         className="hover:bg-error hover:bg-opacity-20"
                         title="Dar de baja al estudiante"
                       >
@@ -183,6 +191,32 @@ const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
           </table>
         </div>
       )}
+
+      {estudianteABajar ? (
+        <Modal
+          onClose={handleCerrarBaja}
+          title="Dar de baja al estudiante"
+          confirmButton={{
+            children: isBajaPending ? "Procesando..." : "Confirmar",
+            variant: "error",
+            onClick: handleConfirmarBaja,
+            disabled: isBajaPending,
+          }}
+        >
+          <div className="flex flex-col gap-2 py-4">
+            <p>
+              ¿Seguro que deseas dar de baja a{" "}
+              <strong>
+                {estudianteABajar.nombre} {estudianteABajar.apellido}
+              </strong>
+              ? Esta acción no se puede deshacer.
+            </p>
+            {bajaError ? (
+              <p className="text-error text-sm">{bajaError}</p>
+            ) : null}
+          </div>
+        </Modal>
+      ) : null}
     </div>
   );
 };

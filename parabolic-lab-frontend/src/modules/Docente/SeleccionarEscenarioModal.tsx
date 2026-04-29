@@ -16,28 +16,31 @@ const SeleccionarEscenarioModal = ({
   onClose,
   salon,
 }: SeleccionarEscenarioModalProps) => {
-  const [selectedEscenario, setSelectedEscenario] = useState<string>("");
+  const [selectedEscenario, setSelectedEscenario] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const { data: escenarios } = useMisEscenarios();
-
   const { mutate: asignar, isPending } = useAsignarEscenario();
 
   const handleConfirm = () => {
     if (selectedEscenario.trim() === "") return;
-    asignar({ idescenario: selectedEscenario, idsalon: salon.idsalon }, {
-      onSuccess: () => {
-        setSelectedEscenario("");
-        onClose();
+    setError(null);
+    asignar(
+      { idescenario: selectedEscenario, idsalon: salon.idsalon },
+      {
+        onSuccess: () => {
+          setSelectedEscenario("");
+          onClose();
+        },
+        onError: () => {
+          setError("Error al asignar el escenario. Intenta de nuevo.");
+        },
       },
-      onError: () => {
-        alert(
-          "Error al asignar el escenario. Por favor, intenta de nuevo."
-        );
-      },
-    });
+    );
   };
 
   const handleCancel = () => {
     setSelectedEscenario("");
+    setError(null);
     onClose();
   };
 
@@ -65,12 +68,16 @@ const SeleccionarEscenarioModal = ({
           >
             <option value="">-- Elige un escenario --</option>
             {escenarios?.map((escenario) => (
-              <option key={escenario.idescenario} value={escenario.idescenario}>
+              <option
+                key={escenario.idescenario}
+                value={escenario.idescenario}
+              >
                 {escenario.nombre}
               </option>
             ))}
           </select>
         </div>
+        {error ? <p className="text-error text-sm">{error}</p> : null}
       </div>
     </Modal>
   ) : null;

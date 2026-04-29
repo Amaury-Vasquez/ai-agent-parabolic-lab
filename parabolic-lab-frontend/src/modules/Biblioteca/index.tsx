@@ -1,13 +1,13 @@
 "use client";
-import { Button } from "amvasdev-ui";
-import { Plus, Pencil, BookOpen, Share2, Trash2 } from "lucide-react";
+import { Button, Modal } from "amvasdev-ui";
+import { BookOpen, Pencil, Plus, Share2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import AsignarEscenarioModal from "./AsignarEscenarioModal";
+import type { Scenario } from "@/models/scenario";
+import { useDeleteEscenario } from "@/mutations/useDeleteEscenario";
 import { useMisEscenarios } from "@/queries/useMisEscenarios";
 import { useMySalones } from "@/queries/useMySalones";
-import { useDeleteEscenario } from "@/mutations/useDeleteEscenario";
-import type { Scenario } from "@/models/scenario";
+import AsignarEscenarioModal from "./AsignarEscenarioModal";
 
 const DIFFICULTY_COLORS: Record<string, string> = {
   principiante: "badge-success",
@@ -27,30 +27,39 @@ const Biblioteca = () => {
   const router = useRouter();
   const { data: escenarios, isLoading } = useMisEscenarios();
   const { data: salones } = useMySalones();
-  const { mutateAsync: eliminarEscenario } = useDeleteEscenario();
-  
+  const { mutate: eliminarEscenario, isPending: isDeleting } =
+    useDeleteEscenario();
+
   const [isAsignarModalOpen, setIsAsignarModalOpen] = useState(false);
-  const [escenarioSeleccionado, setEscenarioSeleccionado] = useState<Scenario | null>(null);
+  const [escenarioSeleccionado, setEscenarioSeleccionado] =
+    useState<Scenario | null>(null);
+  const [escenarioAEliminar, setEscenarioAEliminar] =
+    useState<Scenario | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const getSalonNombre = (idsalon: string) => {
     const salon = salones?.find((s) => s.idsalon === idsalon);
     return salon?.nombresalon ?? "Salón desconocido";
   };
 
-  const handleEliminarEscenario = async (escenario: Scenario) => {
-    if (
-      window.confirm(
-        `¿Estás seguro de que deseas eliminar el escenario "${escenario.nombre}"? Esta acción no se puede deshacer.`
-      )
-    ) {
-      try {
-        await eliminarEscenario(escenario.idescenario);
-        // El cache se invalidará automáticamente por el onSuccess en useDeleteEscenario
-      } catch (error) {
-        console.error("Error al eliminar escenario:", error);
-        alert("Hubo un error al eliminar el escenario. Intenta nuevamente.");
-      }
-    }
+  const handleConfirmarEliminacion = () => {
+    if (!escenarioAEliminar) return;
+    setDeleteError(null);
+    eliminarEscenario(escenarioAEliminar.idescenario, {
+      onSuccess: () => {
+        setEscenarioAEliminar(null);
+      },
+      onError: () => {
+        setDeleteError(
+          "No se pudo eliminar el escenario. Intenta nuevamente.",
+        );
+      },
+    });
+  };
+
+  const handleCerrarConfirmacion = () => {
+    setEscenarioAEliminar(null);
+    setDeleteError(null);
   };
 
   return (
@@ -143,7 +152,10 @@ const Biblioteca = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleEliminarEscenario(escenario)}
+                  onClick={() => {
+                    setEscenarioAEliminar(escenario);
+                    setDeleteError(null);
+                  }}
                   className="hover:bg-error hover:bg-opacity-20"
                 >
                   <Trash2 size={14} />
@@ -161,7 +173,7 @@ const Biblioteca = () => {
           </p>
         </div>
       )}
-      {escenarioSeleccionado && (
+      {escenarioSeleccionado ? (
         <AsignarEscenarioModal
           isOpen={isAsignarModalOpen}
           onClose={() => {
@@ -171,7 +183,30 @@ const Biblioteca = () => {
           escenario={escenarioSeleccionado}
           salones={salones}
         />
-      )}
+      ) : null}
+      {escenarioAEliminar ? (
+        <Modal
+          onClose={handleCerrarConfirmacion}
+          title="Eliminar escenario"
+          confirmButton={{
+            children: isDeleting ? "Eliminando..." : "Eliminar",
+            variant: "error",
+            onClick: handleConfirmarEliminacion,
+            disabled: isDeleting,
+          }}
+        >
+          <div className="flex flex-col gap-2 py-4">
+            <p>
+              ¿Seguro que deseas eliminar el escenario{" "}
+              <strong>{escenarioAEliminar.nombre}</strong>? Esta acción no se
+              puede deshacer.
+            </p>
+            {deleteError ? (
+              <p className="text-error text-sm">{deleteError}</p>
+            ) : null}
+          </div>
+        </Modal>
+      ) : null}
     </div>
   );
 };

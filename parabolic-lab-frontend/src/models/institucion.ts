@@ -11,3 +11,9 @@ export interface Institucion {
   telefono: string;
   activa?: boolean | null;
 }
+
+export interface UpdateInstitucionPayload {
+  nombre?: string;
+  direccion?: string;
+  telefono?: string;
+}

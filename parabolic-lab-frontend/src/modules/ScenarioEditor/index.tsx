@@ -67,6 +67,7 @@ const ScenarioEditorForm = ({
 
   const [errors, setErrors] = useState<ScenarioFormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const { mutateAsync: crearEscenario } = useCreateEscenario();
   const { mutateAsync: actualizarEscenario } = useUpdateEscenario();
   // Sync context physics config with form data
@@ -105,71 +106,40 @@ const ScenarioEditorForm = ({
     if (!validateForm()) return;
 
     setIsSaving(true);
+    setSubmitError(null);
 
     try {
       const datos = {
         nombre: formData.nombre,
         descripcion: formData.descripcion || undefined,
-        niveldificultad: DIFFICULTY_MAP[formData.niveldificultad] ?? "principiante",
+        niveldificultad:
+          DIFFICULTY_MAP[formData.niveldificultad] ?? "principiante",
         tipoescenario: TYPE_MAP[formData.tipoescenario] ?? "simulacion",
         objetivosaprendizaje: formData.objetivosaprendizaje || undefined,
         instrucciones: formData.instrucciones || undefined,
         tiempolimite: formData.tiempolimite || undefined,
         intentospermitidos: formData.intentospermitidos,
-        configuracionescenario: formData.configuracionescenario as Record<string, unknown>,
+        configuracionescenario:
+          formData.configuracionescenario as Record<string, unknown>,
       };
 
       if (isEditing && scenarioId) {
-        await actualizarEscenario({
-          ...datos,
-          idescenario: scenarioId,
-        });
-        // Después de actualizar, regresar al salón o a la biblioteca
-        if (classroomId) {
-          router.push(`/docente/salon/${classroomId}`);
-        } else {
-          router.push("/docente/biblioteca");
-        }
+        await actualizarEscenario({ ...datos, idescenario: scenarioId });
+        router.push(
+          classroomId
+            ? `/docente/salon/${classroomId}`
+            : "/docente/biblioteca",
+        );
       } else {
-        // Crear nuevo escenario
-        // idsalon es requerido por el backend
-        const createData: Parameters<typeof crearEscenario>[0] = {
-          ...datos,
-          idsalon: classroomId!,
-        };
-
-        await crearEscenario(createData);
-        // Después de crear, redirigir a biblioteca
+        await crearEscenario({ ...datos, idsalon: classroomId! });
         router.push("/docente/biblioteca");
       }
     } catch (error) {
-      let errorMessage = "Hubo un error al guardar el escenario. Por favor, intenta de nuevo.";
-
-      if (error instanceof Error) {
-        console.error("Error al guardar escenario:", {
-          message: error.message,
-          stack: error.stack,
-        });
-
-        // Proporcionar mensajes de error más específicos
-        if (error.message.includes("Fallo en la conexión")) {
-          errorMessage = "No se puede conectar al servidor. Verifica que el backend está ejecutándose en http://localhost:8000";
-        } else if (error.message.includes("422")) {
-          errorMessage = "Los datos enviados son inválidos. Verifica que todos los campos requeridos sean correctos.";
-        } else if (error.message.includes("500")) {
-          errorMessage = `Error del servidor: ${error.message}. Revisa la consola del backend para más detalles.`;
-        } else if (error.message.includes("401") || error.message.includes("403")) {
-          errorMessage = "No tienes permisos para realizar esta acción.";
-        } else if (error.message.includes("404")) {
-          errorMessage = "El escenario no fue encontrado.";
-        } else {
-          errorMessage = `Error: ${error.message}`;
-        }
-      } else {
-        console.error("Error desconocido al guardar escenario:", error);
-      }
-
-      alert(errorMessage);
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar el escenario. Intenta de nuevo.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -185,7 +155,7 @@ const ScenarioEditorForm = ({
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">
           {isEditing ? "Editar Escenario" : "Crear Nuevo Escenario"}
         </h1>
-        <p className="text-sm sm:text-base text-base-content/70">
+        <p className="text-sm sm:text-base opacity-70">
           {isEditing
             ? "Modifica los detalles del escenario y su configuración física."
             : "Define un nuevo escenario de tiro parabólico para tus alumnos."}
@@ -421,6 +391,12 @@ const ScenarioEditorForm = ({
           />
         </div>
 
+        {submitError ? (
+          <div className="alert alert-error">
+            <p>{submitError}</p>
+          </div>
+        ) : null}
+
         {/* Botones de Acción */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end">
           <Button
@@ -432,12 +408,17 @@ const ScenarioEditorForm = ({
           >
             Cancelar
           </Button>
-          <Button type="submit" variant="primary" disabled={isSaving} className="w-full sm:w-auto">
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={isSaving}
+            className="w-full sm:w-auto"
+          >
             {isSaving
               ? "Guardando..."
               : isEditing
-              ? "Guardar Cambios"
-              : "Crear Escenario"}
+                ? "Guardar Cambios"
+                : "Crear Escenario"}
           </Button>
         </div>
       </form>

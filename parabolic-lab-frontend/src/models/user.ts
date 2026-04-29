@@ -17,3 +17,13 @@ export interface DocenteProfile {
   idusuario: string;
   gradoacademico?: string | null;
 }
+
+export interface UpdateUsuarioPayload {
+  nombre?: string;
+  apellidopaterno?: string;
+  apellidomaterno?: string;
+}
+
+export interface UpdateDocentePayload {
+  gradoacademico?: string;
+}

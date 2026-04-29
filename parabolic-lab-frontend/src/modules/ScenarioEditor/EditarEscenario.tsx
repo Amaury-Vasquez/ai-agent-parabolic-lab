@@ -16,7 +16,7 @@ const EditarEscenario = ({
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="p-8 flex justify-center">
         <span className="loading loading-spinner loading-lg" />
       </div>
     );
@@ -32,3 +32,4 @@ const EditarEscenario = ({
 };
 
 export default EditarEscenario;
+

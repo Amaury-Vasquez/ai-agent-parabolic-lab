@@ -1,19 +1,20 @@
 "use client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
-import { post } from "@/services/api";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-import { SALON_ESTUDIANTES_QUERY_KEY, type EstudianteEnSalon } from "@/fetchers/salones";
+import { SALON_ESTUDIANTES_QUERY_KEY } from "@/fetchers/salones";
+import type { EstudianteEnSalon } from "@/models/estudiante";
+import { post } from "@/services/api";
 
 async function agregarEstudianteASalon(
   token: string,
   salonId: string,
-  correoAlumno: string
+  correoAlumno: string,
 ): Promise<EstudianteEnSalon> {
   return post<EstudianteEnSalon>(
     `/salones/${salonId}/agregar-estudiante`,
     { correo: correoAlumno },
-    { token }
+    { token },
   );
 }
 

@@ -1,31 +1,27 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
+import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import {
   fetchEstudiantesGlobales,
   getEstudiantesGlobalesQueryKey,
-  EstudianteGlobal,
 } from "@/fetchers/salones";
-import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import type {
+  EstudianteGlobal,
+  EstudiantesGlobalesOptions,
+} from "@/models/estudiante";
 
-export interface UseEstudiantesGlobalesOptions {
-  sort_by?: "nombre" | "promedio" | "interacciones" | "salon";
-  order?: "asc" | "desc";
-  idsalon?: string;
-}
-
-export function useEstudiantesGlobales(options?: UseEstudiantesGlobalesOptions) {
+export function useEstudiantesGlobales(options?: EstudiantesGlobalesOptions) {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);
   const token = cookies[ACCESS_TOKEN_COOKIE];
 
   return useQuery<EstudianteGlobal[]>({
-    queryKey: getEstudiantesGlobalesQueryKey(options?.sort_by, options?.order, options?.idsalon),
-    queryFn: () =>
-      fetchEstudiantesGlobales(token, {
-        sort_by: options?.sort_by,
-        order: options?.order,
-        idsalon: options?.idsalon,
-      }),
+    queryKey: getEstudiantesGlobalesQueryKey(
+      options?.sort_by,
+      options?.order,
+      options?.idsalon,
+    ),
+    queryFn: () => fetchEstudiantesGlobales(token, options),
     enabled: !!token,
   });
 }

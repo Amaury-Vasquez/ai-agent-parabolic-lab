@@ -1,15 +1,15 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "amvasdev-ui";
 import { Eye } from "lucide-react";
-import clsx from "clsx";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import type {
+  EstudianteGlobal,
+  Order,
+  SortBy,
+} from "@/models/estudiante";
 import { useEstudiantesGlobales } from "@/queries/useEstudiantesGlobales";
 import { useMySalones } from "@/queries/useMySalones";
-import { EstudianteGlobal } from "@/fetchers/salones";
-
-type SortBy = "nombre" | "promedio" | "interacciones" | "salon";
-type Order = "asc" | "desc";
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: "nombre", label: "Alfabético" },
@@ -39,27 +39,10 @@ const GestionEstudiantesGlobal = () => {
     );
   };
 
-  const formatearFecha = (fecha: string | null): string => {
-    if (!fecha) return "Sin acceso";
-    try {
-      const date = new Date(fecha);
-      const options: Intl.DateTimeFormatOptions = {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      };
-      return date.toLocaleDateString("es-ES", options);
-    } catch {
-      return "Fecha inválida";
-    }
-  };
-
   const calcularPorcentajeProgreso = (
     completados: number,
-    total: number
-  ): number => {
-    return total > 0 ? (completados / total) * 100 : 0;
-  };
+    total: number,
+  ): number => (total > 0 ? (completados / total) * 100 : 0);
 
   const isLoading = isEstudiantesLoading || isSalonesLoading;
 
@@ -123,28 +106,22 @@ const GestionEstudiantesGlobal = () => {
               <span className="label-text font-medium">Dirección</span>
             </label>
             <div className="flex gap-2">
-              <button
+              <Button
+                size="sm"
+                variant={order === "asc" ? "primary" : "ghost"}
                 onClick={() => setOrder("asc")}
-                className={clsx(
-                  "btn btn-sm flex-1 text-xs",
-                  order === "asc"
-                    ? "btn-primary"
-                    : "btn-ghost"
-                )}
+                className="flex-1 text-xs"
               >
                 Ascendente ↑
-              </button>
-              <button
+              </Button>
+              <Button
+                size="sm"
+                variant={order === "desc" ? "primary" : "ghost"}
                 onClick={() => setOrder("desc")}
-                className={clsx(
-                  "btn btn-sm flex-1 text-xs",
-                  order === "desc"
-                    ? "btn-primary"
-                    : "btn-ghost"
-                )}
+                className="flex-1 text-xs"
               >
                 Descendente ↓
-              </button>
+              </Button>
             </div>
           </div>
         </div>
