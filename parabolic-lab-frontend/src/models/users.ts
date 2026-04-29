@@ -1,1 +1,1 @@
-export type UserType = "docente" | "alumno" | "admin";
+export type { UserType, UserProfile, DocenteProfile } from "./user";

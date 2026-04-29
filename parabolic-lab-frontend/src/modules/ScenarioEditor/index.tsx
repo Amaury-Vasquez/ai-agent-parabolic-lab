@@ -7,6 +7,9 @@ import PhysicsConfigBuilder from "@/components/PhysicsConfigBuilder";
 import { DIFFICULTY_LEVELS } from "@/constants/difficultyLevels";
 import { PHYSICS_DEFAULTS } from "@/constants/physicsDefaults";
 import { SCENARIO_TYPES } from "@/constants/scenarioTypes";
+import { useCreateEscenario } from "@/mutations/useCreateEscenario";
+import { useUpdateEscenario } from "@/mutations/useUpdateEscenario";
+import { DIFFICULTY_MAP, TYPE_MAP } from "@/utils/scenarioMappers";
 import {
   ScenarioEditorProvider,
   useScenarioEditor,
@@ -20,7 +23,7 @@ import type {
 import InteractiveSimulator from "./InteractiveSimulator";
 
 interface ScenarioEditorProps {
-  classroomId: string;
+  classroomId?: string;
   scenarioId?: string;
   initialData?: Scenario;
 }
@@ -64,7 +67,9 @@ const ScenarioEditorForm = ({
 
   const [errors, setErrors] = useState<ScenarioFormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
-
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { mutateAsync: crearEscenario } = useCreateEscenario();
+  const { mutateAsync: actualizarEscenario } = useUpdateEscenario();
   // Sync context physics config with form data
   useEffect(() => {
     setFormData((prev) => ({
@@ -98,31 +103,42 @@ const ScenarioEditorForm = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsSaving(true);
+    setSubmitError(null);
 
     try {
-      // TODO: Implementar llamada a API
-      // if (isEditing) {
-      //   await updateScenario(scenarioId, formData);
-      // } else {
-      //   await createScenario(classroomId, formData);
-      // }
+      const datos = {
+        nombre: formData.nombre,
+        descripcion: formData.descripcion || undefined,
+        niveldificultad:
+          DIFFICULTY_MAP[formData.niveldificultad] ?? "principiante",
+        tipoescenario: TYPE_MAP[formData.tipoescenario] ?? "simulacion",
+        objetivosaprendizaje: formData.objetivosaprendizaje || undefined,
+        instrucciones: formData.instrucciones || undefined,
+        tiempolimite: formData.tiempolimite || undefined,
+        intentospermitidos: formData.intentospermitidos,
+        configuracionescenario:
+          formData.configuracionescenario as Record<string, unknown>,
+      };
 
-      // Simulación de guardado
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      console.log("Guardando escenario:", formData);
-
-      // Redirigir a la lista de escenarios
-      router.push(`/docente/salon/${classroomId}/escenarios`);
+      if (isEditing && scenarioId) {
+        await actualizarEscenario({ ...datos, idescenario: scenarioId });
+        router.push(
+          classroomId
+            ? `/docente/salon/${classroomId}`
+            : "/docente/biblioteca",
+        );
+      } else {
+        await crearEscenario({ ...datos, idsalon: classroomId! });
+        router.push("/docente/biblioteca");
+      }
     } catch (error) {
-      console.error("Error al guardar escenario:", error);
-      alert(
-        "Hubo un error al guardar el escenario. Por favor, intenta de nuevo."
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar el escenario. Intenta de nuevo.",
       );
     } finally {
       setIsSaving(false);
@@ -139,7 +155,7 @@ const ScenarioEditorForm = ({
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">
           {isEditing ? "Editar Escenario" : "Crear Nuevo Escenario"}
         </h1>
-        <p className="text-sm sm:text-base text-base-content/70">
+        <p className="text-sm sm:text-base opacity-70">
           {isEditing
             ? "Modifica los detalles del escenario y su configuración física."
             : "Define un nuevo escenario de tiro parabólico para tus alumnos."}
@@ -375,6 +391,12 @@ const ScenarioEditorForm = ({
           />
         </div>
 
+        {submitError ? (
+          <div className="alert alert-error">
+            <p>{submitError}</p>
+          </div>
+        ) : null}
+
         {/* Botones de Acción */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end">
           <Button
@@ -386,12 +408,17 @@ const ScenarioEditorForm = ({
           >
             Cancelar
           </Button>
-          <Button type="submit" variant="primary" disabled={isSaving} className="w-full sm:w-auto">
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={isSaving}
+            className="w-full sm:w-auto"
+          >
             {isSaving
               ? "Guardando..."
               : isEditing
-              ? "Guardar Cambios"
-              : "Crear Escenario"}
+                ? "Guardar Cambios"
+                : "Crear Escenario"}
           </Button>
         </div>
       </form>

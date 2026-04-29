@@ -1,5 +1,9 @@
 import { Badge, Button } from "amvasdev-ui";
+import { useState } from "react";
 import Card from "@/components/Card";
+import SeleccionarEscenarioModal from "./SeleccionarEscenarioModal";
+import SalonConfigModal from "./SalonConfigModal";
+import { useRouter } from "next/navigation";
 import { Salon } from "@/types/salon";
 
 interface SalonCardProps {
@@ -9,14 +13,17 @@ interface SalonCardProps {
 const SalonCard = ({ salon }: SalonCardProps) => {
   const hasScenarios = salon.escenarios.length > 0;
   const hasMultipleScenarios = salon.escenarios.length > 1;
+  const router = useRouter();
+  const [isSeleccionarEscenarioModalOpen, setIsSeleccionarEscenarioModalOpen] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
   return (
     <Card contentClassName="justify-between">
       {/* Card Header with Settings */}
       <div className="flex justify-between items-start">
         <h2 className="card-title">{salon.nombresalon}</h2>
-        <div className="dropdown dropdown-end">
-          <Button tabIndex={0} variant="ghost" size="sm" className="btn-square">
+        <div>
+          <Button variant="ghost" size="sm" className="btn-square" onClick={() => setIsConfigModalOpen(true)}>
             <svg
               className="w-5 h-5"
               fill="none"
@@ -79,7 +86,7 @@ const SalonCard = ({ salon }: SalonCardProps) => {
             <div className="flex items-center gap-2">
               <div className="flex flex-wrap gap-2 flex-1">
                 <Badge variant="primary" size="md" soft>
-                  {salon.escenarios[0]}
+                  {salon.escenarios[0].nombre}
                 </Badge>
                 {hasMultipleScenarios ? (
                   <Badge variant="primary" borderType="outline" size="md">
@@ -115,7 +122,7 @@ const SalonCard = ({ salon }: SalonCardProps) => {
 
       {/* Action Buttons */}
       <div className="card-actions flex-col mt-6 w-full">
-        <Button variant="primary" className="w-full">
+        <Button variant="primary" className="w-full" onClick={() => setIsSeleccionarEscenarioModalOpen(true)}>
           <svg
             className="w-4 h-4"
             fill="none"
@@ -130,8 +137,13 @@ const SalonCard = ({ salon }: SalonCardProps) => {
             />
           </svg>
           Asignar Escenario
+
         </Button>
-        <Button outlined className="w-full">
+        <Button
+          outlined
+          className="w-full"
+          onClick={() => router.push(`/docente/salon/${salon.idsalon}`)}
+        >
           <svg
             className="w-4 h-4"
             fill="none"
@@ -148,6 +160,16 @@ const SalonCard = ({ salon }: SalonCardProps) => {
           Ver Progreso
         </Button>
       </div>
+      <SeleccionarEscenarioModal
+        isOpen={isSeleccionarEscenarioModalOpen}
+        onClose={() => setIsSeleccionarEscenarioModalOpen(false)}
+        salon={salon}
+      />
+      <SalonConfigModal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+        salon={salon}
+      />
     </Card>
   );
 };

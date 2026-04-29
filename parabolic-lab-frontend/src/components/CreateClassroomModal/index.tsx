@@ -1,30 +1,45 @@
 "use client";
 import { Input, Modal } from "amvasdev-ui";
 import { useState } from "react";
-import useModalFormConfirm from "@/hooks/useModalFormConfirm";
+import { useCreateSalon } from "@/mutations/useCreateSalon";
 
 interface CreateClassroomModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const CreateClassroomModal = ({
-  isOpen,
-  onClose,
-}: CreateClassroomModalProps) => {
+const CreateClassroomModal = ({ isOpen, onClose }: CreateClassroomModalProps) => {
   const [classroomName, setClassroomName] = useState("");
-  const { formRef, handleConfirmClick } = useModalFormConfirm();
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(false);
+  const { mutate: crearSalon, isPending } = useCreateSalon();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement classroom creation logic
-    console.log("Creating classroom:", classroomName);
-    setClassroomName("");
-    onClose();
+    if (classroomName.trim() === "") return;
+    setError(false);
+    crearSalon(
+      { nombresalon: classroomName.trim() },
+      {
+        onSuccess: () => {
+          setSuccess(true);
+          setClassroomName("");
+          setTimeout(() => {
+            setSuccess(false);
+            onClose();
+          }, 1500);
+        },
+        onError: () => {
+          setError(true);
+        },
+      }
+    );
   };
 
   const handleCancel = () => {
     setClassroomName("");
+    setSuccess(false);
+    setError(false);
     onClose();
   };
 
@@ -33,16 +48,15 @@ const CreateClassroomModal = ({
       onClose={handleCancel}
       title="Crear Nuevo Salón"
       confirmButton={{
-        children: "Crear Salón",
+        children: isPending ? "Creando..." : "Crear Salón",
         variant: "primary",
-        onClick: handleConfirmClick,
-        disabled: classroomName.trim() === "",
+        onClick: handleSubmit,
+        disabled: classroomName.trim() === "" || isPending || success,
       }}
     >
       <form
         onSubmit={handleSubmit}
         className="flex flex-col py-4 gap-4"
-        ref={formRef}
       >
         <Input
           id="classroom-name"
@@ -50,8 +64,17 @@ const CreateClassroomModal = ({
           placeholder="Física 101"
           value={classroomName}
           onChange={(e) => setClassroomName(e.currentTarget.value)}
-          required
         />
+        {success ? (
+          <p className="text-success text-sm">
+            ✓ Salón creado exitosamente
+          </p>
+        ) : null}
+        {error ? (
+          <p className="text-error text-sm">
+            ✗ Error al crear el salón. Intenta de nuevo.
+          </p>
+        ) : null}
       </form>
     </Modal>
   ) : null;

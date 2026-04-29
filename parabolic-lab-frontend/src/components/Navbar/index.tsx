@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useCookies } from "react-cookie";
 import AuthMenu from "./AuthMenu";
 import NavMenu from "./NavMenu";
+import ThemeToggle from "@/components/ThemeToggle";
 import CustomLink from "@/components/CustomLink";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import { NavLink, LOGIN_LINK, REGISTER_LINK } from "@/constants/navLinks";
@@ -69,6 +70,7 @@ const Navbar = ({
 
       {/* Auth Section - Right (Desktop) */}
       <div className="navbar-end gap-2 hidden lg:flex">
+        <ThemeToggle />
         {authenticated ? (
           <Button variant="ghost" size="sm" onClick={logout}>
             <LogOut size="16" strokeWidth="2.5" />
@@ -94,7 +96,8 @@ const Navbar = ({
       </div>
 
       {/* Auth Section - Right (Mobile) */}
-      <div className="navbar-end lg:hidden">
+      <div className="navbar-end gap-1 lg:hidden">
+        <ThemeToggle />
         {authenticated ? (
           <Button variant="ghost" size="sm" onClick={logout}>
             <LogOut size="16" strokeWidth="2.5" />
