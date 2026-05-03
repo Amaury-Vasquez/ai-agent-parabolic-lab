@@ -1,14 +1,41 @@
-import ClassroomDetail from "@/modules/ClassroomDetail";
+import { cookies } from "next/headers";
+import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
+import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import { fetchMySalones, MY_SALONES_QUERY_KEY } from "@/fetchers/salones";
+import { fetchEscenariosBySalon, ESCENARIOS_SALON_QUERY_KEY } from "@/fetchers/escenarios";
+import SalonAlumno from "@/modules/SalonAlumno";
 
-interface AlumnoClassroomDetailPageProps {
-  params: Promise<{
-    classroomId: string;
-  }>;
+interface SalonPageProps {
+  params: Promise<{ classroomId: string }>;
 }
 
-export default async function AlumnoClassroomDetailPage({
-  params,
-}: AlumnoClassroomDetailPageProps) {
+export default async function SalonAlumnoPage({ params }: SalonPageProps) {
   const { classroomId } = await params;
-  return <ClassroomDetail classroomId={classroomId} userType="alumno" />;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
+  const queryClient = new QueryClient();
+
+  if (token) {
+    try {
+      const salones = await queryClient.fetchQuery({
+        queryKey: MY_SALONES_QUERY_KEY,
+        queryFn: () => fetchMySalones(token),
+      });
+      const salon = salones.find((s) => s.codigoacceso === classroomId);
+      if (salon) {
+        await queryClient.prefetchQuery({
+          queryKey: ESCENARIOS_SALON_QUERY_KEY(salon.idsalon),
+          queryFn: () => fetchEscenariosBySalon(token, salon.idsalon),
+        });
+      }
+    } catch {
+      // Si falla, el cliente manejará el error
+    }
+  }
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <SalonAlumno classroomId={classroomId} />
+    </HydrationBoundary>
+  );
 }

@@ -8,7 +8,7 @@ import type {
   SalonProgresoResponse,
   SortBy,
 } from "@/models/estudiante";
-import { get } from "@/services/api";
+import { get, post } from "@/services/api";
 import { Salon } from "@/types/salon";
 
 export const MY_SALONES_QUERY_KEY = ["salones", "me"];
@@ -68,4 +68,11 @@ export async function fetchEstudiantesGlobales(
 
   const data = await get<EstudiantesGlobalesResponse>(endpoint, { token });
   return data?.estudiantes ?? [];
+}
+
+export async function unirseASalon(
+  token: string,
+  codigoacceso: string,
+): Promise<void> {
+  return post<void>("/alumnos-en-salon/unirse", { codigoacceso }, { token });
 }

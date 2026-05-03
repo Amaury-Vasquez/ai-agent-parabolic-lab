@@ -1,10 +1,14 @@
 import ActivityInfo from "./ActivityInfo";
 import ScenariosList from "./ScenariosList";
 
-const ActividadDetalle = () => (
+interface ActividadDetalleProps {
+  idactividad: string;
+}
+
+const ActividadDetalle = ({ idactividad }: ActividadDetalleProps) => (
   <div className="flex flex-col gap-4 p-4 md:p-8 md:gap-6">
-    <ActivityInfo />
-    <ScenariosList />
+    <ActivityInfo idactividad={idactividad} />
+    <ScenariosList idactividad={idactividad} />
   </div>
 );
 
