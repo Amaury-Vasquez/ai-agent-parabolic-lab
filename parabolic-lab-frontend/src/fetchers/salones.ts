@@ -2,7 +2,6 @@ import type {
   EstudianteEnSalon,
   EstudianteGlobal,
   EstudiantesGlobalesOptions,
-  EstudiantesGlobalesResponse,
   Order,
   SalonProgresoEstudiante,
   SalonProgresoResponse,
@@ -66,8 +65,7 @@ export async function fetchEstudiantesGlobales(
   const queryString = params.toString();
   const endpoint = `/docentes/me/estudiantes-global${queryString ? `?${queryString}` : ""}`;
 
-  const data = await get<EstudiantesGlobalesResponse>(endpoint, { token });
-  return data?.estudiantes ?? [];
+  return get<EstudianteGlobal[]>(endpoint, { token });
 }
 
 export async function unirseASalon(

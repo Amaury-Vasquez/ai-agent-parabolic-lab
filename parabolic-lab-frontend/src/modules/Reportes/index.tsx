@@ -190,7 +190,7 @@ const Reportes = () => {
                     </thead>
                     <tbody>
                       {estudiantes.map((estudiante) => {
-                        const fullName = `${estudiante.nombre} ${estudiante.apellidopaterno}`;
+                        const fullName = [estudiante.nombre, estudiante.apellidopaterno, estudiante.apellidomaterno].filter(Boolean).join(" ");
                         const csvKey = `student-${estudiante.idalumno}-csv`;
                         const pdfKey = `student-${estudiante.idalumno}-pdf`;
                         return (

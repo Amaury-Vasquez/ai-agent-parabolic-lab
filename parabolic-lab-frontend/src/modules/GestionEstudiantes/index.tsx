@@ -128,12 +128,12 @@ const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
                 <tr key={estudiante.idalumno} className="hover:bg-base-200">
                   <td>
                     <div className="font-medium">
-                      {estudiante.nombre} {estudiante.apellido}
+                      {estudiante.nombre} {[estudiante.apellidopaterno, estudiante.apellidomaterno].filter(Boolean).join(" ")}
                     </div>
                   </td>
                   <td>
                     <div className="text-sm opacity-60">
-                      {estudiante.correo}
+                      {estudiante.email}
                     </div>
                   </td>
                   <td>
@@ -207,7 +207,7 @@ const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
             <p>
               ¿Seguro que deseas dar de baja a{" "}
               <strong>
-                {estudianteABajar.nombre} {estudianteABajar.apellido}
+                {estudianteABajar.nombre} {[estudianteABajar.apellidopaterno, estudianteABajar.apellidomaterno].filter(Boolean).join(" ")}
               </strong>
               ? Esta acción no se puede deshacer.
             </p>

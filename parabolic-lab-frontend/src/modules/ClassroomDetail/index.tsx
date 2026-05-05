@@ -23,7 +23,7 @@ interface ClassroomDetailProps {
 const mapProgresoToStudent = (progreso: SalonProgresoEstudiante): Student => ({
   id: progreso.idalumno,
   nombre: progreso.nombre,
-  apellido: progreso.apellidopaterno,
+  apellido: [progreso.apellidopaterno, progreso.apellidomaterno].filter(Boolean).join(" "),
   totalScore: progreso.promedio_puntuacion,
   activitiesCompleted: progreso.escenarios_completados,
   totalAttempts: progreso.total_intentos,

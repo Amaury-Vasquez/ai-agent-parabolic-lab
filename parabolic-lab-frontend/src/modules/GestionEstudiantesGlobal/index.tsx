@@ -164,10 +164,10 @@ const GestionEstudiantesGlobal = () => {
                   <td>
                     <div>
                       <div className="font-medium">
-                        {estudiante.nombre} {estudiante.apellido}
+                        {estudiante.nombre} {[estudiante.apellidopaterno, estudiante.apellidomaterno].filter(Boolean).join(" ")}
                       </div>
                       <div className="text-sm opacity-60">
-                        {estudiante.correo}
+                        {estudiante.email}
                       </div>
                     </div>
                   </td>
@@ -189,7 +189,7 @@ const GestionEstudiantesGlobal = () => {
                         max="100"
                       ></progress>
                       <span className="text-sm min-w-fit">
-                        {estudiante.promedio_puntuacion.toFixed(1)}%
+                        {(estudiante.promedio_puntuacion ?? 0).toFixed(1)}%
                       </span>
                     </div>
                   </td>
