@@ -10,10 +10,10 @@ import {
   fetchDocente,
   fetchInstitucion,
   fetchMe,
+  INSTITUCION_QUERY_KEY,
   ME_QUERY_KEY,
 } from "@/fetchers/auth";
 import PerfilDocente from "@/modules/PerfilDocente";
-import { INSTITUCION_QUERY_KEY } from "@/mutations/useUpdateInstitucion";
 
 export default async function PerfilPage() {
   const queryClient = new QueryClient();

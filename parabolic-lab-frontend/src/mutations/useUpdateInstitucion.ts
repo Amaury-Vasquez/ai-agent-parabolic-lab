@@ -2,16 +2,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import { INSTITUCION_QUERY_KEY } from "@/fetchers/auth";
 import type {
   Institucion,
   UpdateInstitucionPayload,
 } from "@/models/institucion";
 import { patch } from "@/services/api";
-
-export const INSTITUCION_QUERY_KEY = (idinstitucion: string) => [
-  "instituciones",
-  idinstitucion,
-];
 
 interface UpdateInstitucionVariables {
   idinstitucion: string;
