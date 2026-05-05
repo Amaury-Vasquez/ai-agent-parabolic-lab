@@ -203,10 +203,10 @@ const Reportes = () => {
                               {estudiante.total_intentos}
                             </td>
                             <td className="text-center">
-                              {estudiante.promedio_puntuacion.toFixed(1)}
+                              {(estudiante.promedio_puntuacion ?? 0).toFixed(1)}
                             </td>
                             <td className="text-center">
-                              {estudiante.mejor_puntuacion.toFixed(1)}
+                              {(estudiante.mejor_puntuacion ?? 0).toFixed(1)}
                             </td>
                             <td className="text-center">
                               {estudiante.tiempo_total_minutos}m

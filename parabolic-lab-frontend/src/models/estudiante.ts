@@ -4,8 +4,8 @@ export interface SalonProgresoEstudiante {
   apellidopaterno: string;
   apellidomaterno?: string | null;
   total_interacciones: number;
-  promedio_puntuacion: number;
-  mejor_puntuacion: number;
+  promedio_puntuacion: number | null;
+  mejor_puntuacion: number | null;
   total_intentos: number;
   escenarios_completados: number;
   tiempo_total_minutos: number;

@@ -4,7 +4,6 @@ import type {
   EstudiantesGlobalesOptions,
   Order,
   SalonProgresoEstudiante,
-  SalonProgresoResponse,
   SortBy,
 } from "@/models/estudiante";
 import { get, post } from "@/services/api";
@@ -38,11 +37,10 @@ export async function fetchSalonProgreso(
   token: string,
   salonId: string,
 ): Promise<SalonProgresoEstudiante[]> {
-  const data = await get<SalonProgresoResponse>(
+  return get<SalonProgresoEstudiante[]>(
     `/salones/${salonId}/progreso`,
     { token },
   );
-  return data?.estudiantes ?? [];
 }
 
 export async function fetchEstudiantesBySalon(
