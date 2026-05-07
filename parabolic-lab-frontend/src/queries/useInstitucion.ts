@@ -4,7 +4,7 @@ import { useCookies } from "react-cookie";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import { fetchInstitucion } from "@/fetchers/auth";
 import type { Institucion } from "@/models/institucion";
-import { INSTITUCION_QUERY_KEY } from "@/mutations/useUpdateInstitucion";
+import { INSTITUCION_QUERY_KEY } from "@/fetchers/auth";
 
 export function useInstitucion(idinstitucion: string | undefined) {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);

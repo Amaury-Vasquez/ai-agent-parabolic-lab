@@ -19,3 +19,8 @@ export async function fetchInstitucion(
 ): Promise<Institucion> {
   return get<Institucion>(`/instituciones/${idinstitucion}`, { token });
 }
+
+export const INSTITUCION_QUERY_KEY = (idinstitucion: string) => [
+  "institucion",
+  idinstitucion,
+];

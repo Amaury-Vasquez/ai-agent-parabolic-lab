@@ -13,7 +13,7 @@ import {
   ME_QUERY_KEY,
 } from "@/fetchers/auth";
 import PerfilDocente from "@/modules/PerfilDocente";
-import { INSTITUCION_QUERY_KEY } from "@/mutations/useUpdateInstitucion";
+import { INSTITUCION_QUERY_KEY } from "@/fetchers/auth";
 
 export default async function PerfilPage() {
   const queryClient = new QueryClient();

@@ -54,10 +54,14 @@ async def mis_escenarios(
 
 @router.get("/", response_model=list[EscenarioRead])
 async def listar_escenarios(
+    idsalon: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     _: Usuario = Depends(get_current_user),
 ):
-    result = await db.execute(select(Escenario))
+    query = select(Escenario)
+    if idsalon:
+        query = query.where(Escenario.idsalon == idsalon).where(Escenario.activo.is_(True))
+    result = await db.execute(query)
     return result.scalars().all()
 
 
