@@ -8,7 +8,9 @@ import ClassroomDetail from "@/modules/ClassroomDetail";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import {
   fetchSalonProgreso,
+  fetchMySalones,
   SALON_PROGRESO_QUERY_KEY,
+  MY_SALONES_QUERY_KEY,
 } from "@/fetchers/salones";
 
 interface ClassroomDetailPageProps {
@@ -26,10 +28,16 @@ export default async function ClassroomDetailPage({
   const token = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
 
   if (token) {
-    await queryClient.prefetchQuery({
-      queryKey: SALON_PROGRESO_QUERY_KEY(classroomId),
-      queryFn: () => fetchSalonProgreso(token, classroomId),
-    });
+    await Promise.all([
+      queryClient.prefetchQuery({
+        queryKey: SALON_PROGRESO_QUERY_KEY(classroomId),
+        queryFn: () => fetchSalonProgreso(token, classroomId),
+      }),
+      queryClient.prefetchQuery({
+        queryKey: MY_SALONES_QUERY_KEY,
+        queryFn: () => fetchMySalones(token),
+      }),
+    ]);
   }
 
   return (

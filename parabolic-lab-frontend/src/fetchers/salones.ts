@@ -2,10 +2,8 @@ import type {
   EstudianteEnSalon,
   EstudianteGlobal,
   EstudiantesGlobalesOptions,
-  EstudiantesGlobalesResponse,
   Order,
   SalonProgresoEstudiante,
-  SalonProgresoResponse,
   SortBy,
 } from "@/models/estudiante";
 import { get, post } from "@/services/api";
@@ -39,11 +37,10 @@ export async function fetchSalonProgreso(
   token: string,
   salonId: string,
 ): Promise<SalonProgresoEstudiante[]> {
-  const data = await get<SalonProgresoResponse>(
+  return get<SalonProgresoEstudiante[]>(
     `/salones/${salonId}/progreso`,
     { token },
   );
-  return data?.estudiantes ?? [];
 }
 
 export async function fetchEstudiantesBySalon(
@@ -66,8 +63,7 @@ export async function fetchEstudiantesGlobales(
   const queryString = params.toString();
   const endpoint = `/docentes/me/estudiantes-global${queryString ? `?${queryString}` : ""}`;
 
-  const data = await get<EstudiantesGlobalesResponse>(endpoint, { token });
-  return data?.estudiantes ?? [];
+  return get<EstudianteGlobal[]>(endpoint, { token });
 }
 
 export async function unirseASalon(

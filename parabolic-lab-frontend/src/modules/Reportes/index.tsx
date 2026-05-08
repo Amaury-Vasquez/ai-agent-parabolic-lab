@@ -190,7 +190,7 @@ const Reportes = () => {
                     </thead>
                     <tbody>
                       {estudiantes.map((estudiante) => {
-                        const fullName = `${estudiante.nombre} ${estudiante.apellidopaterno}`;
+                        const fullName = [estudiante.nombre, estudiante.apellidopaterno, estudiante.apellidomaterno].filter(Boolean).join(" ");
                         const csvKey = `student-${estudiante.idalumno}-csv`;
                         const pdfKey = `student-${estudiante.idalumno}-pdf`;
                         return (
@@ -203,10 +203,10 @@ const Reportes = () => {
                               {estudiante.total_intentos}
                             </td>
                             <td className="text-center">
-                              {estudiante.promedio_puntuacion.toFixed(1)}
+                              {(estudiante.promedio_puntuacion ?? 0).toFixed(1)}
                             </td>
                             <td className="text-center">
-                              {estudiante.mejor_puntuacion.toFixed(1)}
+                              {(estudiante.mejor_puntuacion ?? 0).toFixed(1)}
                             </td>
                             <td className="text-center">
                               {estudiante.tiempo_total_minutos}m
