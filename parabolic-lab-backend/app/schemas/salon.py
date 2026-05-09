@@ -86,3 +86,12 @@ class AgregarEstudianteRequest(BaseModel):
     """Solicitud para agregar un estudiante a un salón."""
 
     correo: str = Field(..., min_length=5, max_length=100)
+
+
+class AgregarEstudianteResponse(BaseModel):
+    """Respuesta al agregar un estudiante a un salón."""
+
+    mensaje: str
+    idalumno: UUID
+    nombre: str
+    email: str
