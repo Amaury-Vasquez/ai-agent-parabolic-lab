@@ -4,6 +4,10 @@ import { get } from "@/services/api";
 
 export const ME_QUERY_KEY = ["auth", "me"];
 export const DOCENTE_QUERY_KEY = ["docente", "me"];
+export const INSTITUCION_QUERY_KEY = (idinstitucion: string) => [
+  "instituciones",
+  idinstitucion,
+];
 
 export async function fetchMe(token: string): Promise<UserProfile> {
   return get<UserProfile>("/auth/me", { token });
@@ -20,7 +24,3 @@ export async function fetchInstitucion(
   return get<Institucion>(`/instituciones/${idinstitucion}`, { token });
 }
 
-export const INSTITUCION_QUERY_KEY = (idinstitucion: string) => [
-  "institucion",
-  idinstitucion,
-];

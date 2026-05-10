@@ -158,6 +158,7 @@ async def obtener_estudiantes_global(
             apellidomaterno=row.apellidomaterno,
             email=row.email,
             matricula=row.matricula,
+            idsalon=row.idsalon,
             nombresalon=row.nombresalon,
             total_interacciones=row.total_interacciones,
             promedio_puntuacion=row.promedio_puntuacion,

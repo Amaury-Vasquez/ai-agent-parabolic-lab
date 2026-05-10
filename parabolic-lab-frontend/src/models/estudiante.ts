@@ -2,11 +2,13 @@ export interface SalonProgresoEstudiante {
   idalumno: string;
   nombre: string;
   apellidopaterno: string;
-  promedio_puntuacion: number;
-  escenarios_completados: number;
+  apellidomaterno?: string | null;
+  total_interacciones: number;
+  promedio_puntuacion: number | null;
+  mejor_puntuacion: number | null;
   total_intentos: number;
+  escenarios_completados: number;
   tiempo_total_minutos: number;
-  mejor_puntuacion: number;
 }
 
 export interface SalonProgresoResponse {
@@ -16,8 +18,9 @@ export interface SalonProgresoResponse {
 export interface EstudianteEnSalon {
   idalumno: string;
   nombre: string;
-  apellido: string;
-  correo: string;
+  apellidopaterno: string;
+  apellidomaterno?: string | null;
+  email: string;
   ultimo_acceso: string | null;
   escenarios_completados: number;
   total_escenarios: number;
@@ -25,20 +28,21 @@ export interface EstudianteEnSalon {
 
 export interface EstudianteGlobal {
   idalumno: string;
+  idusuario: string;
   nombre: string;
-  apellido: string;
-  correo: string;
+  apellidopaterno: string;
+  apellidomaterno?: string | null;
+  email: string;
+  matricula: string;
   idsalon: string;
   nombresalon: string;
-  progreso_total: number;
-  promedio_puntuacion: number;
-  escenarios_completados: number;
+  total_interacciones: number;
+  promedio_puntuacion: number | null;
+  mejor_puntuacion: number | null;
   total_intentos: number;
-}
-
-export interface EstudiantesGlobalesResponse {
-  estudiantes: EstudianteGlobal[];
-  total: number;
+  escenarios_completados: number;
+  tiempo_total_minutos: number;
+  progreso_total: number;
 }
 
 export type SortBy = "nombre" | "promedio" | "interacciones" | "salon";

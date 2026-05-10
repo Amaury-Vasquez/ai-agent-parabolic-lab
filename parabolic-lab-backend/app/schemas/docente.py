@@ -26,6 +26,7 @@ class EstudianteGlobalStats(BaseModel):
     apellidomaterno: str | None = None
     email: str
     matricula: str
+    idsalon: UUID  # Salón al que pertenece
     nombresalon: str  # Nombre del salón al que pertenece
     # Estadísticas de progreso
     total_interacciones: int
