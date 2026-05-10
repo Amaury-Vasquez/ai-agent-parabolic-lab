@@ -8,7 +8,6 @@ import type { Institucion } from "@/models/institucion";
 export function useInstitucion(idinstitucion: string | undefined) {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);
   const token = cookies[ACCESS_TOKEN_COOKIE];
-
   return useQuery<Institucion>({
     queryKey: idinstitucion ? INSTITUCION_QUERY_KEY(idinstitucion) : [],
     queryFn: () => fetchInstitucion(token, idinstitucion!),

@@ -23,3 +23,4 @@ export async function fetchInstitucion(
 ): Promise<Institucion> {
   return get<Institucion>(`/instituciones/${idinstitucion}`, { token });
 }
+

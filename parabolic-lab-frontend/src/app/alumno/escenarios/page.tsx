@@ -9,7 +9,7 @@ import EscenariosAlumno from "@/modules/EscenariosAlumno";
 import {
   fetchMisEscenarios,
   MIS_ESCENARIOS_QUERY_KEY,
-} from "@/queries/useMisEscenarios";
+} from "@/fetchers/escenarios";
 
 export default async function EscenariosAlumnoPage() {
   const queryClient = new QueryClient();
