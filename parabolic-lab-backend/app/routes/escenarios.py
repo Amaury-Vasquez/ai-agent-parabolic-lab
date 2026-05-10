@@ -47,6 +47,7 @@ async def mis_escenarios(
         .join(Salon, Salon.idsalon == Escenario.idsalon)
         .where(Salon.iddocente == current_user.docente.iddocente)
         .where(Escenario.activo.is_(True))
+        .where(Escenario.idescenario_origen.is_(None))
         .order_by(Escenario.fechacreacion.desc())
     )
     return result.scalars().all()
@@ -112,7 +113,7 @@ async def asignar_escenario(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    """Copia un escenario a otro salón. Solo el docente dueño de ambos salones."""
+    """Crea una copia de un escenario en otro salón. Solo el docente dueño de ambos salones."""
     _require_docente(current_user)
 
     # Obtener el escenario original
@@ -127,9 +128,10 @@ async def asignar_escenario(
     # Verificar que el docente es dueño del salón destino
     await _verificar_salon_del_docente(data.idsalon, current_user.docente.iddocente, db)
 
-    # Crear una copia del escenario en el salón destino
+    # Crear una copia ligada al original
     nuevo_escenario = Escenario(
         idsalon=data.idsalon,
+        idescenario_origen=idescenario,
         nombre=escenario_original.nombre,
         descripcion=escenario_original.descripcion,
         niveldificultad=escenario_original.niveldificultad,

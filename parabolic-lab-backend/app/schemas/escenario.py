@@ -56,5 +56,6 @@ class EscenarioRead(BaseModel):
     fechacreacion: datetime | None = None
     fechamodificacion: datetime | None = None
     activo: bool | None = None
+    idescenario_origen: UUID | None = None
 
     model_config = {"from_attributes": True}

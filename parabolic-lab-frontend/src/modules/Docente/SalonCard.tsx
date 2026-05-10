@@ -1,6 +1,8 @@
-import { Badge, Button } from "amvasdev-ui";
+import { Badge, Button, Modal } from "amvasdev-ui";
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import Card from "@/components/Card";
+import { useDeleteSalon } from "@/mutations/useDeleteSalon";
 import SeleccionarEscenarioModal from "./SeleccionarEscenarioModal";
 import SalonConfigModal from "./SalonConfigModal";
 import { useRouter } from "next/navigation";
@@ -16,13 +18,25 @@ const SalonCard = ({ salon }: SalonCardProps) => {
   const router = useRouter();
   const [isSeleccionarEscenarioModalOpen, setIsSeleccionarEscenarioModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+  const { mutate: deleteSalon, isPending: isDeleting } = useDeleteSalon();
+
+  const handleCopiar = async () => {
+    await navigator.clipboard.writeText(salon.codigoacceso);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  };
+
+  if (deleted) return null;
 
   return (
     <Card contentClassName="justify-between">
       {/* Card Header with Settings */}
       <div className="flex justify-between items-start">
         <h2 className="card-title">{salon.nombresalon}</h2>
-        <div>
+        <div className="flex gap-1">
           <Button variant="ghost" size="sm" className="btn-square" onClick={() => setIsConfigModalOpen(true)}>
             <svg
               className="w-5 h-5"
@@ -44,6 +58,9 @@ const SalonCard = ({ salon }: SalonCardProps) => {
               />
             </svg>
           </Button>
+          <Button variant="ghost" size="sm" className="btn-square text-error" onClick={() => setIsDeleteModalOpen(true)}>
+            <Trash2 className="w-5 h-5" />
+          </Button>
         </div>
       </div>
 
@@ -56,20 +73,24 @@ const SalonCard = ({ salon }: SalonCardProps) => {
             </p>
             <p className="font-mono font-bold text-lg">{salon.codigoacceso}</p>
           </div>
-          <Button variant="ghost" size="sm" className="btn-square">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-              />
-            </svg>
+          <Button variant="ghost" size="sm" className="btn-square" onClick={handleCopiar}>
+            {copiado ? (
+              <span className="text-xs text-success">¡Copiado!</span>
+            ) : (
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
+            )}
           </Button>
         </div>
       </div>
@@ -170,6 +191,28 @@ const SalonCard = ({ salon }: SalonCardProps) => {
         onClose={() => setIsConfigModalOpen(false)}
         salon={salon}
       />
+      {isDeleteModalOpen && (
+        <Modal
+          onClose={() => setIsDeleteModalOpen(false)}
+          title="Eliminar salón"
+          confirmButton={{
+            children: isDeleting ? "Eliminando..." : "Sí, eliminar",
+            variant: "error",
+            disabled: isDeleting,
+            onClick: () => deleteSalon(salon.idsalon, {
+              onSuccess: () => {
+                setDeleted(true);
+                setIsDeleteModalOpen(false);
+              }
+            })
+          }}
+        >
+          <p className="py-4">
+            ¿Estás seguro de eliminar <strong>{salon.nombresalon}</strong>?
+            Esta acción borrará el progreso de los estudiantes.
+          </p>
+        </Modal>
+      )}
     </Card>
   );
 };

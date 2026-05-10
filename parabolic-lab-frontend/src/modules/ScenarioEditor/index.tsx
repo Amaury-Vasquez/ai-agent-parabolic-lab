@@ -68,6 +68,7 @@ const ScenarioEditorForm = ({
   const [errors, setErrors] = useState<ScenarioFormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState("");
   const { mutateAsync: crearEscenario } = useCreateEscenario();
   const { mutateAsync: actualizarEscenario } = useUpdateEscenario();
   // Sync context physics config with form data
@@ -125,14 +126,12 @@ const ScenarioEditorForm = ({
 
       if (isEditing && scenarioId) {
         await actualizarEscenario({ ...datos, idescenario: scenarioId });
-        router.push(
-          classroomId
-            ? `/docente/salon/${classroomId}`
-            : "/docente/biblioteca",
-        );
+        setSuccessMsg("Escenario actualizado correctamente");
+        setTimeout(() => router.push("/docente/biblioteca"), 2000);
       } else {
         await crearEscenario({ ...datos, idsalon: classroomId! });
-        router.push("/docente/biblioteca");
+        setSuccessMsg("Escenario creado correctamente");
+        setTimeout(() => router.push("/docente/biblioteca"), 2000);
       }
     } catch (error) {
       setSubmitError(
@@ -422,6 +421,11 @@ const ScenarioEditorForm = ({
           </Button>
         </div>
       </form>
+      {successMsg && (
+        <div className="alert alert-success fixed bottom-4 right-4 w-auto z-50">
+          {successMsg}
+        </div>
+      )}
     </div>
   );
 };
