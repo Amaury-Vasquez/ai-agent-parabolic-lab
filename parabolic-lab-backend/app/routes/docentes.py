@@ -104,6 +104,7 @@ async def obtener_estudiantes_global(
         .outerjoin(InteraccionEscenario, Alumno.idalumno == InteraccionEscenario.idalumno)
         .where(AlumnoEnSalon.idsalon.in_(idsalones))
         .where(AlumnoEnSalon.activo.is_(True))
+        .where(Salon.activo.is_(True))
         .group_by(
             Alumno.idalumno,
             Alumno.idusuario,

@@ -2,7 +2,7 @@
 import { Button, Modal } from "amvasdev-ui";
 import { BookOpen, Pencil, Plus, Share2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Scenario } from "@/models/scenario";
 import { useDeleteEscenario } from "@/mutations/useDeleteEscenario";
 import { useMisEscenarios } from "@/queries/useMisEscenarios";
@@ -36,6 +36,35 @@ const Biblioteca = () => {
   const [escenarioAEliminar, setEscenarioAEliminar] =
     useState<Scenario | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState("reciente");
+
+  const DIFFICULTY_ORDER: Record<string, number> = {
+    principiante: 0,
+    intermedio: 1,
+    avanzado: 2,
+    experto: 3,
+  };
+
+  const escenariosOrdenados = useMemo(() => {
+    if (!escenarios) return [];
+    const sorted = [...escenarios];
+    switch (sortBy) {
+      case "alfabetico":
+        return sorted.sort((a, b) => a.nombre.localeCompare(b.nombre));
+      case "dificultad":
+        return sorted.sort(
+          (a, b) =>
+            (DIFFICULTY_ORDER[a.niveldificultad] ?? 99) -
+            (DIFFICULTY_ORDER[b.niveldificultad] ?? 99),
+        );
+      case "tipo":
+        return sorted.sort((a, b) =>
+          (a.tipoescenario ?? "").localeCompare(b.tipoescenario ?? ""),
+        );
+      default:
+        return sorted;
+    }
+  }, [escenarios, sortBy]);
 
   const getSalonNombre = (idsalon: string) => {
     const salon = salones?.find((s) => s.idsalon === idsalon);
@@ -71,22 +100,34 @@ const Biblioteca = () => {
             Gestiona todos tus escenarios de tiro parabólico
           </p>
         </div>
-        <Button
-          variant="primary"
-          onClick={() => router.push("/docente/biblioteca/nuevo")}
-        >
-          <Plus size={16} />
-          Crear Escenario
-        </Button>
+        <div className="flex items-center gap-3">
+          <select
+            className="select select-bordered select-sm"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="reciente">Más reciente</option>
+            <option value="alfabetico">Alfabético A-Z</option>
+            <option value="dificultad">Por dificultad</option>
+            <option value="tipo">Por tipo</option>
+          </select>
+          <Button
+            variant="primary"
+            onClick={() => router.push("/docente/biblioteca/nuevo")}
+          >
+            <Plus size={16} />
+            Crear Escenario
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-12">
           <span className="loading loading-spinner loading-lg" />
         </div>
-      ) : escenarios && escenarios.length > 0 ? (
+      ) : escenariosOrdenados.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {escenarios.map((escenario) => (
+          {escenariosOrdenados.map((escenario) => (
             <div
               key={escenario.idescenario}
               className="bg-base-200 rounded-xl p-5 flex flex-col gap-3 border border-base-300"
