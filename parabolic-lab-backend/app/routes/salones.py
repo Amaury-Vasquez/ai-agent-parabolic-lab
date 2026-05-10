@@ -18,6 +18,7 @@ from app.models.salon import Salon
 from app.models.usuario import Usuario
 from app.schemas.salon import (
     AgregarEstudianteRequest,
+    AgregarEstudianteResponse,
     EscenarioEnSalon,
     EstudianteEnSalon,
     SalonCreate,
@@ -393,7 +394,7 @@ async def listar_estudiantes_salon(
     ]
 
 
-@router.post("/{idsalon}/agregar-estudiante", status_code=status.HTTP_201_CREATED)
+@router.post("/{idsalon}/agregar-estudiante", response_model=AgregarEstudianteResponse, status_code=status.HTTP_201_CREATED)
 async def agregar_estudiante_salon(
     idsalon: UUID,
     data: AgregarEstudianteRequest,
@@ -421,14 +422,22 @@ async def agregar_estudiante_salon(
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado con ese email")
 
-    # Verificar que el usuario es alumno
-    if usuario.tipousuario != "alumno" or not usuario.alumno:
+    # Verificar que el usuario es alumno por tipo
+    if usuario.tipousuario != "alumno":
         raise HTTPException(status_code=422, detail="El usuario no es un alumno valido")
+
+    # Cargar el alumno explícitamente (evita lazy load en async)
+    alumno_result = await db.execute(
+        select(Alumno).where(Alumno.idusuario == usuario.idusuario)
+    )
+    alumno = alumno_result.scalar_one_or_none()
+    if not alumno:
+        raise HTTPException(status_code=422, detail="El usuario no tiene registro de alumno")
 
     # Verificar que el alumno no esté ya en el salón
     result = await db.execute(
         select(AlumnoEnSalon).where(
-            AlumnoEnSalon.idalumno == usuario.alumno.idalumno,
+            AlumnoEnSalon.idalumno == alumno.idalumno,
             AlumnoEnSalon.idsalon == idsalon,
         )
     )
@@ -444,28 +453,28 @@ async def agregar_estudiante_salon(
             alumno_en_salon.activo = True
             await db.commit()
             await db.refresh(alumno_en_salon)
-            return {
-                "mensaje": "Estudiante reactivado en el salon",
-                "idalumno": usuario.alumno.idalumno,
-                "nombre": usuario.nombre,
-                "email": usuario.email,
-            }
+            return AgregarEstudianteResponse(
+                mensaje="Estudiante reactivado en el salon",
+                idalumno=alumno.idalumno,
+                nombre=usuario.nombre,
+                email=usuario.email,
+            )
 
     # Crear la relación alumno-salon
     nuevo_alumno_en_salon = AlumnoEnSalon(
-        idalumno=usuario.alumno.idalumno,
+        idalumno=alumno.idalumno,
         idsalon=idsalon,
     )
     db.add(nuevo_alumno_en_salon)
     await db.commit()
     await db.refresh(nuevo_alumno_en_salon)
 
-    return {
-        "mensaje": "Estudiante agregado al salon correctamente",
-        "idalumno": usuario.alumno.idalumno,
-        "nombre": usuario.nombre,
-        "email": usuario.email,
-    }
+    return AgregarEstudianteResponse(
+        mensaje="Estudiante agregado al salon correctamente",
+        idalumno=alumno.idalumno,
+        nombre=usuario.nombre,
+        email=usuario.email,
+    )
 
 
 @router.delete("/{idsalon}/estudiantes/{idalumno}", status_code=status.HTTP_204_NO_CONTENT)

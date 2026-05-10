@@ -50,6 +50,11 @@ class Escenario(Base):
     fechacreacion: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())
     fechamodificacion: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())
     activo: Mapped[bool | None] = mapped_column(Boolean, server_default="true")
+    idescenario_origen: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("escenario.idescenario", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     salon: Mapped["Salon"] = relationship(back_populates="escenarios")  # noqa: F821
     actividades: Mapped[list["EscenarioEnActividad"]] = relationship(back_populates="escenario")  # noqa: F821
