@@ -1,28 +1,105 @@
 "use client";
 
-import { useState } from "react";
-import { Rocket, RotateCcw } from "lucide-react";
+import { Music, RotateCcw, VolumeX, Zap } from "lucide-react";
 import { Badge, Button } from "amvasdev-ui";
+import type { ScoreState, SimSettings } from "./types";
 import { Scenario } from "@/models/scenario";
 
 interface ControlPanelProps {
   scenario?: Scenario;
-  defaultAngle: number;
-  defaultVelocity: number;
+  settings: SimSettings;
+  onSettingsChange: (next: SimSettings) => void;
+  onLaunch: () => void;
+  onReset: () => void;
+  score: ScoreState;
+  musicOn: boolean;
+  onToggleMusic: () => void;
+  canFire: boolean;
+  ranges: {
+    angleMin: number;
+    angleMax: number;
+    velocityMin: number;
+    velocityMax: number;
+    cannonHeightMin: number;
+    cannonHeightMax: number;
+    cannonXMin: number;
+    cannonXMax: number;
+  };
 }
+
+interface SliderProps {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  unit: string;
+  accent: string;
+  onChange: (n: number) => void;
+}
+
+const Slider = ({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  unit,
+  accent,
+  onChange,
+}: SliderProps) => (
+  <div>
+    <div className="flex justify-between items-center mb-1">
+      <label className="text-sm font-semibold">{label}</label>
+      <div className="bg-base-100 px-2 py-0.5 rounded font-mono font-bold text-sm tabular-nums min-w-[68px] text-center">
+        {value}
+        {unit}
+      </div>
+    </div>
+    <input
+      type="range"
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className={`range ${accent}`}
+    />
+    <div className="flex justify-between text-[10px] opacity-50 mt-0.5">
+      <span>
+        {min}
+        {unit}
+      </span>
+      <span>
+        {max}
+        {unit}
+      </span>
+    </div>
+  </div>
+);
 
 const ControlPanel = ({
   scenario,
-  defaultAngle,
-  defaultVelocity,
+  settings,
+  onSettingsChange,
+  onLaunch,
+  onReset,
+  score,
+  musicOn,
+  onToggleMusic,
+  canFire,
+  ranges,
 }: ControlPanelProps) => {
-  const [angle, setAngle] = useState(defaultAngle);
-  const [velocity, setVelocity] = useState(defaultVelocity);
+  const accuracy =
+    score.shots === 0 ? 0 : Math.round((score.hits / score.shots) * 100);
+
+  const set = <K extends keyof SimSettings>(k: K, v: SimSettings[K]) =>
+    onSettingsChange({ ...settings, [k]: v });
 
   return (
-    <div className="bg-base-200 rounded-lg p-4 md:p-6 flex flex-col gap-4 md:gap-6">
+    <div className="bg-base-200 rounded-lg p-4 md:p-5 flex flex-col gap-4">
       <div>
-        <h3 className="text-lg md:text-xl font-bold mb-2">Controles</h3>
+        <h3 className="text-xl font-bold mb-2">Controles</h3>
         {scenario ? (
           <div className="flex gap-2 flex-wrap">
             <Badge variant="info">{scenario.tipoescenario}</Badge>
@@ -31,96 +108,112 @@ const ControlPanel = ({
         ) : null}
       </div>
 
-      {/* Angle control */}
-      <div>
-        <label className="block text-sm font-semibold mb-2">
-          Ángulo de lanzamiento
-        </label>
-        <div className="flex items-center gap-2 md:gap-4">
-          <input
-            type="range"
-            min="0"
-            max="90"
-            value={angle}
-            onChange={(e) => setAngle(Number(e.target.value))}
-            className="range range-primary flex-1"
-          />
-          <div className="bg-base-100 px-2 py-1 md:px-3 md:py-2 rounded-lg min-w-[50px] md:min-w-[60px] text-center font-bold text-sm md:text-base">
-            {angle}°
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-base-100 rounded-lg p-2 text-center">
+          <div className="text-[10px] opacity-60">Puntos</div>
+          <div className="text-lg font-bold tabular-nums text-primary">
+            {score.points}
           </div>
         </div>
-        <div className="flex justify-between text-xs opacity-60 mt-1">
-          <span>0°</span>
-          <span>45°</span>
-          <span>90°</span>
+        <div className="bg-base-100 rounded-lg p-2 text-center">
+          <div className="text-[10px] opacity-60">Aciertos</div>
+          <div className="text-lg font-bold tabular-nums">
+            {score.hits}/{score.shots}
+          </div>
+          <div className="text-[10px] opacity-60">{accuracy}%</div>
+        </div>
+        <div className="bg-base-100 rounded-lg p-2 text-center">
+          <div className="text-[10px] opacity-60">Racha</div>
+          <div className="text-lg font-bold tabular-nums text-warning">
+            {score.streak}
+          </div>
+          <div className="text-[10px] opacity-60">máx {score.bestStreak}</div>
         </div>
       </div>
 
-      {/* Velocity control */}
-      <div>
-        <label className="block text-sm font-semibold mb-2">
-          Velocidad inicial
-        </label>
-        <div className="flex items-center gap-2 md:gap-4">
-          <input
-            type="range"
-            min="5"
-            max="50"
-            value={velocity}
-            onChange={(e) => setVelocity(Number(e.target.value))}
-            className="range range-secondary flex-1"
-          />
-          <div className="bg-base-100 px-2 py-1 md:px-3 md:py-2 rounded-lg min-w-[60px] md:min-w-[70px] text-center font-bold text-sm md:text-base">
-            {velocity} m/s
-          </div>
-        </div>
-        <div className="flex justify-between text-xs opacity-60 mt-1">
-          <span>5 m/s</span>
-          <span>25 m/s</span>
-          <span>50 m/s</span>
-        </div>
+      <div className="flex flex-col gap-3">
+        <Slider
+          label="Ángulo"
+          value={settings.angle}
+          min={ranges.angleMin}
+          max={ranges.angleMax}
+          unit="°"
+          accent="range-primary"
+          onChange={(n) => set("angle", n)}
+        />
+        <Slider
+          label="Velocidad inicial"
+          value={settings.velocity}
+          min={ranges.velocityMin}
+          max={ranges.velocityMax}
+          step={0.5}
+          unit=" m/s"
+          accent="range-secondary"
+          onChange={(n) => set("velocity", n)}
+        />
+        <Slider
+          label="Altura del cañón"
+          value={settings.cannonHeight}
+          min={ranges.cannonHeightMin}
+          max={ranges.cannonHeightMax}
+          step={0.5}
+          unit=" m"
+          accent="range-accent"
+          onChange={(n) => set("cannonHeight", n)}
+        />
+        <Slider
+          label="Posición horizontal"
+          value={settings.cannonX}
+          min={ranges.cannonXMin}
+          max={ranges.cannonXMax}
+          step={0.5}
+          unit=" m"
+          accent="range-info"
+          onChange={(n) => set("cannonX", n)}
+        />
       </div>
 
-      {/* Action buttons */}
-      <div className="flex flex-col gap-2 md:gap-3 mt-2 md:mt-4">
-        <Button variant="primary" className="w-full gap-2" size="lg">
-          <Rocket className="w-4 h-4 md:w-5 md:h-5" />
+      <div className="flex flex-col gap-2">
+        <Button
+          variant="primary"
+          className="w-full gap-2"
+          size="lg"
+          onClick={onLaunch}
+          disabled={!canFire}
+        >
+          <Zap className="w-5 h-5" />
           Lanzar
         </Button>
-        <Button variant="ghost" className="w-full gap-2">
-          <RotateCcw className="w-4 h-4" />
-          Reiniciar
-        </Button>
-      </div>
-
-      {/* Physics info panel */}
-      <div className="bg-base-100 rounded-lg p-3 md:p-4 mt-1 md:mt-2">
-        <h4 className="text-sm font-bold mb-2 md:mb-3 opacity-70">
-          Cálculos (preview)
-        </h4>
-        <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
-          <div className="flex justify-between">
-            <span className="opacity-70">Alcance máximo:</span>
-            <span className="font-semibold">-- m</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="opacity-70">Altura máxima:</span>
-            <span className="font-semibold">-- m</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="opacity-70">Tiempo de vuelo:</span>
-            <span className="font-semibold">-- s</span>
-          </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="ghost"
+            className="gap-1"
+            size="sm"
+            onClick={onReset}
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reset
+          </Button>
+          <Button
+            variant={musicOn ? "primary" : "ghost"}
+            className="gap-1"
+            size="sm"
+            onClick={onToggleMusic}
+          >
+            {musicOn ? (
+              <Music className="w-4 h-4" />
+            ) : (
+              <VolumeX className="w-4 h-4" />
+            )}
+            {musicOn ? "Música" : "Mute"}
+          </Button>
         </div>
       </div>
 
-      {/* Scenario objectives (if available) */}
       {scenario?.objetivosaprendizaje ? (
-        <div className="bg-info bg-opacity-10 rounded-lg p-3 md:p-4 border-l-4 border-info">
-          <h4 className="text-sm font-bold mb-2">Objetivos</h4>
-          <p className="text-xs md:text-sm opacity-80">
-            {scenario.objetivosaprendizaje}
-          </p>
+        <div className="bg-info/10 rounded-lg p-3 border-l-4 border-info">
+          <h4 className="text-xs font-bold mb-1">Objetivos</h4>
+          <p className="text-xs opacity-80">{scenario.objetivosaprendizaje}</p>
         </div>
       ) : null}
     </div>
