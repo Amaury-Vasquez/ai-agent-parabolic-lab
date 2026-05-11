@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -74,11 +75,20 @@ async def obtener_interaccion_escenario(
 async def crear_interaccion_escenario(
     data: InteraccionEscenarioCreate,
     db: AsyncSession = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(get_current_user),
 ):
+    # Si el usuario es alumno: usar su propio idalumno (ignora body para evitar suplantación).
+    # Para otros roles, mantener el comportamiento anterior basado en el body.
+    if current_user.tipousuario == "alumno":
+        if not current_user.alumno:
+            raise HTTPException(status_code=403, detail="Alumno no encontrado")
+        idalumno = current_user.alumno.idalumno
+    else:
+        idalumno = data.idalumno
+
     interaccion = InteraccionEscenario(
         idescenario=data.idescenario,
-        idalumno=data.idalumno,
+        idalumno=idalumno,
     )
     db.add(interaccion)
     await db.commit()
@@ -98,7 +108,20 @@ async def actualizar_interaccion_escenario(
     if not interaccion:
         raise HTTPException(status_code=404, detail="Interaccion de escenario no encontrada")
 
-    for field, value in data.model_dump(exclude_none=True).items():
+    payload = data.model_dump(exclude_none=True)
+    # Si el cliente marca completado y no envía fechafin, lo asignamos en el server.
+    if payload.get("completado") is True and "fechafin" not in payload:
+        payload["fechafin"] = datetime.utcnow()
+
+    for field, value in payload.items():
+        # Las columnas DateTime del modelo son naive. Si el cliente manda ISO
+        # con timezone (e.g. ...Z), lo convertimos a UTC naive antes de asignar.
+        if (
+            field == "fechafin"
+            and hasattr(value, "tzinfo")
+            and value.tzinfo is not None
+        ):
+            value = value.astimezone(UTC).replace(tzinfo=None)
         setattr(interaccion, field, value)
 
     await db.commit()

@@ -1,6 +1,7 @@
 import random
 import string
 from datetime import UTC, datetime
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -19,8 +20,12 @@ from app.models.usuario import Usuario
 from app.schemas.salon import (
     AgregarEstudianteRequest,
     AgregarEstudianteResponse,
+    DesempenoAlumnoEnSalon,
     EscenarioEnSalon,
     EstudianteEnSalon,
+    InteraccionConEscenario,
+    ResolucionAlumno,
+    ResolucionesEscenario,
     SalonCreate,
     SalonProgresoAlumno,
     SalonRead,
@@ -512,3 +517,183 @@ async def eliminar_estudiante_salon(
     # Soft delete: desactivar la relación
     alumno_en_salon.activo = False
     await db.commit()
+
+
+# ── DESEMPEÑO / RESOLUCIONES ──────────────────────────────────────────────────
+
+
+async def _verificar_salon_docente(
+    db: AsyncSession, idsalon: UUID, current_user: Usuario
+) -> Salon:
+    _require_docente(current_user)
+    result = await db.execute(select(Salon).where(Salon.idsalon == idsalon))
+    salon = result.scalar_one_or_none()
+    if not salon:
+        raise HTTPException(status_code=404, detail="Salon no encontrado")
+    if salon.iddocente != current_user.docente.iddocente:
+        raise HTTPException(status_code=403, detail="No tienes permiso para acceder a este salon")
+    return salon
+
+
+@router.get(
+    "/{idsalon}/alumnos/{idalumno}/desempeno",
+    response_model=DesempenoAlumnoEnSalon,
+)
+async def obtener_desempeno_alumno(
+    idsalon: UUID,
+    idalumno: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """
+    Detalle de desempeño de un alumno en los escenarios de un salón.
+    Solo el docente dueño del salón puede acceder.
+    """
+    await _verificar_salon_docente(db, idsalon, current_user)
+
+    # Verificar que el alumno está en el salón
+    rel_result = await db.execute(
+        select(AlumnoEnSalon)
+        .where(AlumnoEnSalon.idalumno == idalumno)
+        .where(AlumnoEnSalon.idsalon == idsalon)
+        .where(AlumnoEnSalon.activo.is_(True))
+    )
+    if rel_result.scalar_one_or_none() is None:
+        raise HTTPException(
+            status_code=404, detail="Alumno no encontrado en este salon"
+        )
+
+    alumno_result = await db.execute(
+        select(Alumno, Usuario)
+        .join(Usuario, Alumno.idusuario == Usuario.idusuario)
+        .where(Alumno.idalumno == idalumno)
+    )
+    row = alumno_result.first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Alumno no encontrado")
+    _alumno, usuario = row
+
+    # Interacciones del alumno en escenarios de este salón
+    interacciones_result = await db.execute(
+        select(InteraccionEscenario, Escenario)
+        .join(Escenario, InteraccionEscenario.idescenario == Escenario.idescenario)
+        .where(InteraccionEscenario.idalumno == idalumno)
+        .where(Escenario.idsalon == idsalon)
+        .order_by(InteraccionEscenario.fechainicio.desc())
+    )
+    rows = interacciones_result.all()
+
+    interacciones_payload: list[InteraccionConEscenario] = []
+    puntuaciones: list[float] = []
+    tiempos: list[int] = []
+    intentos_total = 0
+    completados = 0
+
+    for interaccion, escenario in rows:
+        interacciones_payload.append(
+            InteraccionConEscenario(
+                idinteraccion=interaccion.idinteraccion,
+                idescenario=interaccion.idescenario,
+                escenario_nombre=escenario.nombre,
+                escenario_dificultad=escenario.niveldificultad,
+                fechainicio=interaccion.fechainicio,
+                fechafin=interaccion.fechafin,
+                tiempototal=interaccion.tiempototal,
+                intentosrealizados=interaccion.intentosrealizados,
+                puntuacion=interaccion.puntuacion,
+                completado=interaccion.completado,
+                datosinteraccion=interaccion.datosinteraccion,
+            )
+        )
+        if interaccion.puntuacion is not None:
+            puntuaciones.append(float(interaccion.puntuacion))
+        if interaccion.tiempototal is not None:
+            tiempos.append(interaccion.tiempototal)
+        if interaccion.intentosrealizados is not None:
+            intentos_total += interaccion.intentosrealizados
+        if interaccion.completado:
+            completados += 1
+
+    promedio = (
+        Decimal(sum(puntuaciones) / len(puntuaciones)) if puntuaciones else None
+    )
+    mejor = Decimal(max(puntuaciones)) if puntuaciones else None
+    tiempo_min = sum(tiempos) / 60.0 if tiempos else 0.0
+
+    return DesempenoAlumnoEnSalon(
+        idalumno=idalumno,
+        nombre=usuario.nombre,
+        apellidopaterno=usuario.apellidopaterno,
+        apellidomaterno=usuario.apellidomaterno,
+        email=usuario.email,
+        total_interacciones=len(interacciones_payload),
+        escenarios_completados=completados,
+        promedio_puntuacion=promedio,
+        mejor_puntuacion=mejor,
+        total_intentos=intentos_total,
+        tiempo_total_minutos=tiempo_min,
+        interacciones=interacciones_payload,
+    )
+
+
+@router.get(
+    "/{idsalon}/escenarios/{idescenario}/resoluciones",
+    response_model=ResolucionesEscenario,
+)
+async def obtener_resoluciones_escenario(
+    idsalon: UUID,
+    idescenario: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """
+    Lista de resoluciones (interacciones) de los alumnos sobre un escenario.
+    Solo el docente dueño del salón puede acceder.
+    """
+    await _verificar_salon_docente(db, idsalon, current_user)
+
+    escenario_result = await db.execute(
+        select(Escenario)
+        .where(Escenario.idescenario == idescenario)
+        .where(Escenario.idsalon == idsalon)
+    )
+    escenario = escenario_result.scalar_one_or_none()
+    if escenario is None:
+        raise HTTPException(
+            status_code=404, detail="Escenario no encontrado en este salon"
+        )
+
+    interacciones_result = await db.execute(
+        select(InteraccionEscenario, Usuario)
+        .join(Alumno, InteraccionEscenario.idalumno == Alumno.idalumno)
+        .join(Usuario, Alumno.idusuario == Usuario.idusuario)
+        .where(InteraccionEscenario.idescenario == idescenario)
+        .order_by(InteraccionEscenario.fechainicio.desc())
+    )
+    rows = interacciones_result.all()
+
+    resoluciones = [
+        ResolucionAlumno(
+            idinteraccion=interaccion.idinteraccion,
+            idalumno=interaccion.idalumno,
+            alumno_nombre=usuario.nombre,
+            alumno_apellidopaterno=usuario.apellidopaterno,
+            alumno_apellidomaterno=usuario.apellidomaterno,
+            fechainicio=interaccion.fechainicio,
+            fechafin=interaccion.fechafin,
+            tiempototal=interaccion.tiempototal,
+            intentosrealizados=interaccion.intentosrealizados,
+            puntuacion=interaccion.puntuacion,
+            completado=interaccion.completado,
+            datosinteraccion=interaccion.datosinteraccion,
+        )
+        for interaccion, usuario in rows
+    ]
+
+    return ResolucionesEscenario(
+        idescenario=escenario.idescenario,
+        escenario_nombre=escenario.nombre,
+        escenario_descripcion=escenario.descripcion,
+        escenario_dificultad=escenario.niveldificultad,
+        resoluciones=resoluciones,
+    )

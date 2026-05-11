@@ -1,12 +1,19 @@
 import { get, post, patch } from "@/services/api";
-import { Activity } from "@/models/activity";
 import { ActividadAlumno } from "@/models/actividad_alumno";
+import { Activity, ActivityWithScenarios } from "@/models/activity";
 
 export const ACTIVIDADES_QUERY_KEY = ["actividades"];
+export const MIS_ACTIVIDADES_QUERY_KEY = ["actividades", "me"];
 export const ACTIVIDAD_QUERY_KEY = (idactividad: string) => ["actividades", idactividad];
 
 export async function fetchActividades(token: string): Promise<Activity[]> {
   return get<Activity[]>("/actividades-interactivas/", { token });
+}
+
+export async function fetchMisActividades(
+  token: string,
+): Promise<ActivityWithScenarios[]> {
+  return get<ActivityWithScenarios[]>("/actividades-interactivas/me", { token });
 }
 
 export async function fetchActividad(

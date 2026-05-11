@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -95,3 +96,63 @@ class AgregarEstudianteResponse(BaseModel):
     idalumno: UUID
     nombre: str
     email: str
+
+
+class InteraccionConEscenario(BaseModel):
+    """Interacción de un alumno enriquecida con datos del escenario."""
+
+    idinteraccion: UUID
+    idescenario: UUID
+    escenario_nombre: str
+    escenario_dificultad: str
+    fechainicio: datetime | None = None
+    fechafin: datetime | None = None
+    tiempototal: int | None = None
+    intentosrealizados: int | None = None
+    puntuacion: Decimal | None = None
+    completado: bool | None = None
+    datosinteraccion: dict[str, Any] | None = None
+
+
+class DesempenoAlumnoEnSalon(BaseModel):
+    """Detalle del desempeño de un alumno en un salón."""
+
+    idalumno: UUID
+    nombre: str
+    apellidopaterno: str
+    apellidomaterno: str | None = None
+    email: str
+    total_interacciones: int
+    escenarios_completados: int
+    promedio_puntuacion: Decimal | None = None
+    mejor_puntuacion: Decimal | None = None
+    total_intentos: int
+    tiempo_total_minutos: float
+    interacciones: list[InteraccionConEscenario] = []
+
+
+class ResolucionAlumno(BaseModel):
+    """Resolución individual de un alumno sobre un escenario."""
+
+    idinteraccion: UUID
+    idalumno: UUID
+    alumno_nombre: str
+    alumno_apellidopaterno: str
+    alumno_apellidomaterno: str | None = None
+    fechainicio: datetime | None = None
+    fechafin: datetime | None = None
+    tiempototal: int | None = None
+    intentosrealizados: int | None = None
+    puntuacion: Decimal | None = None
+    completado: bool | None = None
+    datosinteraccion: dict[str, Any] | None = None
+
+
+class ResolucionesEscenario(BaseModel):
+    """Conjunto de resoluciones de un escenario en un salón."""
+
+    idescenario: UUID
+    escenario_nombre: str
+    escenario_descripcion: str | None = None
+    escenario_dificultad: str
+    resoluciones: list[ResolucionAlumno] = []

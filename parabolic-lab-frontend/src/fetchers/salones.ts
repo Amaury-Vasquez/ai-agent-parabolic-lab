@@ -7,6 +7,10 @@ import type {
   SortBy,
 } from "@/models/estudiante";
 import { get, post } from "@/services/api";
+import type {
+  DesempenoAlumnoEnSalon,
+  ResolucionesEscenario,
+} from "@/types/desempeno";
 import { Salon } from "@/types/salon";
 
 export const MY_SALONES_QUERY_KEY = ["salones", "me"];
@@ -71,4 +75,36 @@ export async function unirseASalon(
   codigoacceso: string,
 ): Promise<void> {
   return post<void>("/alumnos-en-salon/unirse", { codigoacceso }, { token });
+}
+
+export const SALON_ALUMNO_DESEMPENO_QUERY_KEY = (
+  salonId: string,
+  alumnoId: string,
+) => ["salones", salonId, "alumnos", alumnoId, "desempeno"];
+
+export const SALON_ESCENARIO_RESOLUCIONES_QUERY_KEY = (
+  salonId: string,
+  escenarioId: string,
+) => ["salones", salonId, "escenarios", escenarioId, "resoluciones"];
+
+export async function fetchDesempenoAlumno(
+  token: string,
+  salonId: string,
+  alumnoId: string,
+): Promise<DesempenoAlumnoEnSalon> {
+  return get<DesempenoAlumnoEnSalon>(
+    `/salones/${salonId}/alumnos/${alumnoId}/desempeno`,
+    { token },
+  );
+}
+
+export async function fetchResolucionesEscenario(
+  token: string,
+  salonId: string,
+  escenarioId: string,
+): Promise<ResolucionesEscenario> {
+  return get<ResolucionesEscenario>(
+    `/salones/${salonId}/escenarios/${escenarioId}/resoluciones`,
+    { token },
+  );
 }

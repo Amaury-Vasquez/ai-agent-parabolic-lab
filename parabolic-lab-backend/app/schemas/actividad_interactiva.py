@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.schemas.escenario import EscenarioRead
+
 
 class ActividadInteractivaRead(BaseModel):
     idactividad: UUID
@@ -21,3 +23,7 @@ class ActividadInteractivaRead(BaseModel):
     activa: bool | None = None
 
     model_config = {"from_attributes": True}
+
+
+class ActividadConEscenariosRead(ActividadInteractivaRead):
+    escenarios: list[EscenarioRead] = []

@@ -5,11 +5,11 @@ import {
 } from "@tanstack/react-query";
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-import LogrosAlumno from "@/modules/LogrosAlumno";
 import {
   fetchProgresoAlumno,
   PROGRESO_ALUMNO_QUERY_KEY,
-} from "@/queries/useProgresoAlumno";
+} from "@/fetchers/interaccionesAlumno";
+import LogrosAlumno from "@/modules/LogrosAlumno";
 
 export default async function LogrosAlumnoPage() {
   const queryClient = new QueryClient();

@@ -12,8 +12,13 @@ const formatDate = (date: Date | string | null | undefined): string => {
   });
 };
 
-const formatScore = (value: number | null | undefined): string =>
-  value !== null && value !== undefined ? value.toFixed(1) : "—";
+const formatScore = (
+  value: number | string | null | undefined,
+): string => {
+  if (value === null || value === undefined || value === "") return "—";
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isNaN(n) ? "—" : n.toFixed(1);
+};
 
 interface StatCardProps {
   label: string;
@@ -76,7 +81,7 @@ const ProgresoAlumno = () => {
     <div className="p-4 md:p-8 flex flex-col gap-6">
       <h1 className="text-2xl md:text-3xl font-bold">Mi Progreso</h1>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <StatCard label="Escenarios totales" value={progreso.total_escenarios} />
         <StatCard label="Completados" value={progreso.escenarios_completados} />
         <StatCard

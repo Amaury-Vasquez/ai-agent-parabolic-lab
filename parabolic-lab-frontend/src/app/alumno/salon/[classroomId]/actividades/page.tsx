@@ -1,7 +1,15 @@
-import { ArrowLeft } from "lucide-react";
-import CustomLink from "@/components/CustomLink";
-import ActivitiesList from "@/components/ActivitiesList";
-import { MOCK_ACTIVITIES } from "@/constants/activities";
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from "@tanstack/react-query";
+import { cookies } from "next/headers";
+import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import {
+  fetchMisActividades,
+  MIS_ACTIVIDADES_QUERY_KEY,
+} from "@/fetchers/actividades";
+import ActividadesSalon from "@/modules/ActividadesSalon";
 
 interface ClassroomActividadesPageProps {
   params: Promise<{
@@ -13,32 +21,20 @@ export default async function ClassroomActividadesPage({
   params,
 }: ClassroomActividadesPageProps) {
   const { classroomId } = await params;
+  const queryClient = new QueryClient();
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
 
-  // Filter activities for this specific classroom
-  const classroomActivities = MOCK_ACTIVITIES.filter(
-    (activity) => activity.idsalon === classroomId
-  );
+  if (token) {
+    await queryClient.prefetchQuery({
+      queryKey: MIS_ACTIVIDADES_QUERY_KEY,
+      queryFn: () => fetchMisActividades(token),
+    });
+  }
 
   return (
-    <div className="p-8">
-      <div className="flex items-center gap-4 mb-8">
-        <CustomLink
-          href={`/alumno/salon/${classroomId}`}
-          variant="ghost"
-          className="btn-square"
-        >
-          <ArrowLeft size={20} />
-        </CustomLink>
-        <div>
-          <h1 className="text-3xl font-bold">Actividades del Salon</h1>
-          <p className="mt-1">Actividades asignadas para este salon</p>
-        </div>
-      </div>
-
-      <ActivitiesList
-        activities={classroomActivities}
-        emptyMessage="No hay actividades asignadas para este salon"
-      />
-    </div>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <ActividadesSalon classroomId={classroomId} />
+    </HydrationBoundary>
   );
 }
