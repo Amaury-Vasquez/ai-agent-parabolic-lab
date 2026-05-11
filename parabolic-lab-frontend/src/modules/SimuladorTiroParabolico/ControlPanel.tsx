@@ -1,7 +1,7 @@
 "use client";
 
-import { Music, RotateCcw, VolumeX, Zap } from "lucide-react";
-import { Badge, Button } from "amvasdev-ui";
+import { Button } from "amvasdev-ui";
+import { Music, RotateCcw, Trash2, VolumeX, Zap } from "lucide-react";
 import type { ScoreState, SimSettings } from "./types";
 import { Scenario } from "@/models/scenario";
 
@@ -11,6 +11,7 @@ interface ControlPanelProps {
   onSettingsChange: (next: SimSettings) => void;
   onLaunch: () => void;
   onReset: () => void;
+  onResetScore: () => void;
   score: ScoreState;
   musicOn: boolean;
   onToggleMusic: () => void;
@@ -25,6 +26,7 @@ interface ControlPanelProps {
     cannonXMin: number;
     cannonXMax: number;
   };
+  intentosRestantes: number | null;
 }
 
 interface SliderProps {
@@ -79,16 +81,17 @@ const Slider = ({
 );
 
 const ControlPanel = ({
-  scenario,
   settings,
   onSettingsChange,
   onLaunch,
   onReset,
+  onResetScore,
   score,
   musicOn,
   onToggleMusic,
   canFire,
   ranges,
+  intentosRestantes,
 }: ControlPanelProps) => {
   const accuracy =
     score.shots === 0 ? 0 : Math.round((score.hits / score.shots) * 100);
@@ -98,14 +101,16 @@ const ControlPanel = ({
 
   return (
     <div className="bg-base-200 rounded-lg p-4 md:p-5 flex flex-col gap-4">
-      <div>
-        <h3 className="text-xl font-bold mb-2">Controles</h3>
-        {scenario ? (
-          <div className="flex gap-2 flex-wrap">
-            <Badge variant="info">{scenario.tipoescenario}</Badge>
-            <Badge variant="warning">{scenario.niveldificultad}</Badge>
-          </div>
-        ) : null}
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold">Controles</h3>
+        <button
+          className="btn btn-xs btn-ghost gap-1"
+          onClick={onResetScore}
+          type="button"
+        >
+          <Trash2 className="w-3 h-3" />
+          Puntaje
+        </button>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
@@ -182,7 +187,9 @@ const ControlPanel = ({
           disabled={!canFire}
         >
           <Zap className="w-5 h-5" />
-          Lanzar
+          {intentosRestantes !== null
+            ? `Lanzar (${intentosRestantes} restantes)`
+            : "Lanzar"}
         </Button>
         <div className="grid grid-cols-2 gap-2">
           <Button
@@ -209,13 +216,6 @@ const ControlPanel = ({
           </Button>
         </div>
       </div>
-
-      {scenario?.objetivosaprendizaje ? (
-        <div className="bg-info/10 rounded-lg p-3 border-l-4 border-info">
-          <h4 className="text-xs font-bold mb-1">Objetivos</h4>
-          <p className="text-xs opacity-80">{scenario.objetivosaprendizaje}</p>
-        </div>
-      ) : null}
     </div>
   );
 };

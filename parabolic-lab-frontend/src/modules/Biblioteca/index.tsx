@@ -1,6 +1,6 @@
 "use client";
 import { Button, Modal } from "amvasdev-ui";
-import { BookOpen, Pencil, Plus, Share2, Trash2 } from "lucide-react";
+import { BookOpen, ClipboardList, Pencil, Plus, Share2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { Scenario } from "@/models/scenario";
@@ -92,15 +92,17 @@ const Biblioteca = () => {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-start mb-8">
+    <div className="p-4 md:p-8">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Biblioteca de Escenarios</h1>
-          <p className="mt-1 opacity-70">
+          <h1 className="text-2xl md:text-3xl font-bold">
+            Biblioteca de escenarios
+          </h1>
+          <p className="mt-1 text-sm md:text-base opacity-70">
             Gestiona todos tus escenarios de tiro parabólico
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
           <select
             className="select select-bordered select-sm"
             value={sortBy}
@@ -116,7 +118,7 @@ const Biblioteca = () => {
             onClick={() => router.push("/docente/biblioteca/nuevo")}
           >
             <Plus size={16} />
-            Crear Escenario
+            Crear escenario
           </Button>
         </div>
       </div>
@@ -164,11 +166,11 @@ const Biblioteca = () => {
                 </span>
               </div>
 
-              <div className="flex gap-2 mt-auto pt-2">
+              <div className="flex flex-wrap gap-2 mt-auto pt-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 min-w-[80px]"
                   onClick={() =>
                     router.push(
                       `/docente/salon/${escenario.idsalon}/escenarios/${escenario.idescenario}/editar`
@@ -181,7 +183,20 @@ const Biblioteca = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 min-w-[80px]"
+                  onClick={() =>
+                    router.push(
+                      `/docente/salon/${escenario.idsalon}/escenarios/${escenario.idescenario}/respuestas`
+                    )
+                  }
+                >
+                  <ClipboardList size={14} />
+                  Respuestas
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex-1 min-w-[80px]"
                   onClick={() => {
                     setEscenarioSeleccionado(escenario);
                     setIsAsignarModalOpen(true);

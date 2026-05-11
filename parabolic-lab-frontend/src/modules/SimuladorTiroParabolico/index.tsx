@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ControlPanel from "./ControlPanel";
 import GameCanvas from "./GameCanvas";
+import ProblemPanel from "./ProblemPanel";
+import ResolucionPanel from "./ResolucionPanel";
 import {
   isMusicPlaying,
   startMusic,
@@ -12,10 +14,17 @@ import {
 import type { ScoreState, SimSettings } from "./types";
 import { PHYSICS_DEFAULTS } from "@/constants/physicsDefaults";
 import { Scenario } from "@/models/scenario";
+import type { Disparo, ResolucionAlumno } from "@/types/datosInteraccion";
 import type { PhysicsConfig } from "@/types/physicsConfig";
 
 interface SimuladorTiroParabolicoProps {
   scenario?: Scenario;
+  resolucion?: ResolucionAlumno;
+  onResolucionChange?: (next: ResolucionAlumno) => void;
+  onDisparo?: (disparo: Disparo) => void;
+  onScoreChange?: (score: ScoreState) => void;
+  onTiempoAgotado?: () => void;
+  startTime?: number;
 }
 
 const INITIAL_SCORE: ScoreState = {
@@ -92,7 +101,15 @@ function resolveConfig(scenario?: Scenario): ResolvedConfig {
   };
 }
 
-const SimuladorTiroParabolico = ({ scenario }: SimuladorTiroParabolicoProps) => {
+const SimuladorTiroParabolico = ({
+  scenario,
+  resolucion,
+  onResolucionChange,
+  onDisparo,
+  onScoreChange,
+  onTiempoAgotado,
+  startTime,
+}: SimuladorTiroParabolicoProps) => {
   const config = useMemo(() => resolveConfig(scenario), [scenario]);
   const [settings, setSettings] = useState<SimSettings>(config.initial);
   const [score, setScore] = useState<ScoreState>(INITIAL_SCORE);
@@ -101,6 +118,20 @@ const SimuladorTiroParabolico = ({ scenario }: SimuladorTiroParabolicoProps) => 
   const [resetSignal, setResetSignal] = useState(0);
   const [canFire, setCanFire] = useState(true);
   const lastResultRef = useRef<{ hit: boolean; points: number } | null>(null);
+  const onDisparoRef = useRef(onDisparo);
+  const onScoreChangeRef = useRef(onScoreChange);
+  const settingsAtLaunchRef = useRef<SimSettings>(settings);
+
+  const intentos = scenario?.intentospermitidos ?? null;
+  const sinIntentos = intentos !== null && score.shots >= intentos;
+  const internalStartTime = useRef<number>(startTime ?? Date.now());
+
+  useEffect(() => {
+    onDisparoRef.current = onDisparo;
+  }, [onDisparo]);
+  useEffect(() => {
+    onScoreChangeRef.current = onScoreChange;
+  }, [onScoreChange]);
 
   useEffect(() => {
     setSettings(config.initial);
@@ -113,9 +144,14 @@ const SimuladorTiroParabolico = ({ scenario }: SimuladorTiroParabolicoProps) => 
     []
   );
 
+  useEffect(() => {
+    onScoreChangeRef.current?.(score);
+  }, [score]);
+
   const handleLaunch = () => {
-    if (!canFire) return;
+    if (!canFire || sinIntentos) return;
     unlockAudio();
+    settingsAtLaunchRef.current = settings;
     setCanFire(false);
     setFireSignal((n) => n + 1);
   };
@@ -138,24 +174,42 @@ const SimuladorTiroParabolico = ({ scenario }: SimuladorTiroParabolicoProps) => 
   }) => {
     if (lastResultRef.current === result) return;
     lastResultRef.current = result;
+
+    const fired = settingsAtLaunchRef.current;
     setScore((s) => {
-      const shots = s.shots + 1;
+      const shotsNew = s.shots + 1;
+      let next: ScoreState;
       if (result.hit) {
         const streak = s.streak + 1;
         const bonus = streak >= 3 ? 25 : 0;
-        return {
-          shots,
+        next = {
+          shots: shotsNew,
           hits: s.hits + 1,
           streak,
           bestStreak: Math.max(s.bestStreak, streak),
           points: s.points + result.points + bonus,
         };
+      } else {
+        next = {
+          ...s,
+          shots: shotsNew,
+          streak: 0,
+        };
       }
-      return {
-        ...s,
-        shots,
-        streak: 0,
-      };
+
+      onDisparoRef.current?.({
+        n: shotsNew,
+        angle: fired.angle,
+        velocity: fired.velocity,
+        cannonHeight: fired.cannonHeight,
+        cannonX: fired.cannonX,
+        hit: result.hit,
+        distance: result.distance,
+        points: result.hit ? result.points : 0,
+        timestamp: new Date().toISOString(),
+      });
+
+      return next;
     });
     window.setTimeout(() => setCanFire(true), 950);
   };
@@ -196,27 +250,17 @@ const SimuladorTiroParabolico = ({ scenario }: SimuladorTiroParabolicoProps) => 
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="bg-base-200 rounded-lg p-4 flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-2xl font-bold truncate">
-            {scenario?.nombre ?? "Simulador de Tiro Parabólico"}
-          </h2>
-          <p className="text-sm opacity-70 mt-1">
-            {scenario?.descripcion ??
-              "Arrastra el cañón como una resortera o ajusta los controles para impactar el blanco."}
-          </p>
-        </div>
-        <button
-          className="btn btn-sm btn-ghost"
-          onClick={handleResetScore}
-          type="button"
-        >
-          Reiniciar puntaje
-        </button>
-      </div>
+      {scenario ? (
+        <ProblemPanel
+          scenario={scenario}
+          intentosUsados={score.shots}
+          startTime={startTime ?? internalStartTime.current}
+          onTiempoAgotado={onTiempoAgotado}
+        />
+      ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 flex flex-col gap-4">
           <GameCanvas
             settings={settings}
             onSettingsChange={handleSettingsChange}
@@ -224,6 +268,14 @@ const SimuladorTiroParabolico = ({ scenario }: SimuladorTiroParabolicoProps) => 
             fireSignal={fireSignal}
             resetSignal={resetSignal}
           />
+          {sinIntentos ? (
+            <div className="alert alert-warning">
+              <span>
+                Has usado tus {intentos} intentos. Revisa tu solución y termina
+                la actividad cuando estés listo.
+              </span>
+            </div>
+          ) : null}
         </div>
         <div className="lg:col-span-1">
           <ControlPanel
@@ -232,14 +284,25 @@ const SimuladorTiroParabolico = ({ scenario }: SimuladorTiroParabolicoProps) => 
             onSettingsChange={handleSettingsChange}
             onLaunch={handleLaunch}
             onReset={handleReset}
+            onResetScore={handleResetScore}
             score={score}
             musicOn={musicOn}
             onToggleMusic={handleToggleMusic}
-            canFire={canFire}
+            canFire={canFire && !sinIntentos}
             ranges={config.ranges}
+            intentosRestantes={
+              intentos !== null ? Math.max(0, intentos - score.shots) : null
+            }
           />
         </div>
       </div>
+
+      {resolucion && onResolucionChange ? (
+        <ResolucionPanel
+          resolucion={resolucion}
+          onChange={onResolucionChange}
+        />
+      ) : null}
     </div>
   );
 };

@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_current_user, get_db
+from app.models.alumno_en_salon import AlumnoEnSalon
 from app.models.escenario import Escenario
 from app.models.salon import Salon
 from app.models.usuario import Usuario
@@ -39,18 +40,40 @@ async def mis_escenarios(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    """Devuelve todos los escenarios de los salones del docente actual."""
-    _require_docente(current_user)
+    """Devuelve los escenarios visibles para el usuario actual.
 
-    result = await db.execute(
-        select(Escenario)
-        .join(Salon, Salon.idsalon == Escenario.idsalon)
-        .where(Salon.iddocente == current_user.docente.iddocente)
-        .where(Escenario.activo.is_(True))
-        .where(Escenario.idescenario_origen.is_(None))
-        .order_by(Escenario.fechacreacion.desc())
-    )
-    return result.scalars().all()
+    - Docente: escenarios originales (no copias) de sus salones
+    - Alumno: escenarios de los salones donde está inscrito
+    """
+    if current_user.tipousuario == "docente":
+        if not current_user.docente:
+            return []
+        query = (
+            select(Escenario)
+            .join(Salon, Salon.idsalon == Escenario.idsalon)
+            .where(Salon.iddocente == current_user.docente.iddocente)
+            .where(Escenario.activo.is_(True))
+            .where(Escenario.idescenario_origen.is_(None))
+            .order_by(Escenario.fechacreacion.desc())
+        )
+    elif current_user.tipousuario == "alumno":
+        if not current_user.alumno:
+            return []
+        query = (
+            select(Escenario)
+            .join(Salon, Salon.idsalon == Escenario.idsalon)
+            .join(AlumnoEnSalon, AlumnoEnSalon.idsalon == Salon.idsalon)
+            .where(AlumnoEnSalon.idalumno == current_user.alumno.idalumno)
+            .where(AlumnoEnSalon.activo.is_(True))
+            .where(Salon.activo.is_(True))
+            .where(Escenario.activo.is_(True))
+            .order_by(Escenario.fechacreacion.desc())
+        )
+    else:
+        return []
+
+    result = await db.execute(query)
+    return result.scalars().unique().all()
 
 
 @router.get("/", response_model=list[EscenarioRead])

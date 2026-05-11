@@ -1,3 +1,5 @@
+import { Scenario } from "@/models/scenario";
+
 export interface Activity {
   idactividad: string;
   idsalon: string;
@@ -12,4 +14,8 @@ export interface Activity {
   puntuaciontotal?: number;
   tipoactividad: string;
   activa?: boolean;
+}
+
+export interface ActivityWithScenarios extends Activity {
+  escenarios: Scenario[];
 }

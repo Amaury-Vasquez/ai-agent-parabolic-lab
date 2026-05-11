@@ -1,5 +1,5 @@
 import ActivityCard from "./ActivityCard";
-import { ActivityWithScenarios } from "@/constants/activities";
+import { ActivityWithScenarios } from "@/models/activity";
 
 interface ActivitiesListProps {
   activities: ActivityWithScenarios[];

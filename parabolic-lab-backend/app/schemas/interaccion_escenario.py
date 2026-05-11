@@ -33,7 +33,7 @@ class ProgresoAlumnoRead(BaseModel):
 
 class InteraccionEscenarioCreate(BaseModel):
     idescenario: UUID
-    idalumno: UUID
+    idalumno: UUID | None = None
 
 
 class InteraccionEscenarioUpdate(BaseModel):

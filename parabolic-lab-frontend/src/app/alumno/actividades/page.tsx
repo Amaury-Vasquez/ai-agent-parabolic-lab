@@ -1,18 +1,31 @@
-"use client";
-import ActivitiesList from "@/components/ActivitiesList";
-import { MOCK_ACTIVITIES } from "@/constants/activities";
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from "@tanstack/react-query";
+import { cookies } from "next/headers";
+import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import {
+  fetchMisActividades,
+  MIS_ACTIVIDADES_QUERY_KEY,
+} from "@/fetchers/actividades";
+import Actividades from "@/modules/Actividades";
 
-export default function ActividadesPage() {
+export default async function ActividadesPage() {
+  const queryClient = new QueryClient();
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
+
+  if (token) {
+    await queryClient.prefetchQuery({
+      queryKey: MIS_ACTIVIDADES_QUERY_KEY,
+      queryFn: () => fetchMisActividades(token),
+    });
+  }
+
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Mis Actividades</h1>
-        <p className="mt-1">
-          Todas las actividades asignadas en tus salones
-        </p>
-      </div>
-
-      <ActivitiesList activities={MOCK_ACTIVITIES} />
-    </div>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <Actividades />
+    </HydrationBoundary>
   );
 }

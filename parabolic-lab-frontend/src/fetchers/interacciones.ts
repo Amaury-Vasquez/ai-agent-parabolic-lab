@@ -18,7 +18,7 @@ export async function fetchInteraccion(
 
 export async function createInteraccion(
   token: string,
-  data: { idescenario: string; idalumno: string }
+  data: { idescenario: string; idalumno?: string }
 ): Promise<InteraccionEscenario> {
   return post<InteraccionEscenario>("/interacciones-escenario/", data, {
     token,
@@ -34,11 +34,12 @@ export async function updateInteraccion(
     puntuacion?: number;
     completado?: boolean;
     datosinteraccion?: Record<string, unknown>;
-  }
+  },
+  options?: { keepalive?: boolean }
 ): Promise<InteraccionEscenario> {
   return patch<InteraccionEscenario>(
     `/interacciones-escenario/${idinteraccion}`,
     data,
-    { token }
+    { token, keepalive: options?.keepalive }
   );
 }

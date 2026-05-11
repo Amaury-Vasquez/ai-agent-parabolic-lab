@@ -60,7 +60,7 @@ const SidebarLayout = ({ children, panelType }: SidebarLayoutProps) => {
       {/* Main Content Area */}
       <div
         className={clsx(
-          "flex-1 bg-gradient-to-br from-base-100 to-base-200 ml-14 transition-[margin-left] ease-out",
+          "flex-1 min-w-0 bg-gradient-to-br from-base-100 to-base-200 ml-14 transition-[margin-left] ease-out",
           {
             "lg:ml-64": !isShrinked && !isMobileOrTablet,
           }

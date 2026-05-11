@@ -5,6 +5,7 @@ const AUTH_HEADER = "x-stack-access-token";
 export interface ApiOptions {
   token?: string;
   headers?: HeadersInit;
+  keepalive?: boolean;
 }
 
 function buildUrl(endpoint: string): string {
@@ -36,10 +37,11 @@ async function readErrorMessage(response: Response): Promise<string> {
 async function request<T>(
   endpoint: string,
   fetchOptions: RequestInit = {},
-  { token, headers }: ApiOptions = {},
+  { token, headers, keepalive }: ApiOptions = {},
 ): Promise<T> {
   const response = await fetch(buildUrl(endpoint), {
     ...fetchOptions,
+    keepalive,
     headers: {
       "Content-Type": "application/json",
       ...authHeaders(token, headers),

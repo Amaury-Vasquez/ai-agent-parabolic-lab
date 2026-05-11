@@ -1,19 +1,16 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
+import { fetchMisActividades, MIS_ACTIVIDADES_QUERY_KEY } from "@/fetchers/actividades";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-import {
-  fetchProgresoAlumno,
-  PROGRESO_ALUMNO_QUERY_KEY,
-} from "@/fetchers/interaccionesAlumno";
 
-export function useProgresoAlumno() {
+export function useMisActividades() {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);
   const token = cookies[ACCESS_TOKEN_COOKIE];
 
   return useQuery({
-    queryKey: PROGRESO_ALUMNO_QUERY_KEY,
-    queryFn: () => fetchProgresoAlumno(token),
+    queryKey: MIS_ACTIVIDADES_QUERY_KEY,
+    queryFn: () => fetchMisActividades(token),
     enabled: !!token,
   });
 }

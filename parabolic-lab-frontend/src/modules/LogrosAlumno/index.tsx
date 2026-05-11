@@ -12,7 +12,8 @@ import {
   Target,
   Trophy,
 } from "lucide-react";
-import { ProgresoAlumnoData, useProgresoAlumno } from "@/queries/useProgresoAlumno";
+import { ProgresoAlumnoData } from "@/fetchers/interaccionesAlumno";
+import { useProgresoAlumno } from "@/queries/useProgresoAlumno";
 
 interface LogroDefinicion {
   id: string;

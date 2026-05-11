@@ -48,7 +48,7 @@ const ScenarioAlumnoCard = ({ scenario }: ScenarioAlumnoCardProps) => (
     </div>
     <div className="px-6 pb-6">
       <CustomLink
-        href={`/alumno/actividad/simulador/${scenario.idescenario}`}
+        href={`/alumno/escenario/${scenario.idescenario}`}
         variant="primary"
         className="w-full"
       >
