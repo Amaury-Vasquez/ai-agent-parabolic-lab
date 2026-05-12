@@ -1,6 +1,7 @@
 "use client";
 import { Button, Input } from "amvasdev-ui";
-import { Edit2 } from "lucide-react";
+import { ArrowLeft, Edit2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type {
   Institucion,
@@ -67,6 +68,7 @@ const buildInstitutionForm = (
 });
 
 const PerfilDocente = () => {
+  const router = useRouter();
   const { data: user, isLoading: isLoadingUser } = useMe();
   const { data: docente, isLoading: isLoadingDocente } = useDocente();
   const { data: institucion } = useInstitucion(user?.idinstitucion);
@@ -204,7 +206,16 @@ const PerfilDocente = () => {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-8">Mi Perfil</h1>
+      <div className="flex items-center gap-3 mb-8">
+        <button
+          onClick={() => router.back()}
+          className="btn btn-ghost btn-square btn-sm"
+          title="Regresar"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <h1 className="text-3xl font-bold">Mi Perfil</h1>
+      </div>
 
       {saveMessage ? (
         <div

@@ -1,6 +1,6 @@
 "use client";
 import { Button, Modal } from "amvasdev-ui";
-import { BookOpen, ClipboardList, Pencil, Plus, Share2, Trash2 } from "lucide-react";
+import { ArrowLeft, BookOpen, ClipboardList, Pencil, Plus, Share2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { Scenario } from "@/models/scenario";
@@ -95,9 +95,18 @@ const Biblioteca = () => {
     <div className="p-4 md:p-8">
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">
-            Biblioteca de escenarios
-          </h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="btn btn-ghost btn-square btn-sm"
+              title="Regresar"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-2xl md:text-3xl font-bold">
+              Biblioteca de escenarios
+            </h1>
+          </div>
           <p className="mt-1 text-sm md:text-base opacity-70">
             Gestiona todos tus escenarios de tiro parabólico
           </p>

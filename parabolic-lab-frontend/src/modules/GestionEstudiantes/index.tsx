@@ -1,6 +1,6 @@
 "use client";
 import { Button, Modal } from "amvasdev-ui";
-import { Eye, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Eye, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { EstudianteEnSalon } from "@/models/estudiante";
@@ -73,7 +73,16 @@ const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
     <div className="p-8">
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Gestión de Estudiantes</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <button
+              onClick={() => router.back()}
+              className="btn btn-ghost btn-square btn-sm"
+              title="Regresar"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-3xl font-bold">Gestión de Estudiantes</h1>
+          </div>
           <p className="opacity-60">
             Total: {total} estudiante{total !== 1 ? "s" : ""}
           </p>
@@ -166,7 +175,7 @@ const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
                         size="sm"
                         onClick={() =>
                           router.push(
-                            `/docente/salon/${salonId}/estudiantes/${estudiante.idalumno}`,
+                            `/docente/salon/${salonId}/alumno/${estudiante.idalumno}`,
                           )
                         }
                         title="Ver detalle del estudiante"

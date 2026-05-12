@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "amvasdev-ui";
-import { Eye } from "lucide-react";
+import { ArrowLeft, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type {
@@ -35,7 +35,7 @@ const GestionEstudiantesGlobal = () => {
 
   const handleVerExpediente = (estudiante: EstudianteGlobal) => {
     router.push(
-      `/docente/salon/${estudiante.idsalon}/estudiantes/${estudiante.idalumno}`
+      `/docente/salon/${estudiante.idsalon}/alumno/${estudiante.idalumno}`
     );
   };
 
@@ -50,9 +50,18 @@ const GestionEstudiantesGlobal = () => {
     <div className="p-8">
       {/* Header Section */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">
-          Gestión Global de Estudiantes
-        </h1>
+        <div className="flex items-center gap-3 mb-2">
+          <button
+            onClick={() => router.back()}
+            className="btn btn-ghost btn-square btn-sm"
+            title="Regresar"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="text-3xl font-bold">
+            Gestión Global de Estudiantes
+          </h1>
+        </div>
         <p className="opacity-60">
           Total: {estudiantes?.length || 0} estudiante
           {estudiantes && estudiantes.length !== 1 ? "s" : ""}
@@ -189,7 +198,7 @@ const GestionEstudiantesGlobal = () => {
                         max="100"
                       ></progress>
                       <span className="text-sm min-w-fit">
-                        {(estudiante.promedio_puntuacion ?? 0).toFixed(1)}%
+                        {Number(estudiante.promedio_puntuacion ?? 0).toFixed(1)}%
                       </span>
                     </div>
                   </td>

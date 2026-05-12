@@ -1,6 +1,7 @@
 "use client";
 import { Badge, Button } from "amvasdev-ui";
-import { Settings, Users } from "lucide-react";
+import { ArrowLeft, Settings, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { UserType } from "@/models/users";
 
 interface HeaderSectionProps {
@@ -18,12 +19,24 @@ const HeaderSection = ({
   nombre,
   onSettingsClick,
   onEstudiantesClick,
-}: HeaderSectionProps) => (
+}: HeaderSectionProps) => {
+  const router = useRouter();
+
+  return (
   <div className="flex w-full items-center gap-2 justify-between py-4">
     <div className="flex-1 flex flex-col gap-2">
-      <h1 className="text-2xl md:text-3xl font-bold text-ellipsis">
-        {nombre || classroomId}
-      </h1>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => router.back()}
+          className="btn btn-ghost btn-square btn-sm"
+          title="Regresar"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <h1 className="text-2xl md:text-3xl font-bold text-ellipsis">
+          {nombre || classroomId}
+        </h1>
+      </div>
       <p className="mt-1 text-ellipsis">Salón #{classroomId}</p>
     </div>
     <div className="flex items-center gap-2">
@@ -52,6 +65,7 @@ const HeaderSection = ({
       </Badge>
     </div>
   </div>
-);
+  );
+};
 
 export default HeaderSection;
