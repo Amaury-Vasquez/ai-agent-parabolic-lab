@@ -193,12 +193,12 @@ const GestionEstudiantesGlobal = () => {
                         className="progress progress-primary h-2 w-28"
                         value={calcularPorcentajeProgreso(
                           estudiante.escenarios_completados,
-                          estudiante.total_intentos
+                          estudiante.total_interacciones
                         )}
                         max="100"
                       ></progress>
                       <span className="text-sm min-w-fit">
-                        {Number(estudiante.promedio_puntuacion ?? 0).toFixed(1)}%
+                        {estudiante.escenarios_completados ?? 0} / {estudiante.total_interacciones ?? "—"}
                       </span>
                     </div>
                   </td>

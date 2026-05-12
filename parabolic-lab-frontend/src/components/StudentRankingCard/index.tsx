@@ -41,19 +41,19 @@ const getMainMetric = (student: Student, rankingType: string) => {
       return {
         icon: <Target size={16} />,
         label: "Puntaje Total",
-        value: student.totalScore,
+        value: Number(student.totalScore ?? 0).toFixed(1),
       };
     case "maxScore":
       return {
         icon: <Award size={16} />,
         label: "Puntaje Máximo",
-        value: student.maxScore,
+        value: Number(student.maxScore ?? 0).toFixed(1),
       };
     case "averageTime":
       return {
         icon: <Clock size={16} />,
         label: "Tiempo Promedio",
-        value: `${student.averageTime} min`,
+        value: `${Number(student.averageTime ?? 0).toFixed(1)} min`,
       };
     case "totalAttempts":
       return {
@@ -80,7 +80,7 @@ const getMainMetric = (student: Student, rankingType: string) => {
       return {
         icon: <Target size={16} />,
         label: "Puntaje",
-        value: student.totalScore,
+        value: Number(student.totalScore ?? 0).toFixed(1),
       };
   }
 };
@@ -120,11 +120,11 @@ const StudentRankingCard = ({
           </span>
           <span className="flex items-center gap-1">
             <Target size={14} />
-            {student.totalScore} pts
+            {Number(student.totalScore ?? 0).toFixed(1)} pts
           </span>
           <span className="flex items-center gap-1">
             <Clock size={14} />
-            {student.averageTime} min
+            {Number(student.averageTime ?? 0).toFixed(1)} min
           </span>
         </div>
       </div>
