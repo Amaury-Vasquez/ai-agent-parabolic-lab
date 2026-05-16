@@ -5,10 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-import {
-  fetchMisActividades,
-  MIS_ACTIVIDADES_QUERY_KEY,
-} from "@/fetchers/actividades";
+import { fetchMySalones, MY_SALONES_QUERY_KEY } from "@/fetchers/salones";
 import Actividades from "@/modules/Actividades";
 
 export default async function ActividadesPage() {
@@ -18,8 +15,8 @@ export default async function ActividadesPage() {
 
   if (token) {
     await queryClient.prefetchQuery({
-      queryKey: MIS_ACTIVIDADES_QUERY_KEY,
-      queryFn: () => fetchMisActividades(token),
+      queryKey: MY_SALONES_QUERY_KEY,
+      queryFn: () => fetchMySalones(token),
     });
   }
 

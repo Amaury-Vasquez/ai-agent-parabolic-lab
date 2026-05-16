@@ -1,6 +1,7 @@
 "use client";
 import { Badge } from "amvasdev-ui";
 import { InteraccionEscenario } from "@/models/interaccion_escenario";
+import { useMisEscenarios } from "@/queries/useMisEscenarios";
 import { useProgresoAlumno } from "@/queries/useProgresoAlumno";
 
 const formatDate = (date: Date | string | null | undefined): string => {
@@ -36,13 +37,12 @@ const StatCard = ({ label, value }: StatCardProps) => (
 
 interface InteraccionRowProps {
   interaccion: InteraccionEscenario;
+  nombreEscenario: string;
 }
 
-const InteraccionRow = ({ interaccion }: InteraccionRowProps) => (
+const InteraccionRow = ({ interaccion, nombreEscenario }: InteraccionRowProps) => (
   <tr>
-    <td className="font-mono text-xs opacity-60">
-      {interaccion.idescenario.slice(0, 8)}…
-    </td>
+    <td>{nombreEscenario}</td>
     <td>{formatDate(interaccion.fechainicio)}</td>
     <td>{formatScore(interaccion.puntuacion)}</td>
     <td>
@@ -61,6 +61,11 @@ const InteraccionRow = ({ interaccion }: InteraccionRowProps) => (
 
 const ProgresoAlumno = () => {
   const { data: progreso, isLoading } = useProgresoAlumno();
+  const { data: escenarios } = useMisEscenarios();
+
+  const nombrePorId = new Map(
+    (escenarios ?? []).map((e) => [e.idescenario, e.nombre])
+  );
 
   if (isLoading) {
     return (
@@ -114,6 +119,7 @@ const ProgresoAlumno = () => {
                     <InteraccionRow
                       key={interaccion.idinteraccion}
                       interaccion={interaccion}
+                      nombreEscenario={nombrePorId.get(interaccion.idescenario) ?? interaccion.idescenario.slice(0, 8) + "…"}
                     />
                   ))}
                 </tbody>

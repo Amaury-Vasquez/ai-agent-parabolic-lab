@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import { fetchMisEscenarios, MIS_ESCENARIOS_QUERY_KEY } from "@/fetchers/escenarios";
 import {
   fetchProgresoAlumno,
   PROGRESO_ALUMNO_QUERY_KEY,
@@ -17,10 +18,16 @@ export default async function ProgresoAlumnoPage() {
   const token = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
 
   if (token) {
-    await queryClient.prefetchQuery({
-      queryKey: PROGRESO_ALUMNO_QUERY_KEY,
-      queryFn: () => fetchProgresoAlumno(token),
-    });
+    await Promise.all([
+      queryClient.prefetchQuery({
+        queryKey: PROGRESO_ALUMNO_QUERY_KEY,
+        queryFn: () => fetchProgresoAlumno(token),
+      }),
+      queryClient.prefetchQuery({
+        queryKey: MIS_ESCENARIOS_QUERY_KEY,
+        queryFn: () => fetchMisEscenarios(token),
+      }),
+    ]);
   }
 
   return (
