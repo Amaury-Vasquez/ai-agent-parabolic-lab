@@ -9,6 +9,7 @@ from app.dependencies import get_current_user, get_db
 from app.models.alumno import Alumno
 from app.models.alumno_en_salon import AlumnoEnSalon
 from app.models.docente import Docente
+from app.models.escenario import Escenario
 from app.models.interaccion_escenario import InteraccionEscenario
 from app.models.salon import Salon
 from app.models.usuario import Usuario
@@ -101,7 +102,13 @@ async def obtener_estudiantes_global(
         .join(AlumnoEnSalon, Alumno.idalumno == AlumnoEnSalon.idalumno)
         .join(Usuario, Alumno.idusuario == Usuario.idusuario)
         .join(Salon, AlumnoEnSalon.idsalon == Salon.idsalon)
-        .outerjoin(InteraccionEscenario, Alumno.idalumno == InteraccionEscenario.idalumno)
+        .outerjoin(
+            InteraccionEscenario,
+            (Alumno.idalumno == InteraccionEscenario.idalumno)
+            & (InteraccionEscenario.idescenario.in_(
+                select(Escenario.idescenario).where(Escenario.idsalon == Salon.idsalon)
+            )),
+        )
         .where(AlumnoEnSalon.idsalon.in_(idsalones))
         .where(AlumnoEnSalon.activo.is_(True))
         .where(Salon.activo.is_(True))

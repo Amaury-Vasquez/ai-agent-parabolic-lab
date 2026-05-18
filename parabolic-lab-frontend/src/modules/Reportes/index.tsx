@@ -1,7 +1,8 @@
 "use client";
 
 import { Button } from "amvasdev-ui";
-import { File, FileText } from "lucide-react";
+import { ArrowLeft, File, FileText } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useCookies } from "react-cookie";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
@@ -12,6 +13,7 @@ import { downloadReport } from "@/services/api";
 type ReportFormat = "csv" | "pdf";
 
 const Reportes = () => {
+  const router = useRouter();
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);
   const token = cookies[ACCESS_TOKEN_COOKIE];
   const { data: salones = [] } = useMySalones();
@@ -75,7 +77,16 @@ const Reportes = () => {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Reportes de Desempeño</h1>
+        <div className="flex items-center gap-3 mb-2">
+          <button
+            onClick={() => router.back()}
+            className="btn btn-ghost btn-square btn-sm"
+            title="Regresar"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="text-3xl font-bold">Reportes de Desempeño</h1>
+        </div>
         <p className="opacity-60">
           Descarga reportes consolidados y expedientes individuales de tus
           estudiantes
@@ -203,10 +214,10 @@ const Reportes = () => {
                               {estudiante.total_intentos}
                             </td>
                             <td className="text-center">
-                              {(estudiante.promedio_puntuacion ?? 0).toFixed(1)}
+                              {Number(estudiante.promedio_puntuacion ?? 0).toFixed(1)}
                             </td>
                             <td className="text-center">
-                              {(estudiante.mejor_puntuacion ?? 0).toFixed(1)}
+                              {Number(estudiante.mejor_puntuacion ?? 0).toFixed(1)}
                             </td>
                             <td className="text-center">
                               {estudiante.tiempo_total_minutos}m

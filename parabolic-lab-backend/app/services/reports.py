@@ -5,6 +5,7 @@ Incluye desempeño de estudiantes, parámetros físicos y estadísticas de éxit
 
 import csv
 import io
+import logging
 from datetime import datetime
 
 from reportlab.lib import colors
@@ -15,6 +16,8 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
+logger = logging.getLogger(__name__)
 
 from app.models.alumno import Alumno
 from app.models.alumno_en_salon import AlumnoEnSalon
@@ -37,38 +40,51 @@ class ReportService:
         - Desempeño en escenarios
         """
         # Obtener salón con estudiantes
-        result = await db.execute(select(Salon).where(Salon.idsalon == salon_id).options(selectinload(Salon.alumnos)))
+        result = await db.execute(
+            select(Salon)
+            .where(Salon.idsalon == salon_id)
+            .options(
+                selectinload(Salon.alumnos)
+                .selectinload(AlumnoEnSalon.alumno)
+                .selectinload(Alumno.usuario)
+            )
+        )
         salon = result.scalar_one_or_none()
         if not salon:
             raise ValueError(f"Salón {salon_id} no encontrado")
 
         # Crear buffer para CSV
         output = io.StringIO()
-        writer = csv.writer(output, encoding="utf-8")
+        writer = csv.writer(output)
 
         # Encabezado general
         writer.writerow(["REPORTE DE DESEMPEÑO - SALÓN"])
         writer.writerow([])
         writer.writerow(["Salón:", salon.nombresalon])
         writer.writerow(["Código de Acceso:", salon.codigoacceso])
-        writer.writerow(["Fecha Reporte:", datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+        writer.writerow(["Fecha Reporte:", datetime.now().strftime("%Y-%m-%d %H:%M")])
         writer.writerow([])
 
         # Encabezado de tabla de estudiantes
         writer.writerow(
             [
-                "Nombre Estudiante",
+                "Nombre",
+                "Apellido Paterno",
+                "Apellido Materno",
                 "Matrícula",
-                "Total Intentos",
+                "Salón",
+                "Intentos Totales",
                 "Escenarios Completados",
-                "Puntuación Promedio",
-                "Tiempo Promedio (seg)",
+                "Promedio Puntuación",
+                "Tiempo Total (min)",
                 "Tasa Éxito (%)",
             ]
         )
 
         # Procesar cada estudiante
         for alumno_en_salon in salon.alumnos:
+            if not alumno_en_salon.activo:
+                continue
             alumno = alumno_en_salon.alumno
             usuario = alumno.usuario
 
@@ -83,43 +99,40 @@ class ReportService:
             )
             interacciones = result.scalars().all()
 
-            # Calcular estadísticas
-            total_intentos = len(interacciones)
+            # Calcular estadísticas usando intentosrealizados reales
+            total_intentos = sum(int(i.intentosrealizados or 0) for i in interacciones)
             completadas = sum(1 for i in interacciones if i.completado)
+            num_interacciones = len(interacciones)
 
             if interacciones:
                 puntuacion_promedio = (
-                    sum(float(i.puntuacion) for i in interacciones if i.puntuacion) / len(interacciones)
-                    if total_intentos > 0
-                    else 0
+                    sum(float(i.puntuacion or 0) for i in interacciones) / num_interacciones
                 )
-
-                tiempo_promedio = (
-                    sum(int(i.tiempototal) for i in interacciones if i.tiempototal) / len(interacciones)
-                    if total_intentos > 0
-                    else 0
-                )
-
-                tasa_exito = (completadas / total_intentos * 100) if total_intentos > 0 else 0
+                tiempo_total_seg = sum(int(i.tiempototal or 0) for i in interacciones)
+                tasa_exito = (completadas / num_interacciones * 100) if num_interacciones > 0 else 0
             else:
                 puntuacion_promedio = 0
-                tiempo_promedio = 0
+                tiempo_total_seg = 0
                 tasa_exito = 0
 
             writer.writerow(
                 [
                     usuario.nombre or "Sin nombre",
+                    usuario.apellidopaterno or "",
+                    usuario.apellidomaterno or "",
                     alumno.matricula,
+                    salon.nombresalon,
                     total_intentos,
                     completadas,
                     round(puntuacion_promedio, 2),
-                    round(tiempo_promedio, 2),
+                    round(tiempo_total_seg / 60, 2),
                     round(tasa_exito, 2),
                 ]
             )
 
-        # Convertir a bytes
-        return output.getvalue().encode("utf-8")
+        # Convertir a bytes con BOM for Excel compatibility
+        bom = "\ufeff"
+        return (bom + output.getvalue()).encode("utf-8")
 
     @staticmethod
     async def generate_student_csv_report(db: AsyncSession, alumno_id: str, salon_id: str) -> bytes:
@@ -149,14 +162,18 @@ class ReportService:
 
         # Crear buffer
         output = io.StringIO()
-        writer = csv.writer(output, encoding="utf-8")
+        writer = csv.writer(output)
 
         # Encabezado
+        nombre_completo = " ".join(
+            filter(None, [usuario.nombre, usuario.apellidopaterno, usuario.apellidomaterno])
+        )
         writer.writerow(["EXPEDIENTE DE DESEMPEÑO - ESTUDIANTE"])
         writer.writerow([])
-        writer.writerow(["Nombre:", usuario.nombre or "Sin nombre"])
+        writer.writerow(["Nombre:", nombre_completo or "Sin nombre"])
         writer.writerow(["Matrícula:", alumno.matricula])
-        writer.writerow(["Fecha Reporte:", datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+        writer.writerow(["Email:", usuario.email or "N/A"])
+        writer.writerow(["Fecha Reporte:", datetime.now().strftime("%Y-%m-%d %H:%M")])
         writer.writerow([])
 
         if not interacciones:
@@ -196,11 +213,13 @@ class ReportService:
                         "Sí" if interaccion.completado else "No",
                         round(float(interaccion.puntuacion) if interaccion.puntuacion else 0, 2),
                         int(interaccion.tiempototal) if interaccion.tiempototal else 0,
-                        interaccion.fechafin.strftime("%Y-%m-%d %H:%M") if interaccion.fechafin else "En progreso",
+                        interaccion.fechafin.strftime("%Y-%m-%d %H:%M") if interaccion.fechafin else "Sin registro",
                     ]
                 )
 
-        return output.getvalue().encode("utf-8")
+        # BOM for Excel compatibility
+        bom = "\ufeff"
+        return (bom + output.getvalue()).encode("utf-8")
 
     @staticmethod
     async def generate_salon_pdf_report(db: AsyncSession, salon_id: str) -> bytes:
@@ -212,7 +231,11 @@ class ReportService:
         result = await db.execute(
             select(Salon)
             .where(Salon.idsalon == salon_id)
-            .options(selectinload(Salon.alumnos).selectinload(AlumnoEnSalon.alumno))
+            .options(
+                selectinload(Salon.alumnos)
+                .selectinload(AlumnoEnSalon.alumno)
+                .selectinload(Alumno.usuario)
+            )
         )
         salon = result.scalar_one_or_none()
         if not salon:
@@ -261,7 +284,7 @@ class ReportService:
             ["Salón:", salon.nombresalon],
             ["Código de Acceso:", salon.codigoacceso],
             ["Total Estudiantes:", len(salon.alumnos)],
-            ["Fecha Reporte:", datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+            ["Fecha Reporte:", datetime.now().strftime("%Y-%m-%d %H:%M")],
         ]
         salon_table = Table(salon_info, colWidths=[2 * inch, 4 * inch])
         salon_table.setStyle(
@@ -280,112 +303,200 @@ class ReportService:
         elements.append(salon_table)
         elements.append(Spacer(1, 0.3 * inch))
 
-        # Tabla de estudiantes
-        elements.append(Paragraph("Desempeño por Estudiante", heading_style))
-
-        table_data = [
-            [
-                "Estudiante",
-                "Matrícula",
-                "Intentos",
-                "Completados",
-                "Promedio",
-                "Tiempo Promedio",
-                "Tasa Éxito (%)",
-            ]
-        ]
-
-        has_data = False
-        for alumno_en_salon in salon.alumnos:
-            alumno = alumno_en_salon.alumno
-            usuario = alumno.usuario
-
-            # Obtener interacciones
-            result = await db.execute(
-                select(InteraccionEscenario).where(
-                    InteraccionEscenario.idalumno == alumno.idalumno,
-                    InteraccionEscenario.idescenario.in_(
-                        select(Escenario.idescenario).where(Escenario.idsalon == salon.idsalon)
-                    ),
-                )
-            )
-            interacciones = result.scalars().all()
-
-            total_intentos = len(interacciones)
-            completadas = sum(1 for i in interacciones if i.completado)
-
-            if interacciones:
-                has_data = True
-                promedio = (
-                    sum(float(i.puntuacion) for i in interacciones if i.puntuacion) / len(interacciones)
-                    if total_intentos > 0
-                    else 0
+        # --- Collect per-student data ---
+        student_rows = []  # list of dicts with computed stats
+        try:
+            for alumno_en_salon in salon.alumnos:
+                alumno = alumno_en_salon.alumno
+                usuario = alumno.usuario
+                nombre_completo = " ".join(
+                    filter(None, [usuario.nombre, usuario.apellidopaterno, usuario.apellidomaterno])
                 )
 
-                tiempo = (
-                    sum(int(i.tiempototal) for i in interacciones if i.tiempototal) / len(interacciones)
-                    if total_intentos > 0
-                    else 0
+                # Obtener interacciones
+                result = await db.execute(
+                    select(InteraccionEscenario).where(
+                        InteraccionEscenario.idalumno == alumno.idalumno,
+                        InteraccionEscenario.idescenario.in_(
+                            select(Escenario.idescenario).where(Escenario.idsalon == salon.idsalon)
+                        ),
+                    )
+                )
+                interacciones = result.scalars().all()
+
+                total_intentos = sum(int(i.intentosrealizados or 0) for i in interacciones)
+                completadas = sum(1 for i in interacciones if i.completado)
+                num_interacciones = len(interacciones)
+
+                if interacciones:
+                    promedio = (
+                        sum(float(i.puntuacion or 0) for i in interacciones) / num_interacciones
+                    )
+                    mejor = max((float(i.puntuacion or 0) for i in interacciones), default=0)
+                    tiempo_seg = sum(int(i.tiempototal or 0) for i in interacciones)
+                    tasa = (completadas / num_interacciones * 100) if num_interacciones > 0 else 0
+                else:
+                    promedio = 0
+                    mejor = 0
+                    tiempo_seg = 0
+                    tasa = 0
+
+                student_rows.append(
+                    {
+                        "nombre": nombre_completo or "Sin nombre",
+                        "matricula": alumno.matricula,
+                        "promedio": float(promedio),
+                        "mejor": float(mejor),
+                        "completados": int(completadas),
+                        "intentos": int(total_intentos),
+                        "tiempo_min": round(tiempo_seg / 60, 2),
+                        "tasa": round(float(tasa), 1),
+                        "num_interacciones": int(num_interacciones),
+                    }
                 )
 
-                tasa = (completadas / total_intentos * 100) if total_intentos > 0 else 0
+            # --- Resumen General de Desempeño ---
+            has_data = any(s["num_interacciones"] > 0 for s in student_rows)
+
+            if len(salon.alumnos) == 0:
+                elements.append(Paragraph("Sin datos registrados - El salón no tiene estudiantes.", styles["Normal"]))
+            elif not has_data:
+                elements.append(
+                    Paragraph(
+                        "No hay datos de interacción registrados aún para ningún estudiante.",
+                        styles["Normal"],
+                    )
+                )
             else:
-                promedio = 0
-                tiempo = 0
-                tasa = 0
+                elements.append(Paragraph("Resumen General de Desempeño", heading_style))
 
-            table_data.append(
-                [
-                    usuario.nombre or "Sin nombre",
-                    alumno.matricula,
-                    str(total_intentos),
-                    str(completadas),
-                    f"{promedio:.2f}",
-                    f"{tiempo:.0f}s",
-                    f"{tasa:.1f}%",
-                ]
-            )
-
-        if not has_data and len(salon.alumnos) > 0:
-            elements.append(
-                Paragraph("No hay datos de interacción registrados aún para ningún estudiante.", styles["Normal"])
-            )
-        elif len(salon.alumnos) == 0:
-            elements.append(Paragraph("Sin datos registrados - El salón no tiene estudiantes.", styles["Normal"]))
-        else:
-            # Crear tabla
-            table = Table(
-                table_data, colWidths=[1.8 * inch, 1 * inch, 0.8 * inch, 1 * inch, 0.8 * inch, 1 * inch, 1 * inch]
-            )
-            table.setStyle(
-                TableStyle(
+                resumen_data = [
                     [
-                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C5AA0")),
-                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                        ("FONTSIZE", (0, 0), (-1, -1), 9),
-                        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-                        ("GRID", (0, 0), (-1, -1), 1, colors.grey),
-                        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F0F5FB")]),
+                        "Estudiante",
+                        "Promedio",
+                        "Mejor Puntaje",
+                        "Completados",
+                        "Intentos",
+                        "Tiempo (min)",
+                        "Tasa de Éxito (%)",
                     ]
+                ]
+                for s in student_rows:
+                    resumen_data.append(
+                        [
+                            s["nombre"],
+                            f"{s['promedio']:.2f}",
+                            f"{s['mejor']:.2f}",
+                            str(s["completados"]),
+                            str(s["intentos"]),
+                            f"{s['tiempo_min']:.2f}",
+                            f"{s['tasa']:.1f}%",
+                        ]
+                    )
+
+                resumen_table = Table(
+                    resumen_data,
+                    colWidths=[
+                        1.8 * inch,
+                        0.8 * inch,
+                        0.9 * inch,
+                        0.9 * inch,
+                        0.8 * inch,
+                        0.9 * inch,
+                        1.0 * inch,
+                    ],
+                )
+                resumen_table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C5AA0")),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 9),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                            ("GRID", (0, 0), (-1, -1), 1, colors.grey),
+                            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F0F5FB")]),
+                        ]
+                    )
+                )
+                elements.append(resumen_table)
+                elements.append(Spacer(1, 0.3 * inch))
+
+                # --- Desglose por Estudiante (tabla detallada) ---
+                elements.append(Paragraph("Desempeño por Estudiante", heading_style))
+
+                detail_data = [
+                    [
+                        "Estudiante",
+                        "Matrícula",
+                        "Intentos",
+                        "Completados",
+                        "Promedio",
+                        "Tiempo",
+                        "Tasa Éxito (%)",
+                    ]
+                ]
+                for s in student_rows:
+                    tiempo_seg_total = int(s["tiempo_min"] * 60)
+                    detail_data.append(
+                        [
+                            s["nombre"],
+                            s["matricula"],
+                            str(s["intentos"]),
+                            str(s["completados"]),
+                            f"{s['promedio']:.2f}",
+                            f"{tiempo_seg_total // 60}m {tiempo_seg_total % 60}s",
+                            f"{s['tasa']:.1f}%",
+                        ]
+                    )
+
+                table = Table(
+                    detail_data,
+                    colWidths=[
+                        1.8 * inch,
+                        1 * inch,
+                        0.8 * inch,
+                        1 * inch,
+                        0.8 * inch,
+                        1 * inch,
+                        1 * inch,
+                    ],
+                )
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C5AA0")),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 9),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                            ("GRID", (0, 0), (-1, -1), 1, colors.grey),
+                            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F0F5FB")]),
+                        ]
+                    )
+                )
+                elements.append(table)
+
+            elements.append(Spacer(1, 0.2 * inch))
+
+            # Pie de página
+            elements.append(Spacer(1, 0.3 * inch))
+            elements.append(
+                Paragraph(
+                    f"<font size=8>Reporte generado automáticamente el "
+                    f"{datetime.now().strftime('%Y-%m-%d %H:%M')}</font>",
+                    styles["Normal"],
                 )
             )
-            elements.append(table)
-        elements.append(Spacer(1, 0.2 * inch))
 
-        # Pie de página
-        elements.append(Spacer(1, 0.3 * inch))
-        elements.append(
-            Paragraph(
-                f"<font size=8>Reporte generado automáticamente el "
-                f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</font>",
-                styles["Normal"],
-            )
-        )
+            # Construir PDF
+            doc.build(elements)
 
-        # Construir PDF
-        doc.build(elements)
+        except Exception:
+            logger.exception("Error generando PDF del salón %s", salon_id)
+            raise
 
         return pdf_buffer.getvalue()
 
@@ -447,11 +558,14 @@ class ReportService:
         elements.append(Spacer(1, 0.2 * inch))
 
         # Información del estudiante
+        nombre_completo = " ".join(
+            filter(None, [usuario.nombre, usuario.apellidopaterno, usuario.apellidomaterno])
+        )
         student_info = [
-            ["Nombre:", usuario.nombre or "Sin nombre"],
+            ["Nombre:", nombre_completo or "Sin nombre"],
             ["Matrícula:", alumno.matricula],
             ["Email:", usuario.email or "N/A"],
-            ["Fecha Reporte:", datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+            ["Fecha Reporte:", datetime.now().strftime("%Y-%m-%d %H:%M")],
         ]
         student_table = Table(student_info, colWidths=[2 * inch, 4 * inch])
         student_table.setStyle(
@@ -476,6 +590,55 @@ class ReportService:
                 )
             )
         else:
+            # --- Resumen General de Desempeño (upfront) ---
+            heading_style = ParagraphStyle(
+                "CustomHeading",
+                parent=styles["Heading2"],
+                fontSize=14,
+                textColor=colors.HexColor("#2C5AA0"),
+                spaceAfter=10,
+                spaceBefore=10,
+            )
+            elements.append(Paragraph("Resumen General de Desempeño", heading_style))
+
+            total_intentos_resumen = sum(int(i.intentosrealizados or 0) for i in interacciones)
+            completadas_resumen = sum(1 for i in interacciones if i.completado)
+            puntuacion_total_resumen = sum(float(i.puntuacion or 0) for i in interacciones)
+            num_interacciones = len(interacciones)
+            promedio_resumen = puntuacion_total_resumen / num_interacciones if num_interacciones > 0 else 0
+            mejor_resumen = max((float(i.puntuacion or 0) for i in interacciones), default=0)
+            tiempo_total_resumen = sum(int(i.tiempototal or 0) for i in interacciones)
+
+            tasa_exito_resumen = (
+                completadas_resumen / num_interacciones * 100 if num_interacciones > 0 else 0
+            )
+            resumen_data = [
+                ["Promedio de Puntuación:", f"{promedio_resumen:.1f}"],
+                ["Mejor Puntuación:", f"{mejor_resumen:.1f}"],
+                ["Escenarios Completados:", f"{completadas_resumen} / {num_interacciones}"],
+                ["Intentos Totales:", str(total_intentos_resumen)],
+                ["Tiempo Total:", f"{tiempo_total_resumen} seg ({tiempo_total_resumen // 60} min)"],
+                ["Tasa de Éxito:", f"{tasa_exito_resumen:.1f}%"],
+            ]
+            resumen_table = Table(resumen_data, colWidths=[2.5 * inch, 3.5 * inch])
+            resumen_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#E8F0F8")),
+                        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, -1), 10),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                        ("GRID", (0, 0), (-1, -1), 1, colors.grey),
+                    ]
+                )
+            )
+            elements.append(resumen_table)
+            elements.append(Spacer(1, 0.3 * inch))
+
+            # --- Detalle de Interacciones ---
+            elements.append(Paragraph("Detalle de Interacciones", heading_style))
+
             # Tabla de intentos detallada
             table_data = [
                 ["Escenario", "Nivel", "v₀ (m/s)", "θ (°)", "Intentos", "Completado", "Puntos", "Tiempo (s)", "Fecha"]
@@ -490,7 +653,7 @@ class ReportService:
 
                 table_data.append(
                     [
-                        escenario.nombre[:20],
+                        escenario.nombre[:30],
                         escenario.niveldificultad[:3],
                         v0,
                         angulo,
@@ -498,7 +661,7 @@ class ReportService:
                         "✓" if interaccion.completado else "✗",
                         f"{float(interaccion.puntuacion or 0):.1f}",
                         f"{int(interaccion.tiempototal or 0)}",
-                        interaccion.fechafin.strftime("%m/%d") if interaccion.fechafin else "---",
+                        interaccion.fechafin.strftime("%Y-%m-%d %H:%M") if interaccion.fechafin else "Sin registro",
                     ]
                 )
 
@@ -534,42 +697,15 @@ class ReportService:
             )
             elements.append(table)
 
-            # Estadísticas finales
-            elements.append(Spacer(1, 0.2 * inch))
-
-            total_intentos = len(interacciones)
-            completadas = sum(1 for i in interacciones if i.completado)
-            puntuacion_total = sum(float(i.puntuacion or 0) for i in interacciones)
-            tiempo_total = sum(int(i.tiempototal or 0) for i in interacciones)
-
-            stats_info = [
-                ["Total Escenarios:", str(total_intentos)],
-                ["Completados:", str(completadas)],
-                ["Tasa de Éxito:", f"{(completadas / total_intentos * 100 if total_intentos > 0 else 0):.1f}%"],
-                ["Puntuación Total:", f"{puntuacion_total:.1f}"],
-                ["Tiempo Total Invertido:", f"{tiempo_total} segundos ({tiempo_total // 60} min)"],
-            ]
-            stats_table = Table(stats_info, colWidths=[2.5 * inch, 3.5 * inch])
-            stats_table.setStyle(
-                TableStyle(
-                    [
-                        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#E8F0F8")),
-                        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-                        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-                        ("FONTSIZE", (0, 0), (-1, -1), 10),
-                        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-                        ("GRID", (0, 0), (-1, -1), 1, colors.grey),
-                    ]
-                )
-            )
-            elements.append(stats_table)
+            # The summary stats are now shown at the top of the report.
+            # No duplicate stats section at the bottom.
 
         # Pie de página
         elements.append(Spacer(1, 0.3 * inch))
         elements.append(
             Paragraph(
                 f"<font size=8>Reporte generado automáticamente el "
-                f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</font>",
+                f"{datetime.now().strftime('%Y-%m-%d %H:%M')}</font>",
                 styles["Normal"],
             )
         )
