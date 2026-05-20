@@ -2,7 +2,6 @@ import {
   BarChart3,
   BookOpen,
   ClipboardList,
-  GraduationCap,
   Home,
   Trophy,
   User,
@@ -49,11 +48,6 @@ export const STUDENT_NAV_LINKS: NavLink[] = [
     href: "/alumno",
     label: "Mis Salones",
     icon: <Home className="size-5" />,
-  },
-  {
-    href: "/alumno/escenarios",
-    label: "Mis Escenarios",
-    icon: <GraduationCap className="size-5" />,
   },
   {
     href: "/alumno/actividades",
