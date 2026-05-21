@@ -1,11 +1,13 @@
 "use client";
 import { Button } from "amvasdev-ui";
+import { useQueryClient } from "@tanstack/react-query";
 import { Check, CloudOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useCookies } from "react-cookie";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import { createInteraccion, updateInteraccion } from "@/fetchers/interacciones";
+import { MIS_INTERACCIONES_QUERY_KEY, PROGRESO_ALUMNO_QUERY_KEY } from "@/fetchers/interaccionesAlumno";
 import { Scenario } from "@/models/scenario";
 import SimuladorTiroParabolico from "@/modules/SimuladorTiroParabolico";
 import type { ScoreState } from "@/modules/SimuladorTiroParabolico/types";
@@ -40,6 +42,7 @@ const SimuladorWrapper = ({
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);
   const token = cookies[ACCESS_TOKEN_COOKIE];
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const interaccionId = useRef<string | null>(null);
   const startTimeRef = useRef<number>(Date.now());
@@ -190,6 +193,8 @@ const SimuladorWrapper = ({
       finishedRef.current = false;
       return;
     }
+    await queryClient.invalidateQueries({ queryKey: PROGRESO_ALUMNO_QUERY_KEY });
+    await queryClient.invalidateQueries({ queryKey: MIS_INTERACCIONES_QUERY_KEY });
     router.push(
       returnUrl ??
         (motivo === "tiempo" ? `${fallbackBase}?tiempo=agotado` : fallbackBase),

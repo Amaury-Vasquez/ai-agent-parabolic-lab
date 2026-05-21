@@ -23,7 +23,6 @@ export default async function SimuladorSalonPage({ params }: SimuladorSalonPageP
 
   return (
     <SimuladorWrapper
-      idactividad={classroomId}
       idescenario={idescenario}
       scenario={scenario}
       returnUrl={`/alumno/salon/${classroomId}`}

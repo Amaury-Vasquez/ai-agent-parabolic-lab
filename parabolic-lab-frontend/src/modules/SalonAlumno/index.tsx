@@ -58,7 +58,7 @@ const SalonAlumno = ({ classroomId }: SalonAlumnoProps) => {
         ) : escenarios && escenarios.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 md:gap-6">
             {escenarios.map((scenario) => (
-              <ScenarioCard key={scenario.idescenario} scenario={scenario} salonId={salon.idsalon} />
+              <ScenarioCard key={scenario.idescenario} scenario={scenario} salonId={classroomId} />
             ))}
           </div>
         ) : (
