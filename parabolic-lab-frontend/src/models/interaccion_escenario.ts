@@ -10,4 +10,5 @@ export interface InteraccionEscenario {
   puntuacion?: number | null;
   completado?: boolean | null;
   datosinteraccion?: Record<string, unknown> | null;
+  escenario_nombre?: string | null;
 }

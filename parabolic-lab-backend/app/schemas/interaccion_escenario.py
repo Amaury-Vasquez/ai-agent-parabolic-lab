@@ -18,6 +18,7 @@ class InteraccionEscenarioRead(BaseModel):
     puntuacion: Decimal | None = None
     completado: bool | None = None
     datosinteraccion: dict[str, Any] | None = None
+    escenario_nombre: str | None = None
 
     model_config = {"from_attributes": True}
 
