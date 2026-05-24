@@ -4,6 +4,7 @@ import { ArrowLeft, BookOpen, ClipboardList, Pencil, Plus, Share2, Trash2 } from
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { Scenario } from "@/models/scenario";
+import EmptyState from "@/components/EmptyState";
 import { useDeleteEscenario } from "@/mutations/useDeleteEscenario";
 import { useMisEscenarios } from "@/queries/useMisEscenarios";
 import { useMySalones } from "@/queries/useMySalones";
@@ -230,13 +231,13 @@ const Biblioteca = () => {
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 opacity-60">
-          <BookOpen size={48} className="mx-auto mb-4 opacity-40" />
-          <p className="text-lg font-medium">No tienes escenarios creados aún</p>
-          <p className="text-sm mt-1">
-            Crea tu primer escenario para asignarlo a tus salones
-          </p>
-        </div>
+        <EmptyState
+          emoji="🔬"
+          title="Tu biblioteca está vacía"
+          subtitle="Crea escenarios de simulación y asígnalos a tus grupos."
+          actionLabel="+ Crear escenario"
+          onAction={() => router.push("/docente/biblioteca/nuevo")}
+        />
       )}
       {escenarioSeleccionado ? (
         <AsignarEscenarioModal

@@ -1,9 +1,11 @@
 "use client";
 import { Button } from "amvasdev-ui";
 import { Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SalonCard from "./SalonCard";
 import CreateClassroomModal from "@/components/CreateClassroomModal";
+import EmptyState from "@/components/EmptyState";
+import TutorialModal from "@/components/TutorialModal";
 import { useMySalones } from "@/queries/useMySalones";
 import type { Salon } from "@/types/salon";
 
@@ -24,7 +26,14 @@ function sortSalones(salones: Salon[], sortBy: string): Salon[] {
 const Docente = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState("reciente");
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const { data: salones, isLoading } = useMySalones();
+
+  useEffect(() => {
+    if (localStorage.getItem("paraboliclab_tutorial_visto") !== "true") {
+      setIsTutorialOpen(true);
+    }
+  }, []);
 
   const salonesOrdenados = useMemo(
     () => sortSalones(salones ?? [], sortBy),
@@ -71,18 +80,24 @@ const Docente = () => {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 opacity-60">
-          <p className="text-lg">No tienes salones asignados aún.</p>
-          <p className="text-sm mt-1">
-            Crea un nuevo salón para comenzar.
-          </p>
-        </div>
+        <EmptyState
+          emoji="🏫"
+          title="¡Aún no tienes salones creados!"
+          subtitle="Crea tu primer salón para comenzar a gestionar tus clases."
+          actionLabel="+ Crear mi primer Salón"
+          onAction={() => setIsModalOpen(true)}
+        />
       )}
 
       {/* Create Classroom Modal */}
       <CreateClassroomModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+      />
+
+      <TutorialModal
+        isOpen={isTutorialOpen}
+        onClose={() => setIsTutorialOpen(false)}
       />
     </div>
   );

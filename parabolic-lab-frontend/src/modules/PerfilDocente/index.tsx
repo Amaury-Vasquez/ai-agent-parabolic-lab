@@ -1,5 +1,5 @@
 "use client";
-import { Button, Input } from "amvasdev-ui";
+import { Button, Input, Modal } from "amvasdev-ui";
 import { ArrowLeft, Edit2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -17,6 +17,7 @@ import { useUpdateUsuario } from "@/mutations/useUpdateUsuario";
 import { useDocente } from "@/queries/useDocente";
 import { useInstitucion } from "@/queries/useInstitucion";
 import { useMe } from "@/queries/useMe";
+import TutorialModal from "@/components/TutorialModal";
 
 interface SaveMessage {
   type: "success" | "error";
@@ -85,6 +86,8 @@ const PerfilDocente = () => {
   const [institutionForm, setInstitutionForm] = useState<InstitutionFormState>(
     EMPTY_INSTITUTION_FORM,
   );
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [isConfirmTutorialOpen, setIsConfirmTutorialOpen] = useState(false);
 
   useEffect(() => {
     setProfileForm(buildProfileForm(user, docente));
@@ -475,6 +478,39 @@ const PerfilDocente = () => {
           ) : null}
         </div>
       ) : null}
+
+      {/* Ver Tutorial */}
+      <div className="mt-8">
+        <Button
+          variant="ghost"
+          onClick={() => setIsConfirmTutorialOpen(true)}
+          className="border border-base-300"
+        >
+          🎓 Ver Tutorial nuevamente
+        </Button>
+      </div>
+
+      {isConfirmTutorialOpen ? (
+        <Modal
+          onClose={() => setIsConfirmTutorialOpen(false)}
+          title="Ver tutorial"
+          confirmButton={{
+            children: "Sí, mostrar",
+            variant: "primary",
+            onClick: () => {
+              setIsConfirmTutorialOpen(false);
+              setIsTutorialOpen(true);
+            },
+          }}
+        >
+          <p className="py-4">¿Deseas ver el recorrido guiado nuevamente?</p>
+        </Modal>
+      ) : null}
+
+      <TutorialModal
+        isOpen={isTutorialOpen}
+        onClose={() => setIsTutorialOpen(false)}
+      />
     </div>
   );
 };
