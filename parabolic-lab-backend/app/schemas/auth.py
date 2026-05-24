@@ -58,6 +58,7 @@ class UserProfile(BaseModel):
     tipousuario: str
     idinstitucion: UUID
     activo: bool | None = None
+    temapreferido: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -68,6 +69,7 @@ class UpdateProfileRequest(BaseModel):
     apellidomaterno: str | None = None
     email: str | None = None
     password: str | None = None
+    temapreferido: str | None = None
 
 
 class VerifyResponse(BaseModel):

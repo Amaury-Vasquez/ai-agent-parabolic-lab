@@ -10,6 +10,7 @@ export interface UserProfile {
   tipousuario: UserType;
   idinstitucion: string;
   activo?: boolean | null;
+  temapreferido?: string | null;
 }
 
 export interface DocenteProfile {
@@ -22,6 +23,7 @@ export interface UpdateUsuarioPayload {
   nombre?: string;
   apellidopaterno?: string;
   apellidomaterno?: string;
+  temapreferido?: string;
 }
 
 export interface UpdateDocentePayload {

@@ -17,6 +17,7 @@ class UsuarioRead(BaseModel):
     ultimoacceso: datetime | None = None
     activo: bool | None = None
     tipousuario: str
+    temapreferido: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -25,3 +26,4 @@ class UsuarioUpdate(BaseModel):
     nombre: str | None = None
     apellidopaterno: str | None = None
     apellidomaterno: str | None = None
+    temapreferido: str | None = None
