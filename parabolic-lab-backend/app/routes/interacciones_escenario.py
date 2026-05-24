@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.dependencies import get_current_user, get_db
 from app.models.interaccion_escenario import InteraccionEscenario
@@ -32,7 +33,9 @@ async def obtener_progreso_alumno(
     idalumno = current_user.alumno.idalumno
 
     result = await db.execute(
-        select(InteraccionEscenario).where(InteraccionEscenario.idalumno == idalumno)
+        select(InteraccionEscenario)
+        .where(InteraccionEscenario.idalumno == idalumno)
+        .options(selectinload(InteraccionEscenario.escenario))
     )
     interacciones = result.scalars().all()
 
@@ -54,7 +57,11 @@ async def listar_interacciones_escenario(
     db: AsyncSession = Depends(get_db),
     _: Usuario = Depends(get_current_user),
 ):
-    result = await db.execute(select(InteraccionEscenario))
+    result = await db.execute(
+        select(InteraccionEscenario).options(
+            selectinload(InteraccionEscenario.escenario)
+        )
+    )
     return result.scalars().all()
 
 

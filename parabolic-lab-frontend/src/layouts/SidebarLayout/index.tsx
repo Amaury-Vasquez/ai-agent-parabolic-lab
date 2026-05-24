@@ -43,8 +43,8 @@ const SidebarLayout = ({ children, panelType }: SidebarLayoutProps) => {
     <div className="min-h-dvh flex relative">
       {/* Sidebar */}
       <div
-        className={clsx("flex transition-colors fixed left-0 h-dvh", {
-          "w-screen bg-black/30 fixed inset-0 z-50":
+        className={clsx("flex transition-colors fixed left-0 h-dvh z-40", {
+          "w-screen bg-black/40 backdrop-blur-sm fixed inset-0 z-60":
             isMobileOrTablet && !isShrinked,
         })}
       >

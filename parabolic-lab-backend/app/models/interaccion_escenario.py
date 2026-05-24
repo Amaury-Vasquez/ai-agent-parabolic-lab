@@ -48,3 +48,10 @@ class InteraccionEscenario(Base):
 
     escenario: Mapped["Escenario"] = relationship(back_populates="interacciones")  # noqa: F821
     alumno: Mapped["Alumno"] = relationship(back_populates="interacciones")  # noqa: F821
+
+    @property
+    def escenario_nombre(self) -> str | None:
+        # Exposed in InteraccionEscenarioRead via from_attributes. Requires the
+        # caller to eager-load `escenario` (selectinload) — accessing a lazy
+        # relationship under async SQLAlchemy raises MissingGreenlet.
+        return self.escenario.nombre if self.escenario else None

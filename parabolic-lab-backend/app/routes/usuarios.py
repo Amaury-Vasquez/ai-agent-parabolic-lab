@@ -34,6 +34,8 @@ async def actualizar_usuario_actual(
         current_user.apellidopaterno = usuario_update.apellidopaterno
     if usuario_update.apellidomaterno is not None:
         current_user.apellidomaterno = usuario_update.apellidomaterno
+    if usuario_update.temapreferido is not None:
+        current_user.temapreferido = usuario_update.temapreferido
 
     current_user.fechamodificacion = datetime.now(UTC).replace(tzinfo=None)
     db.add(current_user)

@@ -245,6 +245,8 @@ async def update_me(
         current_user.apellidopaterno = data.apellidopaterno
     if data.apellidomaterno is not None:
         current_user.apellidomaterno = data.apellidomaterno
+    if data.temapreferido is not None:
+        current_user.temapreferido = data.temapreferido
 
     current_user.fechamodificacion = datetime.utcnow()
     await db.commit()
