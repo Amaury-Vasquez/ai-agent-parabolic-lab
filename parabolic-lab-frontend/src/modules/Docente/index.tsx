@@ -1,7 +1,9 @@
 "use client";
 import { Button } from "amvasdev-ui";
 import { Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import EmptyState from "@/components/EmptyState";
+import TutorialModal from "@/components/TutorialModal";
 import SalonCard from "./SalonCard";
 import CreateClassroomModal from "@/components/CreateClassroomModal";
 import InstitutionIdCard from "@/components/InstitutionIdCard";
@@ -27,6 +29,23 @@ function sortSalones(salones: Salon[], sortBy: string): Salon[] {
 const Docente = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState("reciente");
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      localStorage.getItem("paraboliclab_tutorial_visto") !== "true"
+    ) {
+      setIsTutorialOpen(true);
+    }
+  }, []);
+
+  const handleCloseTutorial = () => {
+    setIsTutorialOpen(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("paraboliclab_tutorial_visto", "true");
+    }
+  };
   const { data: salones, isLoading } = useMySalones();
   const { data: me } = useMe();
   const { data: institucion } = useInstitucion(me?.idinstitucion);
@@ -85,12 +104,13 @@ const Docente = () => {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 opacity-60">
-          <p className="text-lg">No tienes salones asignados aún.</p>
-          <p className="text-sm mt-1">
-            Crea un nuevo salón para comenzar.
-          </p>
-        </div>
+        <EmptyState
+          emoji="🏫"
+          title="Aún no tienes salones creados"
+          subtitle="Crea tu primer salón y comienza a gestionar tus clases de física."
+          actionLabel="Crear mi primer salón"
+          onAction={() => setIsModalOpen(true)}
+        />
       )}
 
       {/* Create Classroom Modal */}
@@ -98,6 +118,8 @@ const Docente = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
+
+      <TutorialModal isOpen={isTutorialOpen} onClose={handleCloseTutorial} />
     </div>
   );
 };
