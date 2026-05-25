@@ -1,4 +1,4 @@
-import { Button } from "amvasdev-ui";
+import { Building2 } from "lucide-react";
 import CustomLink from "@/components/CustomLink";
 import { REGISTER_INSTITUTION_LINK } from "@/constants/navLinks";
 
@@ -13,22 +13,16 @@ const CTASection = () => (
         hacer el aprendizaje más interactivo y efectivo
       </p>
 
-      <div className="flex flex-col sm:flex-row justify-center gap-4">
+      <div className="flex justify-center">
         <CustomLink
           href={REGISTER_INSTITUTION_LINK}
           variant="base"
           size="lg"
           className="bg-base-100 text-primary hover:bg-base-200"
         >
+          <Building2 size="16" />
           Registrar mi Institución
         </CustomLink>
-        <Button
-          variant="ghost"
-          size="lg"
-          className="text-primary-content border-2 border-primary-content hover:bg-primary-content/20"
-        >
-          Contactar al Equipo
-        </Button>
       </div>
     </div>
   </section>

@@ -102,6 +102,54 @@ async def refresh_session(refresh_token: str) -> dict:
     return response.json()
 
 
+async def send_reset_password_code(email: str, callback_url: str) -> dict:
+    """Solicita a Stack Auth que envíe un correo con un código de restablecimiento.
+
+    Por seguridad, Stack Auth devuelve `{"success": "maybe, ..."}` sin revelar
+    si el correo existe en el sistema.
+    """
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{STACK_AUTH_BASE}/auth/password/send-reset-code",
+            headers=_server_headers,
+            json={"email": email, "callback_url": callback_url},
+        )
+    if response.status_code != 200:
+        detail = response.json() if response.status_code < 500 else "Error en Stack Auth"
+        raise HTTPException(status_code=response.status_code, detail=detail)
+    return response.json()
+
+
+async def check_reset_password_code(code: str) -> dict:
+    """Verifica que un código de restablecimiento es válido y no ha expirado."""
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{STACK_AUTH_BASE}/auth/password/reset/check-code",
+            headers=_server_headers,
+            json={"code": code},
+        )
+    if response.status_code != 200:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Código de restablecimiento inválido o expirado",
+        )
+    return response.json()
+
+
+async def reset_password(code: str, password: str) -> dict:
+    """Restablece la contraseña usando un código previamente enviado por correo."""
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{STACK_AUTH_BASE}/auth/password/reset",
+            headers=_server_headers,
+            json={"code": code, "password": password},
+        )
+    if response.status_code != 200:
+        detail = response.json() if response.status_code < 500 else "Error en Stack Auth"
+        raise HTTPException(status_code=response.status_code, detail=detail)
+    return response.json()
+
+
 async def delete_stack_user(user_id: str) -> None:
     async with httpx.AsyncClient() as client:
         response = await client.request(

@@ -5,8 +5,8 @@ export const USER_TYPE_COOKIE = "tipousuario";
 export const AUTH_REDIRECT: Record<string, string> = {
   docente: "/docente",
   alumno: "/alumno",
-  admin: "/docente",
+  admin: "/admin",
 };
 
-export const PROTECTED_ROUTES = ["/docente", "/alumno"];
+export const PROTECTED_ROUTES = ["/docente", "/alumno", "/admin"];
 export const AUTH_ONLY_ROUTES = ["/registro"];

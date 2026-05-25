@@ -14,9 +14,15 @@ from app.models.institucion import Institucion
 from app.models.usuario import Usuario
 from app.schemas.auth import (
     AuthResponse,
+    CheckResetCodeRequest,
+    CheckResetCodeResponse,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     LoginRequest,
     RegisterInstitucionAdmin,
     RegisterRequest,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
     UpdateProfileRequest,
     UserProfile,
     VerifyResponse,
@@ -215,6 +221,31 @@ async def verify_token(
             raise
         new_tokens = await stack_auth.refresh_session(x_stack_refresh_token)
         return VerifyResponse(valid=True, access_token=new_tokens["access_token"])
+
+
+@router.post("/password/forgot", response_model=ForgotPasswordResponse)
+async def forgot_password(data: ForgotPasswordRequest):
+    """Solicita el envío de un correo con un código para restablecer la contraseña.
+
+    Por seguridad siempre se responde `sent=true`, incluso si el correo no
+    pertenece a ningún usuario (Stack Auth tampoco lo revela).
+    """
+    await stack_auth.send_reset_password_code(data.email, data.callback_url)
+    return ForgotPasswordResponse(sent=True)
+
+
+@router.post("/password/reset/verify", response_model=CheckResetCodeResponse)
+async def verify_reset_code(data: CheckResetCodeRequest):
+    """Verifica que el código de restablecimiento sigue siendo válido."""
+    result = await stack_auth.check_reset_password_code(data.code)
+    return CheckResetCodeResponse(is_code_valid=bool(result.get("is_code_valid", False)))
+
+
+@router.post("/password/reset", response_model=ResetPasswordResponse)
+async def reset_password(data: ResetPasswordRequest):
+    """Aplica una nueva contraseña usando un código válido."""
+    result = await stack_auth.reset_password(data.code, data.password)
+    return ResetPasswordResponse(success=bool(result.get("success", True)))
 
 
 @router.get("/me", response_model=UserProfile)

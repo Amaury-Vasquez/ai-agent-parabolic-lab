@@ -1,5 +1,4 @@
-import { Button } from "amvasdev-ui";
-import { Rocket, Zap } from "lucide-react";
+import { Building2, Rocket, Zap } from "lucide-react";
 import CustomLink from "@/components/CustomLink";
 import { REGISTER_INSTITUTION_LINK } from "@/constants/navLinks";
 
@@ -33,11 +32,12 @@ export default function HeroSection() {
               size="lg"
               href={REGISTER_INSTITUTION_LINK}
             >
+              <Building2 size="16" />
               Registrar Institución
             </CustomLink>
-            <Button variant="ghost" size="lg">
+            <CustomLink variant="ghost" size="lg" href="/simulador">
               Probar simulador <Rocket size="16" />
-            </Button>
+            </CustomLink>
           </div>
         </div>
       </div>

@@ -75,3 +75,29 @@ class UpdateProfileRequest(BaseModel):
 class VerifyResponse(BaseModel):
     valid: bool
     access_token: str | None = None
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+    callback_url: str
+
+
+class ForgotPasswordResponse(BaseModel):
+    sent: bool = True
+
+
+class CheckResetCodeRequest(BaseModel):
+    code: str
+
+
+class CheckResetCodeResponse(BaseModel):
+    is_code_valid: bool
+
+
+class ResetPasswordRequest(BaseModel):
+    code: str
+    password: str
+
+
+class ResetPasswordResponse(BaseModel):
+    success: bool = True
