@@ -1,5 +1,9 @@
 "use client";
-import { Badge } from "amvasdev-ui";
+import { Badge, Button } from "amvasdev-ui";
+import { FileText } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import ReporteIntentoModal from "@/components/ReporteIntentoModal";
 import { InteraccionEscenario } from "@/models/interaccion_escenario";
 import { useMisEscenarios } from "@/queries/useMisEscenarios";
 import { useProgresoAlumno } from "@/queries/useProgresoAlumno";
@@ -38,9 +42,10 @@ const StatCard = ({ label, value }: StatCardProps) => (
 interface InteraccionRowProps {
   interaccion: InteraccionEscenario;
   nombreEscenario: string;
+  onVerReporte: (id: string) => void;
 }
 
-const InteraccionRow = ({ interaccion, nombreEscenario }: InteraccionRowProps) => (
+const InteraccionRow = ({ interaccion, nombreEscenario, onVerReporte }: InteraccionRowProps) => (
   <tr>
     <td>{nombreEscenario}</td>
     <td>{formatDate(interaccion.fechainicio)}</td>
@@ -51,10 +56,20 @@ const InteraccionRow = ({ interaccion, nombreEscenario }: InteraccionRowProps) =
           Completado
         </Badge>
       ) : (
-        <Badge variant="neutral">
-          En progreso
-        </Badge>
+        <Badge variant="neutral">En progreso</Badge>
       )}
+    </td>
+    <td>
+      {interaccion.completado ? (
+        <Button
+          size="xs"
+          variant="ghost"
+          onClick={() => onVerReporte(interaccion.idinteraccion)}
+        >
+          <FileText className="w-3 h-3" />
+          Ver reporte
+        </Button>
+      ) : null}
     </td>
   </tr>
 );
@@ -62,6 +77,7 @@ const InteraccionRow = ({ interaccion, nombreEscenario }: InteraccionRowProps) =
 const ProgresoAlumno = () => {
   const { data: progreso, isLoading } = useProgresoAlumno();
   const { data: escenarios } = useMisEscenarios();
+  const [reporteId, setReporteId] = useState<string | null>(null);
 
   const nombrePorId = new Map(
     (escenarios ?? []).map((e) => [e.idescenario, e.nombre])
@@ -112,6 +128,7 @@ const ProgresoAlumno = () => {
                     <th>Fecha inicio</th>
                     <th>Puntuación</th>
                     <th>Estado</th>
+                    <th>Reporte</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -119,7 +136,11 @@ const ProgresoAlumno = () => {
                     <InteraccionRow
                       key={interaccion.idinteraccion}
                       interaccion={interaccion}
-                      nombreEscenario={nombrePorId.get(interaccion.idescenario) ?? interaccion.idescenario.slice(0, 8) + "…"}
+                      nombreEscenario={
+                        nombrePorId.get(interaccion.idescenario) ??
+                        interaccion.idescenario.slice(0, 8) + "…"
+                      }
+                      onVerReporte={setReporteId}
                     />
                   ))}
                 </tbody>
@@ -132,6 +153,12 @@ const ProgresoAlumno = () => {
           )}
         </div>
       </div>
+
+      <ReporteIntentoModal
+        isOpen={!!reporteId}
+        onClose={() => setReporteId(null)}
+        idinteraccion={reporteId}
+      />
     </div>
   );
 };

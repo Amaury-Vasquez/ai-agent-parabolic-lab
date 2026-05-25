@@ -16,6 +16,7 @@ dependencies = [
     "email-validator",
     "reportlab>=4.4.10",
     "xhtml2pdf>=0.2.17",
+    "openpyxl>=3.1.5",
 ]
 
 [dependency-groups]

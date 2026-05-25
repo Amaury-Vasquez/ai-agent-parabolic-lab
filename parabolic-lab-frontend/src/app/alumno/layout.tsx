@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { cookies } from "next/headers";
 import { ReactNode } from "react";
+import TutorialAutoRedirect from "@/components/TutorialAutoRedirect";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import { fetchMe, ME_QUERY_KEY } from "@/fetchers/auth";
 import SidebarLayout from "@/layouts/SidebarLayout";
@@ -27,6 +28,7 @@ export default async function AlumnoLayout({ children }: AlumnoLayoutProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
+      <TutorialAutoRedirect />
       <SidebarLayout panelType="alumno">{children}</SidebarLayout>
     </HydrationBoundary>
   );

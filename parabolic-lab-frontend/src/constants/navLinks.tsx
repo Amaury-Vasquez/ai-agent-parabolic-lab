@@ -4,6 +4,7 @@ import {
   BookOpen,
   Building2,
   ClipboardList,
+  HelpCircle,
   Home,
   Rocket,
   School,
@@ -90,6 +91,11 @@ export const STUDENT_NAV_LINKS: NavLink[] = [
     href: "/alumno/progreso",
     label: "Mi Progreso",
     icon: <BarChart3 className="size-5" />,
+  },
+  {
+    href: "/alumno/tutorial",
+    label: "Tutorial",
+    icon: <HelpCircle className="size-5" />,
   },
 ];
 

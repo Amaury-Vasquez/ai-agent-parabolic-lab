@@ -5,6 +5,7 @@ import { Check, CloudOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useCookies } from "react-cookie";
+import ReporteIntentoModal from "@/components/ReporteIntentoModal";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import { createInteraccion, updateInteraccion } from "@/fetchers/interacciones";
 import { MIS_INTERACCIONES_QUERY_KEY, PROGRESO_ALUMNO_QUERY_KEY } from "@/fetchers/interaccionesAlumno";
@@ -56,6 +57,8 @@ const SimuladorWrapper = ({
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [reporteModalOpen, setReporteModalOpen] = useState(false);
+  const [reporteInteraccionId, setReporteInteraccionId] = useState<string | null>(null);
 
   const disparosRef = useRef(disparos);
   const resolucionRef = useRef(resolucion);
@@ -185,9 +188,6 @@ const SimuladorWrapper = ({
       inFlightSaveRef.current = null;
     }
     const ok = await saveSnapshot(true);
-    const fallbackBase = idactividad
-      ? `/alumno/actividad/${idactividad}`
-      : `/alumno/escenarios`;
     if (!ok) {
       setIsFinishing(false);
       finishedRef.current = false;
@@ -195,10 +195,17 @@ const SimuladorWrapper = ({
     }
     await queryClient.invalidateQueries({ queryKey: PROGRESO_ALUMNO_QUERY_KEY });
     await queryClient.invalidateQueries({ queryKey: MIS_INTERACCIONES_QUERY_KEY });
-    router.push(
-      returnUrl ??
-        (motivo === "tiempo" ? `${fallbackBase}?tiempo=agotado` : fallbackBase),
-    );
+    setReporteInteraccionId(interaccionId.current);
+    setReporteModalOpen(true);
+    setIsFinishing(false);
+  };
+
+  const handleCerrarReporte = () => {
+    setReporteModalOpen(false);
+    const fallbackBase = idactividad
+      ? `/alumno/actividad/${idactividad}`
+      : `/alumno/escenarios`;
+    router.push(returnUrl ?? fallbackBase);
   };
 
   const handleTerminar = () => finish("manual");
@@ -244,28 +251,35 @@ const SimuladorWrapper = ({
   ) : null;
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-8">
-      <SimuladorTiroParabolico
-        scenario={scenario ?? undefined}
-        resolucion={resolucion}
-        onResolucionChange={handleResolucionChange}
-        onDisparo={handleDisparo}
-        onScoreChange={handleScoreChange}
-        onTiempoAgotado={handleTiempoAgotado}
-        startTime={startTimeRef.current}
-      />
-      <div className="flex flex-col-reverse sm:flex-row items-end sm:items-center justify-between gap-2">
-        <div>{saveIndicator}</div>
-        <Button
-          variant="primary"
-          onClick={handleTerminar}
-          disabled={isFinishing}
-          className="w-full sm:w-auto"
-        >
-          {isFinishing ? "Terminando..." : "Terminar actividad"}
-        </Button>
+    <>
+      <div className="flex flex-col gap-4 p-4 md:p-8">
+        <SimuladorTiroParabolico
+          scenario={scenario ?? undefined}
+          resolucion={resolucion}
+          onResolucionChange={handleResolucionChange}
+          onDisparo={handleDisparo}
+          onScoreChange={handleScoreChange}
+          onTiempoAgotado={handleTiempoAgotado}
+          startTime={startTimeRef.current}
+        />
+        <div className="flex flex-col-reverse sm:flex-row items-end sm:items-center justify-between gap-2">
+          <div>{saveIndicator}</div>
+          <Button
+            variant="primary"
+            onClick={handleTerminar}
+            disabled={isFinishing}
+            className="w-full sm:w-auto"
+          >
+            {isFinishing ? "Terminando..." : "Terminar actividad"}
+          </Button>
+        </div>
       </div>
-    </div>
+      <ReporteIntentoModal
+        isOpen={reporteModalOpen}
+        onClose={handleCerrarReporte}
+        idinteraccion={reporteInteraccionId}
+      />
+    </>
   );
 };
 

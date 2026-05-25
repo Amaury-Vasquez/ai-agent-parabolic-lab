@@ -8,6 +8,8 @@ import io
 import logging
 from datetime import datetime
 
+import openpyxl
+from openpyxl.styles import Alignment, Font, PatternFill
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -17,13 +19,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-logger = logging.getLogger(__name__)
-
 from app.models.alumno import Alumno
 from app.models.alumno_en_salon import AlumnoEnSalon
 from app.models.escenario import Escenario
 from app.models.interaccion_escenario import InteraccionEscenario
 from app.models.salon import Salon
+from app.schemas.interaccion_escenario import ReporteInteraccionRead
+
+logger = logging.getLogger(__name__)
 
 
 class ReportService:
@@ -712,3 +715,293 @@ class ReportService:
 
         doc.build(elements)
         return pdf_buffer.getvalue()
+
+    @staticmethod
+    async def generate_interaccion_pdf_report(reporte: ReporteInteraccionRead) -> bytes:
+        """Genera PDF del reporte de un intento completado."""
+
+        pdf_buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            pdf_buffer,
+            pagesize=letter,
+            rightMargin=0.5 * inch,
+            leftMargin=0.5 * inch,
+            topMargin=0.75 * inch,
+            bottomMargin=0.75 * inch,
+        )
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            "CustomTitle",
+            parent=styles["Heading1"],
+            fontSize=22,
+            textColor=colors.HexColor("#1F4788"),
+            spaceAfter=12,
+            alignment=1,
+        )
+        heading_style = ParagraphStyle(
+            "CustomHeading",
+            parent=styles["Heading2"],
+            fontSize=13,
+            textColor=colors.HexColor("#2C5AA0"),
+            spaceAfter=8,
+            spaceBefore=10,
+        )
+        elements = []
+
+        elements.append(Paragraph("PARABOLIC LAB", title_style))
+        elements.append(Paragraph(f"Reporte de Intento — {reporte.nombre_escenario}", styles["Heading2"]))
+        elements.append(Spacer(1, 0.2 * inch))
+
+        def fmt_val(v: float | None, decimales: int = 1) -> str:
+            return f"{v:.{decimales}f}" if v is not None else "N/A"
+
+        def fmt_dt(dt: datetime | None) -> str:
+            return dt.strftime("%Y-%m-%d %H:%M") if dt else "—"
+
+        # --- Datos del intento ---
+        elements.append(Paragraph("Datos del Intento", heading_style))
+        info_data = [
+            ["Escenario:", reporte.nombre_escenario],
+            ["Nivel de dificultad:", reporte.niveldificultad],
+            ["Fecha inicio:", fmt_dt(reporte.fechainicio)],
+            ["Fecha fin:", fmt_dt(reporte.fechafin)],
+            ["Tiempo total:", f"{reporte.tiempototal or 0} s ({(reporte.tiempototal or 0) // 60} min)"],
+            ["Intentos realizados:", str(reporte.intentosrealizados or 0)],
+            ["Puntuación:", fmt_val(reporte.puntuacion, 1)],
+        ]
+        info_table = Table(info_data, colWidths=[2.2 * inch, 4 * inch])
+        info_table.setStyle(
+            TableStyle([
+                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#E8F0F8")),
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ])
+        )
+        elements.append(info_table)
+        elements.append(Spacer(1, 0.25 * inch))
+
+        # --- Análisis: comparación alumno vs solución ---
+        elements.append(Paragraph("Análisis — Alumno vs Solución Correcta", heading_style))
+        analisis = reporte.analisis
+        analisis_data = [
+            ["Variable", "Valor del alumno", "Valor correcto"],
+            ["Ángulo (°)", fmt_val(analisis.angulo_alumno), fmt_val(analisis.angulo_correcto)],
+            ["Velocidad inicial (m/s)", fmt_val(analisis.velocidad_alumno), fmt_val(analisis.velocidad_correcta)],
+            ["Alcance (m)", fmt_val(analisis.alcance_alumno), fmt_val(analisis.alcance_correcto)],
+            ["Altura máxima (m)", fmt_val(analisis.altura_maxima_alumno), "—"],
+            ["Tiempo de vuelo (s)", fmt_val(analisis.tiempo_vuelo_alumno), "—"],
+        ]
+        analisis_table = Table(analisis_data, colWidths=[2.5 * inch, 1.9 * inch, 1.9 * inch])
+        analisis_table.setStyle(
+            TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C5AA0")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F0F5FB")]),
+            ])
+        )
+        elements.append(analisis_table)
+        elements.append(Spacer(1, 0.25 * inch))
+
+        # --- Disparos ---
+        if reporte.disparos:
+            elements.append(Paragraph(f"Historial de Disparos ({len(reporte.disparos)})", heading_style))
+            disparos_data: list[list[str]] = [
+                ["#", "Ángulo (°)", "Velocidad (m/s)", "Alt. cañón (m)", "Distancia (m)", "Resultado", "Puntos"]
+            ]
+            for d in reporte.disparos:
+                disparos_data.append([
+                    str(d.n),
+                    fmt_val(d.angulo, 1),
+                    fmt_val(d.velocidad, 1),
+                    fmt_val(d.altura_canon, 1),
+                    fmt_val(d.distancia, 1),
+                    "✓ Acierto" if d.acierto else "✗ Falló",
+                    str(d.puntos),
+                ])
+            disparos_table = Table(
+                disparos_data,
+                colWidths=[0.4 * inch, 0.9 * inch, 0.9 * inch, 0.9 * inch, 1.0 * inch, 0.9 * inch, 0.7 * inch],
+            )
+            disparos_table.setStyle(
+                TableStyle([
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C5AA0")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F0F5FB")]),
+                ])
+            )
+            elements.append(disparos_table)
+            elements.append(Spacer(1, 0.25 * inch))
+
+        # --- Comparativa con intentos anteriores ---
+        if reporte.comparativa:
+            elements.append(Paragraph("Comparativa — Intentos anteriores en este escenario", heading_style))
+            comp_data = [["Fecha inicio", "Puntuación", "Intentos", "Estado"]]
+            for c in reporte.comparativa:
+                comp_data.append([
+                    fmt_dt(c.fechainicio),
+                    fmt_val(c.puntuacion, 1),
+                    str(c.intentosrealizados or 0),
+                    "Completado" if c.completado else "En progreso",
+                ])
+            comp_table = Table(comp_data, colWidths=[2 * inch, 1.5 * inch, 1 * inch, 1.5 * inch])
+            comp_table.setStyle(
+                TableStyle([
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C5AA0")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 9),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F0F5FB")]),
+                ])
+            )
+            elements.append(comp_table)
+
+        elements.append(Spacer(1, 0.3 * inch))
+        elements.append(
+            Paragraph(
+                f"<font size=8>Reporte generado el {datetime.now().strftime('%Y-%m-%d %H:%M')}</font>",
+                styles["Normal"],
+            )
+        )
+        doc.build(elements)
+        return pdf_buffer.getvalue()
+
+    @staticmethod
+    async def generate_interaccion_xlsx_report(reporte: ReporteInteraccionRead) -> bytes:
+        """Genera Excel del reporte de un intento completado."""
+        wb = openpyxl.Workbook()
+
+        HEADER_FILL = PatternFill("solid", fgColor="2C5AA0")
+        HEADER_FONT = Font(bold=True, color="FFFFFF")
+        LABEL_FILL = PatternFill("solid", fgColor="E8F0F8")
+        BOLD = Font(bold=True)
+        CENTER = Alignment(horizontal="center")
+
+        def fmt_val(v: float | None, decimales: int = 1) -> str:
+            return f"{v:.{decimales}f}" if v is not None else "N/A"
+
+        def fmt_dt(dt: datetime | None) -> str:
+            return dt.strftime("%Y-%m-%d %H:%M") if dt else "—"
+
+        # --- Hoja 1: Datos generales ---
+        ws = wb.active
+        ws.title = "Reporte"
+        ws.column_dimensions["A"].width = 28
+        ws.column_dimensions["B"].width = 20
+
+        def write_section_header(row: int, title: str) -> int:
+            cell = ws.cell(row=row, column=1, value=title)
+            cell.font = HEADER_FONT
+            cell.fill = HEADER_FILL
+            ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=2)
+            return row + 1
+
+        def write_row(row: int, label: str, value: str) -> int:
+            lc = ws.cell(row=row, column=1, value=label)
+            lc.font = BOLD
+            lc.fill = LABEL_FILL
+            ws.cell(row=row, column=2, value=value)
+            return row + 1
+
+        r = 1
+        r = write_section_header(r, "PARABOLIC LAB — Reporte de Intento")
+        r += 1
+        r = write_section_header(r, "Datos del intento")
+        r = write_row(r, "Escenario", reporte.nombre_escenario)
+        r = write_row(r, "Nivel de dificultad", reporte.niveldificultad)
+        r = write_row(r, "Fecha inicio", fmt_dt(reporte.fechainicio))
+        r = write_row(r, "Fecha fin", fmt_dt(reporte.fechafin))
+        r = write_row(r, "Tiempo total (s)", str(reporte.tiempototal or 0))
+        r = write_row(r, "Intentos realizados", str(reporte.intentosrealizados or 0))
+        r = write_row(r, "Puntuación", fmt_val(reporte.puntuacion))
+        r += 1
+
+        # Análisis
+        r = write_section_header(r, "Análisis — Alumno vs Solución Correcta")
+        analisis = reporte.analisis
+        headers = ["Variable", "Valor alumno", "Valor correcto"]
+        for col, h in enumerate(headers, 1):
+            c = ws.cell(row=r, column=col, value=h)
+            c.font = HEADER_FONT
+            c.fill = HEADER_FILL
+            c.alignment = CENTER
+        ws.column_dimensions["C"].width = 18
+        r += 1
+        analisis_rows = [
+            ("Ángulo (°)", fmt_val(analisis.angulo_alumno), fmt_val(analisis.angulo_correcto)),
+            ("Velocidad inicial (m/s)", fmt_val(analisis.velocidad_alumno), fmt_val(analisis.velocidad_correcta)),
+            ("Alcance (m)", fmt_val(analisis.alcance_alumno), fmt_val(analisis.alcance_correcto)),
+            ("Altura máxima (m)", fmt_val(analisis.altura_maxima_alumno), "—"),
+            ("Tiempo de vuelo (s)", fmt_val(analisis.tiempo_vuelo_alumno), "—"),
+        ]
+        for label, alumno_val, correcto_val in analisis_rows:
+            lc = ws.cell(row=r, column=1, value=label)
+            lc.font = BOLD
+            ws.cell(row=r, column=2, value=alumno_val).alignment = CENTER
+            ws.cell(row=r, column=3, value=correcto_val).alignment = CENTER
+            r += 1
+        r += 1
+
+        # --- Hoja 2: Disparos ---
+        if reporte.disparos:
+            ws2 = wb.create_sheet("Disparos")
+            ws2.column_dimensions["A"].width = 6
+            ws2.column_dimensions["B"].width = 14
+            ws2.column_dimensions["C"].width = 18
+            ws2.column_dimensions["D"].width = 16
+            ws2.column_dimensions["E"].width = 16
+            ws2.column_dimensions["F"].width = 12
+            ws2.column_dimensions["G"].width = 10
+            disp_headers = [
+                "#", "Ángulo (°)", "Velocidad (m/s)", "Alt. cañón (m)", "Distancia (m)", "Resultado", "Puntos"
+            ]
+            for col, h in enumerate(disp_headers, 1):
+                c = ws2.cell(row=1, column=col, value=h)
+                c.font = HEADER_FONT
+                c.fill = HEADER_FILL
+                c.alignment = CENTER
+            for i, d in enumerate(reporte.disparos, 2):
+                ws2.cell(row=i, column=1, value=d.n)
+                ws2.cell(row=i, column=2, value=fmt_val(d.angulo))
+                ws2.cell(row=i, column=3, value=fmt_val(d.velocidad))
+                ws2.cell(row=i, column=4, value=fmt_val(d.altura_canon))
+                ws2.cell(row=i, column=5, value=fmt_val(d.distancia))
+                ws2.cell(row=i, column=6, value="Acierto" if d.acierto else "Falló")
+                ws2.cell(row=i, column=7, value=d.puntos)
+
+        # --- Hoja 3: Comparativa ---
+        if reporte.comparativa:
+            ws3 = wb.create_sheet("Comparativa")
+            ws3.column_dimensions["A"].width = 20
+            ws3.column_dimensions["B"].width = 14
+            ws3.column_dimensions["C"].width = 12
+            ws3.column_dimensions["D"].width = 14
+            comp_headers = ["Fecha inicio", "Puntuación", "Intentos", "Estado"]
+            for col, h in enumerate(comp_headers, 1):
+                c = ws3.cell(row=1, column=col, value=h)
+                c.font = HEADER_FONT
+                c.fill = HEADER_FILL
+                c.alignment = CENTER
+            for i, c_obj in enumerate(reporte.comparativa, 2):
+                ws3.cell(row=i, column=1, value=fmt_dt(c_obj.fechainicio))
+                ws3.cell(row=i, column=2, value=fmt_val(c_obj.puntuacion))
+                ws3.cell(row=i, column=3, value=c_obj.intentosrealizados or 0)
+                ws3.cell(row=i, column=4, value="Completado" if c_obj.completado else "En progreso")
+
+        output = io.BytesIO()
+        wb.save(output)
+        return output.getvalue()
