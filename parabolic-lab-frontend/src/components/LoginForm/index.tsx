@@ -13,7 +13,7 @@ import {
   REFRESH_TOKEN_COOKIE,
   USER_TYPE_COOKIE,
 } from "@/constants/auth";
-import { REGISTER_LINK } from "@/constants/navLinks";
+import { FORGOT_PASSWORD_LINK, REGISTER_LINK } from "@/constants/navLinks";
 import { useLogin } from "@/mutations/useLogin";
 
 interface LoginFormValues {
@@ -64,6 +64,15 @@ const LoginForm = () => {
           required
           {...register("password")}
         />
+
+        <div className="text-right -mt-1">
+          <Link
+            href={FORGOT_PASSWORD_LINK}
+            className="link link-primary text-sm font-medium"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
 
         {error ? <p className="text-sm text-error">{error}</p> : null}
 

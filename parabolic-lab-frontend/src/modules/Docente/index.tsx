@@ -4,6 +4,9 @@ import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import SalonCard from "./SalonCard";
 import CreateClassroomModal from "@/components/CreateClassroomModal";
+import InstitutionIdCard from "@/components/InstitutionIdCard";
+import { useInstitucion } from "@/queries/useInstitucion";
+import { useMe } from "@/queries/useMe";
 import { useMySalones } from "@/queries/useMySalones";
 import type { Salon } from "@/types/salon";
 
@@ -25,6 +28,8 @@ const Docente = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState("reciente");
   const { data: salones, isLoading } = useMySalones();
+  const { data: me } = useMe();
+  const { data: institucion } = useInstitucion(me?.idinstitucion);
 
   const salonesOrdenados = useMemo(
     () => sortSalones(salones ?? [], sortBy),
@@ -32,16 +37,25 @@ const Docente = () => {
   );
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-6 lg:p-8 flex flex-col gap-6">
+      {institucion ? (
+        <InstitutionIdCard
+          idinstitucion={institucion.idinstitucion}
+          nombreInstitucion={institucion.nombre}
+          clavect={institucion.clavect}
+          description="Comparte este ID con tus alumnos para que se registren en tu institución."
+        />
+      ) : null}
+
       {/* Header Section */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Mis Salones</h1>
-          <p className="mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold">Mis Salones</h1>
+          <p className="mt-1 text-sm md:text-base">
             Gestiona tus salones, asigna escenarios y monitorea el progreso
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <select
             className="select select-bordered select-sm"
             value={sortBy}
@@ -65,7 +79,7 @@ const Docente = () => {
           <span className="loading loading-spinner loading-lg" />
         </div>
       ) : salonesOrdenados.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {salonesOrdenados.map((salon) => (
             <SalonCard key={salon.idsalon} salon={salon} />
           ))}

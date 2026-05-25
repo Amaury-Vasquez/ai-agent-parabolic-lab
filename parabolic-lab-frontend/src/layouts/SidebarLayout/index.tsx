@@ -5,7 +5,11 @@ import { ReactNode, useRef } from "react";
 import Heading from "./Heading";
 import Navbar from "@/components/Navbar";
 import Sidebar, { SidebarRoute } from "@/components/Sidebar";
-import { STUDENT_NAV_LINKS, TEACHER_NAV_LINKS } from "@/constants/navLinks";
+import {
+  ADMIN_NAV_LINKS,
+  STUDENT_NAV_LINKS,
+  TEACHER_NAV_LINKS,
+} from "@/constants/navLinks";
 import useIsMobileOrTablet from "@/hooks/useIsMobileOrTablet";
 import { UserType } from "@/models/users";
 
@@ -23,7 +27,7 @@ const PanelDescription: Record<UserType, string> = {
 const PanelRoutes: Record<UserType, SidebarRoute[]> = {
   docente: TEACHER_NAV_LINKS,
   alumno: STUDENT_NAV_LINKS,
-  admin: [],
+  admin: ADMIN_NAV_LINKS,
 };
 
 const SidebarLayout = ({ children, panelType }: SidebarLayoutProps) => {

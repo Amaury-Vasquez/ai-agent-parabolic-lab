@@ -6,14 +6,21 @@ interface HeadingProps {
 }
 
 const Heading = ({ panelDescription }: HeadingProps) => (
-  <Link href="/" className="flex items-center gap-3 bg-base-200">
-    <div className="w-10 h-10 bg-base-300 rounded-lg flex items-center justify-center">
-      <Rocket className="w-6 h-6 text-primary" />
-    </div>
-    <div>
-      <h1 className="font-bold text-lg">ParabolicLab</h1>
-      <p className="text-xs opacity-80">{panelDescription}</p>
-    </div>
+  <Link
+    href="/"
+    className="flex items-center gap-3 min-w-0 rounded-xl p-1.5 -m-1.5 hover:bg-base-300/60 transition-colors"
+  >
+    <span className="flex items-center justify-center size-10 rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-content shadow-sm shrink-0">
+      <Rocket className="size-5" />
+    </span>
+    <span className="flex flex-col min-w-0">
+      <span className="font-bold text-base leading-tight truncate">
+        ParabolicLab
+      </span>
+      <span className="text-xs opacity-60 leading-tight truncate">
+        Panel · {panelDescription}
+      </span>
+    </span>
   </Link>
 );
 

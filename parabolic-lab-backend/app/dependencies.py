@@ -29,7 +29,11 @@ async def get_current_user(
     result = await db.execute(
         select(Usuario)
         .where(Usuario.authid == auth_id)
-        .options(selectinload(Usuario.docente), selectinload(Usuario.alumno))
+        .options(
+            selectinload(Usuario.docente),
+            selectinload(Usuario.alumno),
+            selectinload(Usuario.admin),
+        )
     )
     usuario = result.scalar_one_or_none()
     if not usuario:

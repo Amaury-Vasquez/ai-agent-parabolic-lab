@@ -31,18 +31,25 @@ const NavMenu = ({ navigationItems, isAuthenticated }: NavMenuProps) => {
 
   return (
     <HamburgerMenu icon={Menu} key={pathname}>
-      <ul className="flex flex-col gap-2 min-w-64 max-w-full">
+      <ul className="flex flex-col gap-1 min-w-60 max-w-full">
         {isAuthenticated && dashboardHref ? (
-          <li>
-            <Link href={dashboardHref} className="w-full font-semibold">
-              <LayoutDashboard className="size-4" />
-              Mi Panel
-            </Link>
-          </li>
+          <>
+            <li>
+              <Link
+                href={dashboardHref}
+                className="w-full font-semibold text-primary"
+              >
+                <LayoutDashboard className="size-4" />
+                Mi Panel
+              </Link>
+            </li>
+            <li className="my-1 border-t border-base-300" aria-hidden />
+          </>
         ) : null}
         {visibleItems.map((item) => (
           <li key={item.label}>
             <Link href={item.href} className="w-full">
+              {item.icon}
               {item.label}
             </Link>
           </li>

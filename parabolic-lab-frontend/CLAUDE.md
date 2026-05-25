@@ -70,6 +70,36 @@ Two main layouts in `src/layouts/`:
 - **NEVER use `min-h-screen` or background gradients in modules** - Layouts already handle height and background styling
 - For component usage reference, see `docs/COMPONENT_USAGE_GUIDE.md`
 
+### Responsive Design
+
+**Every page, module, and component MUST be responsive.** Design mobile-first and progressively enhance for larger screens — never assume desktop-only viewports.
+
+**Breakpoints (Tailwind defaults, also exported from `src/constants/breakpoints.ts`):**
+- Default (no prefix): mobile, `< 640px`
+- `sm:` ≥ 640px (large phones / small tablets)
+- `md:` ≥ 768px (tablets)
+- `lg:` ≥ 1024px (laptops — the sidebar expands here)
+- `xl:` ≥ 1280px (desktop)
+
+**Core rules:**
+- **Mobile-first** — write base classes for mobile, add `md:` / `lg:` modifiers for larger screens (`grid-cols-1 md:grid-cols-2 lg:grid-cols-4`, never `grid-cols-4 sm:grid-cols-1`)
+- **Stack headers on mobile** — page headers with a title + action button should use `flex-col gap-4 md:flex-row md:items-center md:justify-between` so the action doesn't overflow
+- **Module padding** — use `p-4 md:p-6 lg:p-8` (not just `p-8`, which over-pads small screens)
+- **Tables → cards on mobile** — either render a card stack when `useIsMobileOrTablet()` is true, or wrap the `<table>` in `<div className="overflow-x-auto">` for horizontal scroll. Never let a table overflow the layout
+- **Grids** — use responsive column counts (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`), not fixed `grid-cols-4`
+- **No hardcoded widths** — prefer `w-full max-w-md` over `w-96`; let content shrink on small screens
+- **Text scaling** — use `text-2xl md:text-3xl` for headings; default to smaller sizes on mobile
+- **Buttons / actions** — group with `flex-wrap` so they wrap to a new line on narrow screens; use `w-full sm:w-auto` for primary CTAs in forms
+
+**JS-based responsive logic:** use the `useIsMobileOrTablet()` hook (in `src/hooks/`) when behavior — not just layout — must differ between mobile and desktop (e.g. auto-collapse sidebar, swap table for card list). Don't reach for `window.innerWidth` directly.
+
+**Quick checklist before declaring a UI complete:**
+- [ ] Page renders cleanly at 375px (mobile), 768px (tablet), 1280px (desktop) — no horizontal scroll on the body
+- [ ] Header title + actions don't overlap on mobile
+- [ ] Tables either become cards or get a horizontal scroll wrapper
+- [ ] Modals and forms fit within the viewport (use `max-w-md w-full`, not fixed pixel widths)
+- [ ] Sidebar overlays content on mobile (already handled by `SidebarLayout` — don't override)
+
 ### Path Aliases
 
 TypeScript is configured with path alias `@/*` pointing to `src/*`:
