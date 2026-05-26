@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { playHit, playLaunch, playMiss, unlockAudio } from "./audio";
 import {
+  computeShotScore,
   distanceToTarget,
   initialProjectile,
   isHit,
@@ -10,20 +11,40 @@ import {
   step,
   targetCenter,
 } from "./physics";
+import {
+  drawCannonSprite,
+  drawProjectileSprite,
+  drawTargetSprite,
+  projectileTrailColor,
+} from "./sprites";
 import type {
   GamePhase,
   Particle,
   ProjectileState,
   ScorePopup,
+  ShotOutcome,
   SimSettings,
+  TrajectoryMetrics,
 } from "./types";
+import {
+  DEFAULT_ASSETS,
+  type CannonAssetKey,
+  type ProjectileAssetKey,
+  type TargetAssetKey,
+} from "@/constants/simulatorAssets";
 
 interface GameCanvasProps {
   settings: SimSettings;
   onSettingsChange: (next: SimSettings) => void;
-  onResult: (result: { hit: boolean; points: number; distance: number }) => void;
+  onResult: (result: ShotOutcome) => void;
+  onMetricsUpdate?: (metrics: TrajectoryMetrics | null) => void;
   fireSignal: number;
   resetSignal: number;
+  paused?: boolean;
+  speedMultiplier?: number;
+  cannonAsset?: CannonAssetKey;
+  projectileAsset?: ProjectileAssetKey;
+  targetAsset?: TargetAssetKey;
 }
 
 const PADDING_LEFT_M = 4;
@@ -39,12 +60,28 @@ interface Camera {
   groundY: number;
 }
 
+const EMPTY_METRICS: TrajectoryMetrics = {
+  x: 0,
+  y: 0,
+  vx: 0,
+  vy: 0,
+  alturaMaxima: 0,
+  tiempoVuelo: 0,
+  alcance: 0,
+};
+
 const GameCanvas = ({
   settings,
   onSettingsChange,
   onResult,
+  onMetricsUpdate,
   fireSignal,
   resetSignal,
+  paused = false,
+  speedMultiplier = 1,
+  cannonAsset = DEFAULT_ASSETS.cannon,
+  projectileAsset = DEFAULT_ASSETS.projectile,
+  targetAsset = DEFAULT_ASSETS.target,
 }: GameCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -71,7 +108,20 @@ const GameCanvas = ({
   const fireSignalRef = useRef(fireSignal);
   const resetSignalRef = useRef(resetSignal);
   const onResultRef = useRef(onResult);
+  const onMetricsUpdateRef = useRef(onMetricsUpdate);
   const onSettingsChangeRef = useRef(onSettingsChange);
+  const pausedRef = useRef(paused);
+  const speedRef = useRef(speedMultiplier);
+  const assetsRef = useRef({
+    cannon: cannonAsset,
+    projectile: projectileAsset,
+    target: targetAsset,
+  });
+  const metricsRef = useRef<TrajectoryMetrics>({ ...EMPTY_METRICS });
+  const bestPointRef = useRef<{ x: number; y: number; distance: number } | null>(
+    null
+  );
+  const trajectorySamplesRef = useRef<Array<{ x: number; y: number }>>([]);
   const [phase, setPhase] = useState<GamePhase>("idle");
 
   useEffect(() => {
@@ -81,8 +131,24 @@ const GameCanvas = ({
     onResultRef.current = onResult;
   }, [onResult]);
   useEffect(() => {
+    onMetricsUpdateRef.current = onMetricsUpdate;
+  }, [onMetricsUpdate]);
+  useEffect(() => {
     onSettingsChangeRef.current = onSettingsChange;
   }, [onSettingsChange]);
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
+  useEffect(() => {
+    speedRef.current = speedMultiplier;
+  }, [speedMultiplier]);
+  useEffect(() => {
+    assetsRef.current = {
+      cannon: cannonAsset,
+      projectile: projectileAsset,
+      target: targetAsset,
+    };
+  }, [cannonAsset, projectileAsset, targetAsset]);
 
   const resizeCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -138,13 +204,12 @@ const GameCanvas = ({
     };
   }, []);
 
-  const screenToWorld = useCallback((sx: number, sy: number) => {
-    const cam = cameraRef.current;
-    return {
-      x: (sx - PADDING_LEFT_M * cam.pxPerMeter) / cam.pxPerMeter,
-      y: (cam.groundY - sy) / cam.pxPerMeter,
-    };
-  }, []);
+  const resetMetrics = () => {
+    metricsRef.current = { ...EMPTY_METRICS };
+    bestPointRef.current = null;
+    trajectorySamplesRef.current = [];
+    onMetricsUpdateRef.current?.(null);
+  };
 
   const launch = useCallback(() => {
     if (phaseRef.current !== "idle") return;
@@ -152,6 +217,24 @@ const GameCanvas = ({
     const s = settingsRef.current;
     projectileRef.current = initialProjectile(s);
     trailRef.current = [];
+    trajectorySamplesRef.current = [
+      { x: projectileRef.current.x, y: projectileRef.current.y },
+    ];
+    metricsRef.current = {
+      x: projectileRef.current.x,
+      y: projectileRef.current.y,
+      vx: projectileRef.current.vx,
+      vy: projectileRef.current.vy,
+      alturaMaxima: projectileRef.current.y,
+      tiempoVuelo: 0,
+      alcance: 0,
+    };
+    bestPointRef.current = {
+      x: projectileRef.current.x,
+      y: projectileRef.current.y,
+      distance: distanceToTarget(projectileRef.current, s),
+    };
+    onMetricsUpdateRef.current?.(metricsRef.current);
     phaseRef.current = "firing";
     setPhase("firing");
     playLaunch();
@@ -164,6 +247,7 @@ const GameCanvas = ({
     trailRef.current = [];
     popupsRef.current = [];
     phaseRef.current = "idle";
+    resetMetrics();
     setPhase("idle");
   }, []);
 
@@ -215,26 +299,80 @@ const GameCanvas = ({
     }
   };
 
+  const finalizeShot = (
+    hit: boolean,
+    landingX: number,
+    landingY: number,
+    s: SimSettings
+  ) => {
+    const ref = bestPointRef.current ?? { x: landingX, y: landingY, distance: 0 };
+    const closest = { x: ref.x, y: ref.y };
+    const distance = ref.distance;
+    const { score } = computeShotScore(closest, s, hit);
+    const finalMetrics: TrajectoryMetrics = {
+      ...metricsRef.current,
+      alcance: Math.max(metricsRef.current.alcance, landingX - s.cannonX),
+    };
+    metricsRef.current = finalMetrics;
+    onMetricsUpdateRef.current?.(finalMetrics);
+    const outcome: ShotOutcome = {
+      hit,
+      distance,
+      autoScore: score,
+      landingX,
+      landingY,
+      metrics: finalMetrics,
+    };
+    onResultRef.current(outcome);
+  };
+
   useEffect(() => {
     let raf = 0;
     const tick = (now: number) => {
       const last = lastTimeRef.current || now;
-      const dt = Math.min(0.05, (now - last) / 1000);
+      const realDt = Math.min(0.05, (now - last) / 1000);
       lastTimeRef.current = now;
-      update(dt);
+      const simDt = pausedRef.current ? 0 : realDt * speedRef.current;
+      update(realDt, simDt);
       draw();
       raf = requestAnimationFrame(tick);
     };
 
-    const update = (dt: number) => {
+    const update = (realDt: number, simDt: number) => {
       const cam = cameraRef.current;
       const s = settingsRef.current;
-      if (phaseRef.current === "firing" && projectileRef.current) {
+      const trailColor = projectileTrailColor(assetsRef.current.projectile);
+      if (phaseRef.current === "firing" && projectileRef.current && simDt > 0) {
         const sub = 4;
         for (let i = 0; i < sub; i++) {
           const p = projectileRef.current;
           if (!p) break;
-          step(p, s.gravity, dt / sub);
+          step(p, s.gravity, simDt / sub);
+          // Métricas en vivo
+          metricsRef.current.x = p.x;
+          metricsRef.current.y = p.y;
+          metricsRef.current.vx = p.vx;
+          metricsRef.current.vy = p.vy;
+          metricsRef.current.alturaMaxima = Math.max(
+            metricsRef.current.alturaMaxima,
+            p.y
+          );
+          metricsRef.current.tiempoVuelo += simDt / sub;
+          metricsRef.current.alcance = Math.max(
+            metricsRef.current.alcance,
+            p.x - s.cannonX
+          );
+          trajectorySamplesRef.current.push({ x: p.x, y: p.y });
+          if (trajectorySamplesRef.current.length > 600) {
+            trajectorySamplesRef.current.shift();
+          }
+          const dToTarget = distanceToTarget(p, s);
+          if (
+            !bestPointRef.current ||
+            dToTarget < bestPointRef.current.distance
+          ) {
+            bestPointRef.current = { x: p.x, y: p.y, distance: dToTarget };
+          }
           if (i % 2 === 0) {
             trailRef.current.push({
               x: p.x,
@@ -243,13 +381,12 @@ const GameCanvas = ({
               vy: 0,
               life: TRAIL_LIFE,
               maxLife: TRAIL_LIFE,
-              color: "rgba(245,158,11,0.6)",
+              color: trailColor,
               size: 4,
             });
           }
           if (isHit(p, s)) {
             const points = pointsForHit(p, s);
-            const dist = distanceToTarget(p, s);
             const c = targetCenter(s);
             const sc = worldToScreen(c.x, c.y);
             spawnHitBurst(sc.sx, sc.sy, "#facc15", 36);
@@ -266,7 +403,7 @@ const GameCanvas = ({
             phaseRef.current = "hit";
             setPhase("hit");
             playHit(1);
-            onResultRef.current({ hit: true, points, distance: dist });
+            finalizeShot(true, p.x, p.y, s);
             window.setTimeout(() => {
               phaseRef.current = "idle";
               setPhase("idle");
@@ -288,11 +425,7 @@ const GameCanvas = ({
             phaseRef.current = "miss";
             setPhase("miss");
             playMiss();
-            onResultRef.current({
-              hit: false,
-              points: 0,
-              distance: distanceToTarget(p, s),
-            });
+            finalizeShot(false, p.x, 0, s);
             window.setTimeout(() => {
               phaseRef.current = "idle";
               setPhase("idle");
@@ -304,11 +437,7 @@ const GameCanvas = ({
             phaseRef.current = "miss";
             setPhase("miss");
             playMiss();
-            onResultRef.current({
-              hit: false,
-              points: 0,
-              distance: distanceToTarget(p, s),
-            });
+            finalizeShot(false, p.x, p.y, s);
             window.setTimeout(() => {
               phaseRef.current = "idle";
               setPhase("idle");
@@ -317,26 +446,28 @@ const GameCanvas = ({
             return;
           }
         }
+        onMetricsUpdateRef.current?.(metricsRef.current);
       }
+      // Partículas / popups corren en tiempo real (independiente de pausa)
       particlesRef.current.forEach((pt) => {
-        pt.x += pt.vx * dt;
-        pt.y += pt.vy * dt;
-        pt.vy += 350 * dt;
-        pt.life -= dt;
+        pt.x += pt.vx * realDt;
+        pt.y += pt.vy * realDt;
+        pt.vy += 350 * realDt;
+        pt.life -= realDt;
       });
       particlesRef.current = particlesRef.current.filter((p) => p.life > 0);
-      trailRef.current.forEach((p) => (p.life -= dt));
+      trailRef.current.forEach((p) => (p.life -= realDt));
       trailRef.current = trailRef.current.filter((p) => p.life > 0);
       popupsRef.current.forEach((p) => {
-        p.y -= 40 * dt;
-        p.life -= dt;
+        p.y -= 40 * realDt;
+        p.life -= realDt;
       });
       popupsRef.current = popupsRef.current.filter((p) => p.life > 0);
       if (screenshakeRef.current > 0) {
-        screenshakeRef.current = Math.max(0, screenshakeRef.current - dt * 18);
+        screenshakeRef.current = Math.max(0, screenshakeRef.current - realDt * 18);
       }
       if (flashRef.current > 0) {
-        flashRef.current = Math.max(0, flashRef.current - dt * 1.6);
+        flashRef.current = Math.max(0, flashRef.current - realDt * 1.6);
       }
       void cam;
     };
@@ -421,127 +552,17 @@ const GameCanvas = ({
       ctx.restore();
     };
 
-    const drawCannon = (
-      ctx: CanvasRenderingContext2D,
-      sx: number,
-      sy: number,
-      angleDeg: number
-    ) => {
-      ctx.save();
-      const shadowGrad = ctx.createRadialGradient(sx, sy + 8, 4, sx, sy + 8, 36);
-      shadowGrad.addColorStop(0, "rgba(0,0,0,0.35)");
-      shadowGrad.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = shadowGrad;
-      ctx.fillRect(sx - 40, sy + 4, 80, 14);
-      ctx.fillStyle = "#475569";
-      ctx.beginPath();
-      ctx.roundRect(sx - 24, sy - 4, 48, 14, 4);
-      ctx.fill();
-      ctx.strokeStyle = "#1e293b";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      const wheel = (wx: number) => {
-        ctx.fillStyle = "#1f2937";
-        ctx.beginPath();
-        ctx.arc(wx, sy + 12, 9, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "#0f172a";
-        ctx.stroke();
-        ctx.fillStyle = "#475569";
-        ctx.beginPath();
-        ctx.arc(wx, sy + 12, 4, 0, Math.PI * 2);
-        ctx.fill();
-      };
-      wheel(sx - 14);
-      wheel(sx + 14);
-
-      ctx.save();
-      ctx.translate(sx, sy - 4);
-      ctx.rotate(-(angleDeg * Math.PI) / 180);
-      const grad = ctx.createLinearGradient(0, -7, 0, 7);
-      grad.addColorStop(0, "#94a3b8");
-      grad.addColorStop(0.5, "#475569");
-      grad.addColorStop(1, "#1e293b");
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.roundRect(0, -7, 46, 14, 4);
-      ctx.fill();
-      ctx.strokeStyle = "#0f172a";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.fillStyle = "#0f172a";
-      ctx.fillRect(40, -6, 6, 12);
-      ctx.fillStyle = "rgba(248,113,113,0.5)";
-      ctx.fillRect(42, -4, 4, 8);
-      ctx.restore();
-
-      ctx.fillStyle = "#94a3b8";
-      ctx.beginPath();
-      ctx.arc(sx, sy - 4, 8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "#0f172a";
-      ctx.stroke();
-      ctx.restore();
-    };
-
-    const drawTarget = (
-      ctx: CanvasRenderingContext2D,
-      sx: number,
-      sy: number,
-      radiusPx: number,
-      hitGlow: number
-    ) => {
-      ctx.save();
-      ctx.strokeStyle = "#7c2d12";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.lineTo(sx, sy + radiusPx + 18);
-      ctx.stroke();
-      if (hitGlow > 0) {
-        const g = ctx.createRadialGradient(
-          sx,
-          sy,
-          radiusPx * 0.4,
-          sx,
-          sy,
-          radiusPx * 2.4
-        );
-        g.addColorStop(0, `rgba(250,204,21,${hitGlow})`);
-        g.addColorStop(1, "rgba(250,204,21,0)");
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(sx, sy, radiusPx * 2.4, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      const rings = [
-        { r: 1.0, c: "#dc2626" },
-        { r: 0.78, c: "#fef3c7" },
-        { r: 0.6, c: "#dc2626" },
-        { r: 0.4, c: "#fef3c7" },
-        { r: 0.22, c: "#dc2626" },
-        { r: 0.08, c: "#facc15" },
-      ];
-      for (const ring of rings) {
-        ctx.beginPath();
-        ctx.fillStyle = ring.c;
-        ctx.arc(sx, sy, radiusPx * ring.r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(0,0,0,0.25)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-      ctx.restore();
-    };
-
     const drawTrail = (ctx: CanvasRenderingContext2D) => {
       ctx.save();
       for (const p of trailRef.current) {
         const { sx, sy } = worldToScreen(p.x, p.y);
         const alpha = (p.life / p.maxLife) * 0.7;
         const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, 12);
-        grad.addColorStop(0, `rgba(254,215,170,${alpha})`);
-        grad.addColorStop(1, "rgba(254,215,170,0)");
+        grad.addColorStop(
+          0,
+          p.color.replace(/[\d.]+\)$/, `${alpha.toFixed(3)})`)
+        );
+        grad.addColorStop(1, p.color.replace(/[\d.]+\)$/, "0)"));
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.arc(sx, sy, 12, 0, Math.PI * 2);
@@ -554,19 +575,7 @@ const GameCanvas = ({
       const p = projectileRef.current;
       if (!p) return;
       const { sx, sy } = worldToScreen(p.x, p.y);
-      ctx.save();
-      const g = ctx.createRadialGradient(sx - 3, sy - 3, 1, sx, sy, 10);
-      g.addColorStop(0, "#fde68a");
-      g.addColorStop(0.5, "#f59e0b");
-      g.addColorStop(1, "#7c2d12");
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(sx, sy, 9, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "#451a03";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.restore();
+      drawProjectileSprite(ctx, sx, sy, assetsRef.current.projectile);
     };
 
     const drawParticles = (ctx: CanvasRenderingContext2D) => {
@@ -613,6 +622,31 @@ const GameCanvas = ({
       ctx.lineTo(mouseX, mouseY);
       ctx.stroke();
       ctx.restore();
+    };
+
+    const drawSpeedBadge = (
+      ctx: CanvasRenderingContext2D,
+      w: number
+    ) => {
+      if (pausedRef.current) {
+        ctx.save();
+        ctx.fillStyle = "rgba(15,23,42,0.78)";
+        ctx.fillRect(w - 96, 10, 86, 28);
+        ctx.fillStyle = "#fef3c7";
+        ctx.font = "bold 13px ui-sans-serif, system-ui, sans-serif";
+        ctx.fillText("⏸ Pausa", w - 86, 29);
+        ctx.restore();
+        return;
+      }
+      if (speedRef.current !== 1) {
+        ctx.save();
+        ctx.fillStyle = "rgba(15,23,42,0.78)";
+        ctx.fillRect(w - 96, 10, 86, 28);
+        ctx.fillStyle = "#a7f3d0";
+        ctx.font = "bold 13px ui-sans-serif, system-ui, sans-serif";
+        ctx.fillText(`${speedRef.current}× tiempo`, w - 86, 29);
+        ctx.restore();
+      }
     };
 
     const draw = () => {
@@ -662,9 +696,22 @@ const GameCanvas = ({
       const radiusPx = s.targetRadius * cam.pxPerMeter;
 
       const hitGlow = phaseRef.current === "hit" ? 0.7 : 0;
-      drawTarget(ctx, targetScreen.sx, targetScreen.sy, radiusPx, hitGlow);
+      drawTargetSprite(
+        ctx,
+        targetScreen.sx,
+        targetScreen.sy,
+        radiusPx,
+        assetsRef.current.target,
+        { hitGlow }
+      );
 
-      drawCannon(ctx, cannonScreen.sx, cannonScreen.sy, s.angle);
+      drawCannonSprite(
+        ctx,
+        cannonScreen.sx,
+        cannonScreen.sy,
+        s.angle,
+        assetsRef.current.cannon
+      );
 
       if (dragStateRef.current.active) {
         drawAimVector(
@@ -697,6 +744,8 @@ const GameCanvas = ({
       ctx.fillText(`v₀: ${s.velocity.toFixed(1)} m/s`, 20, 46);
       ctx.fillText(`Distancia: ${s.targetDistance} m`, 20, 62);
       ctx.restore();
+
+      drawSpeedBadge(ctx, w);
     };
 
     raf = requestAnimationFrame(tick);
@@ -768,7 +817,9 @@ const GameCanvas = ({
         {phase === "idle"
           ? "Arrastra el cañón para apuntar (estilo resortera) o usa los controles"
           : phase === "firing"
-            ? "¡En el aire!"
+            ? paused
+              ? "Pausado — ajusta la cámara o cambia la velocidad"
+              : "¡En el aire!"
             : phase === "hit"
               ? "¡Impacto!"
               : "Sin impacto"}

@@ -1,12 +1,26 @@
+import {
+  DEFAULT_MUSIC_TRACK,
+  type MusicTrackKey,
+} from "@/constants/simulatorPlayback";
+
 type WindowWithWebkit = Window & { webkitAudioContext?: typeof AudioContext };
 
 let ctx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 let musicGain: GainNode | null = null;
 let musicEnabled = false;
+let activeTrack: MusicTrackKey = DEFAULT_MUSIC_TRACK;
 let melodyTimer: number | null = null;
+let scheduledNodes: Array<OscillatorNode | AudioBufferSourceNode> = [];
 
 const NOTE_FREQS: Record<string, number> = {
+  C3: 130.81,
+  D3: 146.83,
+  E3: 164.81,
+  F3: 174.61,
+  G3: 196.0,
+  A3: 220.0,
+  B3: 246.94,
   C4: 261.63,
   D4: 293.66,
   E4: 329.63,
@@ -20,52 +34,169 @@ const NOTE_FREQS: Record<string, number> = {
   F5: 698.46,
   G5: 783.99,
   A5: 880.0,
+  B5: 987.77,
+  C6: 1046.5,
+  D6: 1174.66,
 };
 
-const MELODY: Array<{ note: string | null; dur: number }> = [
-  { note: "E5", dur: 0.18 },
-  { note: "E5", dur: 0.18 },
-  { note: null, dur: 0.18 },
-  { note: "E5", dur: 0.18 },
-  { note: null, dur: 0.18 },
-  { note: "C5", dur: 0.18 },
-  { note: "E5", dur: 0.18 },
-  { note: "G5", dur: 0.36 },
-  { note: null, dur: 0.18 },
-  { note: "G4", dur: 0.36 },
-  { note: null, dur: 0.18 },
-  { note: "C5", dur: 0.27 },
-  { note: null, dur: 0.18 },
-  { note: "G4", dur: 0.27 },
-  { note: null, dur: 0.18 },
-  { note: "E4", dur: 0.27 },
-  { note: null, dur: 0.18 },
-  { note: "A4", dur: 0.18 },
-  { note: "B4", dur: 0.18 },
-  { note: "A4", dur: 0.18 },
-  { note: "G4", dur: 0.18 },
-  { note: "E5", dur: 0.18 },
-  { note: "G5", dur: 0.18 },
-  { note: "A5", dur: 0.36 },
-  { note: "F5", dur: 0.18 },
-  { note: "G5", dur: 0.18 },
-  { note: null, dur: 0.18 },
-  { note: "E5", dur: 0.18 },
-  { note: "C5", dur: 0.18 },
-  { note: "D5", dur: 0.18 },
-  { note: "B4", dur: 0.36 },
-];
+type Note = { note: string | null; dur: number };
 
-const BASS: Array<{ note: string | null; dur: number }> = [
-  { note: "C4", dur: 0.36 },
-  { note: "C4", dur: 0.36 },
-  { note: "G4", dur: 0.36 },
-  { note: "G4", dur: 0.36 },
-  { note: "A4", dur: 0.36 },
-  { note: "A4", dur: 0.36 },
-  { note: "F4", dur: 0.36 },
-  { note: "G4", dur: 0.36 },
-];
+interface TrackDefinition {
+  bpm: number;
+  melodyWave: OscillatorType;
+  bassWave: OscillatorType;
+  padWave: OscillatorType | null;
+  melody: Note[];
+  bass: Note[];
+  pad?: Note[];
+  melodyGain: number;
+  bassGain: number;
+  padGain: number;
+}
+
+// Cuatro pistas originales: distinto modo/tempo/timbre.
+const TRACKS: Record<MusicTrackKey, TrackDefinition> = {
+  aurora: {
+    bpm: 132,
+    melodyWave: "square",
+    bassWave: "triangle",
+    padWave: null,
+    melodyGain: 0.12,
+    bassGain: 0.16,
+    padGain: 0,
+    melody: [
+      { note: "E5", dur: 0.22 },
+      { note: "G5", dur: 0.22 },
+      { note: "B5", dur: 0.22 },
+      { note: "G5", dur: 0.22 },
+      { note: "A5", dur: 0.22 },
+      { note: "G5", dur: 0.22 },
+      { note: "E5", dur: 0.22 },
+      { note: "D5", dur: 0.22 },
+      { note: "C5", dur: 0.22 },
+      { note: "E5", dur: 0.22 },
+      { note: "G5", dur: 0.22 },
+      { note: "C6", dur: 0.22 },
+      { note: "B5", dur: 0.22 },
+      { note: "A5", dur: 0.22 },
+      { note: "G5", dur: 0.22 },
+      { note: "F5", dur: 0.22 },
+    ],
+    bass: [
+      { note: "C4", dur: 0.44 },
+      { note: "G3", dur: 0.44 },
+      { note: "A3", dur: 0.44 },
+      { note: "F3", dur: 0.44 },
+    ],
+  },
+  voltage: {
+    bpm: 168,
+    melodyWave: "sawtooth",
+    bassWave: "square",
+    padWave: null,
+    melodyGain: 0.1,
+    bassGain: 0.18,
+    padGain: 0,
+    melody: [
+      { note: "A4", dur: 0.14 },
+      { note: "C5", dur: 0.14 },
+      { note: "E5", dur: 0.14 },
+      { note: "A5", dur: 0.14 },
+      { note: "G5", dur: 0.14 },
+      { note: "E5", dur: 0.14 },
+      { note: "C5", dur: 0.14 },
+      { note: "A4", dur: 0.14 },
+      { note: "D5", dur: 0.14 },
+      { note: "F5", dur: 0.14 },
+      { note: "A5", dur: 0.14 },
+      { note: "D6", dur: 0.14 },
+      { note: "C6", dur: 0.14 },
+      { note: "A5", dur: 0.14 },
+      { note: "E5", dur: 0.14 },
+      { note: "A4", dur: 0.14 },
+    ],
+    bass: [
+      { note: "A3", dur: 0.28 },
+      { note: "A3", dur: 0.28 },
+      { note: "F3", dur: 0.28 },
+      { note: "G3", dur: 0.28 },
+    ],
+  },
+  canopy: {
+    bpm: 96,
+    melodyWave: "triangle",
+    bassWave: "sine",
+    padWave: "sine",
+    melodyGain: 0.14,
+    bassGain: 0.2,
+    padGain: 0.05,
+    melody: [
+      { note: "G4", dur: 0.32 },
+      { note: "B4", dur: 0.32 },
+      { note: "D5", dur: 0.32 },
+      { note: "G5", dur: 0.32 },
+      { note: "D5", dur: 0.32 },
+      { note: "B4", dur: 0.32 },
+      { note: "C5", dur: 0.32 },
+      { note: "A4", dur: 0.32 },
+      { note: "D5", dur: 0.32 },
+      { note: "F5", dur: 0.32 },
+      { note: "A5", dur: 0.32 },
+      { note: "F5", dur: 0.32 },
+      { note: "E5", dur: 0.32 },
+      { note: "D5", dur: 0.32 },
+      { note: "C5", dur: 0.32 },
+      { note: "B4", dur: 0.32 },
+    ],
+    bass: [
+      { note: "G3", dur: 0.64 },
+      { note: "D4", dur: 0.64 },
+      { note: "C4", dur: 0.64 },
+      { note: "G3", dur: 0.64 },
+    ],
+    pad: [
+      { note: "B3", dur: 2.56 },
+      { note: "A3", dur: 2.56 },
+    ],
+  },
+  horizon: {
+    bpm: 110,
+    melodyWave: "triangle",
+    bassWave: "triangle",
+    padWave: "sine",
+    melodyGain: 0.13,
+    bassGain: 0.18,
+    padGain: 0.04,
+    melody: [
+      { note: "D5", dur: 0.27 },
+      { note: "F5", dur: 0.27 },
+      { note: "A5", dur: 0.27 },
+      { note: "D6", dur: 0.27 },
+      { note: "A5", dur: 0.27 },
+      { note: "F5", dur: 0.27 },
+      { note: "D5", dur: 0.27 },
+      { note: "A4", dur: 0.27 },
+      { note: "C5", dur: 0.27 },
+      { note: "E5", dur: 0.27 },
+      { note: "G5", dur: 0.27 },
+      { note: "C6", dur: 0.27 },
+      { note: "G5", dur: 0.27 },
+      { note: "E5", dur: 0.27 },
+      { note: "C5", dur: 0.27 },
+      { note: "G4", dur: 0.27 },
+    ],
+    bass: [
+      { note: "D3", dur: 0.54 },
+      { note: "A3", dur: 0.54 },
+      { note: "F3", dur: 0.54 },
+      { note: "G3", dur: 0.54 },
+    ],
+    pad: [
+      { note: "F4", dur: 2.16 },
+      { note: "E4", dur: 2.16 },
+    ],
+  },
+};
 
 function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -78,7 +209,7 @@ function getCtx(): AudioContext | null {
     masterGain.gain.value = 0.5;
     masterGain.connect(ctx.destination);
     musicGain = ctx.createGain();
-    musicGain.gain.value = 0.18;
+    musicGain.gain.value = 0.22;
     musicGain.connect(masterGain);
   }
   if (ctx.state === "suspended") {
@@ -185,56 +316,100 @@ export function playClick(): void {
   osc.stop(now + 0.07);
 }
 
-function scheduleLoop(audioCtx: AudioContext): void {
-  if (!musicEnabled || !musicGain) return;
-  const startTime = audioCtx.currentTime + 0.05;
+function scheduleVoice(
+  audioCtx: AudioContext,
+  destination: AudioNode,
+  notes: Note[],
+  startTime: number,
+  wave: OscillatorType,
+  peakGain: number,
+  octaveShift = 0,
+  loopUntil?: number
+): number {
   let t = startTime;
-
-  for (const { note, dur } of MELODY) {
-    if (note) {
-      const osc = audioCtx.createOscillator();
-      osc.type = "square";
-      osc.frequency.value = NOTE_FREQS[note];
-      const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.15, t + 0.01);
-      gain.gain.linearRampToValueAtTime(0.12, t + dur - 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      osc.connect(gain).connect(musicGain);
-      osc.start(t);
-      osc.stop(t + dur);
-    }
-    t += dur;
-  }
-  const melodyEnd = t;
-
-  let bt = startTime;
-  while (bt < melodyEnd) {
-    for (const { note, dur } of BASS) {
-      if (bt >= melodyEnd) break;
+  const playOnce = () => {
+    for (const { note, dur } of notes) {
       if (note) {
         const osc = audioCtx.createOscillator();
-        osc.type = "triangle";
-        osc.frequency.value = NOTE_FREQS[note] / 2;
+        osc.type = wave;
+        const baseFreq = NOTE_FREQS[note] ?? 440;
+        osc.frequency.value = baseFreq * Math.pow(2, octaveShift);
         const gain = audioCtx.createGain();
-        gain.gain.setValueAtTime(0, bt);
-        gain.gain.linearRampToValueAtTime(0.18, bt + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, bt + dur);
-        osc.connect(gain).connect(musicGain);
-        osc.start(bt);
-        osc.stop(bt + dur);
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(peakGain, t + 0.012);
+        gain.gain.linearRampToValueAtTime(
+          peakGain * 0.85,
+          t + Math.max(0.02, dur - 0.05)
+        );
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.connect(gain).connect(destination);
+        osc.start(t);
+        osc.stop(t + dur);
+        scheduledNodes.push(osc);
       }
-      bt += dur;
+      t += dur;
     }
+  };
+  if (loopUntil === undefined) {
+    playOnce();
+  } else {
+    while (t < loopUntil) {
+      playOnce();
+    }
+  }
+  return t;
+}
+
+function scheduleLoop(audioCtx: AudioContext): void {
+  if (!musicEnabled || !musicGain) return;
+  const track = TRACKS[activeTrack];
+  const startTime = audioCtx.currentTime + 0.05;
+
+  const melodyEnd = scheduleVoice(
+    audioCtx,
+    musicGain,
+    track.melody,
+    startTime,
+    track.melodyWave,
+    track.melodyGain
+  );
+
+  scheduleVoice(
+    audioCtx,
+    musicGain,
+    track.bass,
+    startTime,
+    track.bassWave,
+    track.bassGain,
+    -1,
+    melodyEnd
+  );
+
+  if (track.pad && track.padWave) {
+    scheduleVoice(
+      audioCtx,
+      musicGain,
+      track.pad,
+      startTime,
+      track.padWave,
+      track.padGain,
+      -1,
+      melodyEnd
+    );
   }
 
   const loopMs = (melodyEnd - audioCtx.currentTime) * 1000;
-  melodyTimer = window.setTimeout(() => scheduleLoop(audioCtx), loopMs - 50);
+  melodyTimer = window.setTimeout(() => {
+    scheduledNodes = scheduledNodes.filter(() => false);
+    scheduleLoop(audioCtx);
+  }, loopMs - 60);
 }
 
-export function startMusic(): void {
+export function startMusic(track?: MusicTrackKey): void {
   const c = getCtx();
-  if (!c || musicEnabled) return;
+  if (!c) return;
+  if (track) activeTrack = track;
+  if (musicEnabled) return;
   musicEnabled = true;
   scheduleLoop(c);
 }
@@ -245,6 +420,29 @@ export function stopMusic(): void {
     clearTimeout(melodyTimer);
     melodyTimer = null;
   }
+  if (ctx) {
+    const now = ctx.currentTime;
+    for (const node of scheduledNodes) {
+      try {
+        node.stop(now);
+      } catch {
+        // ya detenido
+      }
+    }
+  }
+  scheduledNodes = [];
+}
+
+export function setMusicTrack(track: MusicTrackKey): void {
+  if (activeTrack === track) return;
+  const wasPlaying = musicEnabled;
+  if (wasPlaying) stopMusic();
+  activeTrack = track;
+  if (wasPlaying) startMusic(track);
+}
+
+export function getMusicTrack(): MusicTrackKey {
+  return activeTrack;
 }
 
 export function isMusicPlaying(): boolean {

@@ -1,6 +1,40 @@
 "use client";
+import { Badge } from "amvasdev-ui";
+import { CheckCircle2 } from "lucide-react";
 import CustomLink from "@/components/CustomLink";
+import { useEscenarioCompletion } from "@/queries/useEscenarioCompletion";
 import { useMySalones } from "@/queries/useMySalones";
+
+interface EscenarioRowProps {
+  escenario: { idescenario: string; nombre: string };
+}
+
+const EscenarioRow = ({ escenario }: EscenarioRowProps) => {
+  const { completado, mejorPuntuacion } = useEscenarioCompletion(
+    escenario.idescenario
+  );
+  return (
+    <div className="flex items-center justify-between gap-4 bg-base-200 rounded-lg p-4">
+      <div className="min-w-0 flex-1 flex items-center gap-2">
+        {completado ? (
+          <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
+        ) : null}
+        <span className="font-medium truncate">{escenario.nombre}</span>
+        {completado && mejorPuntuacion !== null ? (
+          <Badge variant="success">{Math.round(mejorPuntuacion)} pts</Badge>
+        ) : null}
+      </div>
+      <CustomLink
+        href={`/alumno/escenario/${escenario.idescenario}`}
+        variant={completado ? "ghost" : "primary"}
+        size="sm"
+        className="whitespace-nowrap"
+      >
+        {completado ? "Repetir" : "Ir a simulación"}
+      </CustomLink>
+    </div>
+  );
+};
 
 const Actividades = () => {
   const { data: salones, isLoading, isError } = useMySalones();
@@ -21,7 +55,9 @@ const Actividades = () => {
     return (
       <div className="p-4 md:p-8">
         <div className="alert alert-error">
-          <span>No se pudieron cargar tus actividades. Intenta de nuevo más tarde.</span>
+          <span>
+            No se pudieron cargar tus actividades. Intenta de nuevo más tarde.
+          </span>
         </div>
       </div>
     );
@@ -51,20 +87,10 @@ const Actividades = () => {
                 <h2 className="text-xl font-semibold">{salon.nombresalon}</h2>
                 <div className="flex flex-col gap-3">
                   {salon.escenarios.map((escenario) => (
-                    <div
+                    <EscenarioRow
                       key={escenario.idescenario}
-                      className="flex items-center justify-between gap-4 bg-base-200 rounded-lg p-4"
-                    >
-                      <span className="font-medium">{escenario.nombre}</span>
-                      <CustomLink
-                        href={`/alumno/escenario/${escenario.idescenario}`}
-                        variant="primary"
-                        size="sm"
-                        className="whitespace-nowrap"
-                      >
-                        Ir a simulación
-                      </CustomLink>
-                    </div>
+                      escenario={escenario}
+                    />
                   ))}
                 </div>
               </div>

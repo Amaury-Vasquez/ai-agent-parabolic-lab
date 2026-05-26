@@ -28,6 +28,8 @@ export interface DatosInteraccion {
   puntuacionFinal: number;
   intentosUsados: number;
   tiempoTotalSegundos: number;
+  autoScoreMejor?: number;
+  calificacion_manual?: number;
 }
 
 export const EMPTY_RESOLUCION: ResolucionAlumno = {
