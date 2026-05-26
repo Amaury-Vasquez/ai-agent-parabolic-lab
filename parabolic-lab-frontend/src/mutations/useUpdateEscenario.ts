@@ -1,11 +1,11 @@
 "use client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
+import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import { Scenario } from "@/models/scenario";
+import { MY_SALONES_QUERY_KEY } from "@/fetchers/salones";
 import { patch } from "@/services/api";
 import { sanitizeData } from "@/utils/sanitizeData";
-import { Scenario } from "@/models/scenario";
-import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-import { MIS_ESCENARIOS_QUERY_KEY, ESCENARIO_QUERY_KEY } from "@/fetchers/escenarios";
 
 async function updateEscenario(
   token: string,
@@ -23,7 +23,6 @@ async function updateEscenario(
     activo: boolean;
   }>
 ): Promise<Scenario> {
-  // Sanitizar los datos para evitar enviar campos innecesarios como fechas
   const sanitizedData = sanitizeData(data);
   return patch<Scenario>(`/escenarios/${idescenario}`, sanitizedData, { token });
 }
@@ -34,14 +33,17 @@ export function useUpdateEscenario() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Parameters<typeof updateEscenario>[2] & { idescenario: string }) => {
+    mutationFn: (
+      data: Parameters<typeof updateEscenario>[2] & { idescenario: string }
+    ) => {
       const { idescenario, ...updateData } = data;
       return updateEscenario(token, idescenario, updateData);
     },
-    onSuccess: (_, { idescenario }) => {
-      // Invalidar el cache de mis escenarios y del escenario específico
-      queryClient.invalidateQueries({ queryKey: MIS_ESCENARIOS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ESCENARIO_QUERY_KEY(idescenario) });
+    onSuccess: () => {
+      // Invalida cualquier listado o detalle de escenarios y los salones que los
+      // embeben — así toda vista donde aparezca el escenario se refresca.
+      queryClient.invalidateQueries({ queryKey: ["escenarios"] });
+      queryClient.invalidateQueries({ queryKey: MY_SALONES_QUERY_KEY });
     },
   });
 }

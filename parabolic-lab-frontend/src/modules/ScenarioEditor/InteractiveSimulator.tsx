@@ -250,6 +250,62 @@ const InteractiveSimulator = () => {
             </div>
           </div>
 
+          {/* Indicador de rango de posición del cañón (cuando lock activo) */}
+          {physicsConfig.locks?.cannonX?.enabled ? (
+            <div
+              className="absolute bottom-24 h-2 rounded bg-warning/40 border-y-2 border-warning pointer-events-none"
+              style={{
+                left: `${60 + physicsConfig.locks.cannonX.min * 3}px`,
+                width: `${
+                  Math.max(
+                    1,
+                    physicsConfig.locks.cannonX.max -
+                      physicsConfig.locks.cannonX.min
+                  ) * 3
+                }px`,
+              }}
+              title="Rango permitido al alumno para mover el cañón"
+            />
+          ) : null}
+
+          {/* Indicador de rango de posición del objetivo (cuando lock activo) */}
+          {physicsConfig.locks?.targetDistance?.enabled ? (
+            <div
+              className="absolute bottom-24 h-2 rounded bg-secondary/40 border-y-2 border-secondary pointer-events-none"
+              style={{
+                left: `${140 + physicsConfig.locks.targetDistance.min * 3}px`,
+                width: `${
+                  Math.max(
+                    1,
+                    physicsConfig.locks.targetDistance.max -
+                      physicsConfig.locks.targetDistance.min
+                  ) * 3
+                }px`,
+              }}
+              title="Rango permitido para la posición del blanco"
+            />
+          ) : null}
+
+          {/* Indicador de rango de altura del cañón (cuando lock activo) */}
+          {physicsConfig.locks?.cannonHeight?.enabled ? (
+            <div
+              className="absolute left-12 w-2 rounded bg-accent/40 border-x-2 border-accent pointer-events-none"
+              style={{
+                bottom: `${
+                  96 + physicsConfig.locks.cannonHeight.min * 3
+                }px`,
+                height: `${
+                  Math.max(
+                    1,
+                    physicsConfig.locks.cannonHeight.max -
+                      physicsConfig.locks.cannonHeight.min
+                  ) * 3
+                }px`,
+              }}
+              title="Rango permitido para la altura del cañón"
+            />
+          ) : null}
+
           {/* Velocity indicator */}
           <div className="absolute top-4 right-4 bg-white rounded-lg shadow-md p-3 pointer-events-none">
             <div className="text-xs opacity-70">Velocidad inicial</div>

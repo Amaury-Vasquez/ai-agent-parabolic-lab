@@ -43,3 +43,26 @@ export interface ScorePopup {
   life: number;
   color: string;
 }
+
+export interface TrajectoryMetrics {
+  // Estado en vivo durante el vuelo
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  // Acumulados durante el vuelo
+  alturaMaxima: number;
+  tiempoVuelo: number;
+  alcance: number;
+}
+
+export interface ShotOutcome {
+  hit: boolean;
+  distance: number;
+  // Score 0–100 calculado automáticamente
+  autoScore: number;
+  // Punto de aterrizaje real (último punto de la trayectoria)
+  landingX: number;
+  landingY: number;
+  metrics: TrajectoryMetrics;
+}
