@@ -41,6 +41,11 @@ export const TEACHER_NAV_LINKS: NavLink[] = [
     label: "Reportes y Progreso",
     icon: <BarChart3 className="size-5" />,
   },
+  {
+    href: "/docente/tutorial",
+    label: "Tutorial",
+    icon: <HelpCircle className="size-5" />,
+  },
 ];
 
 export const ADMIN_NAV_LINKS: NavLink[] = [
