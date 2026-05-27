@@ -5,7 +5,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import case, func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.functions import coalesce
@@ -257,7 +257,18 @@ async def obtener_progreso_salon(
     if salon.iddocente != current_user.docente.iddocente:
         raise HTTPException(status_code=403, detail="No tienes permiso para ver el progreso de este salon")
 
-    # Query para obtener estadísticas de alumnos con outer join para incluir alumnos sin interacciones
+    # Subquery: escenarios activos de este salón. Sin este filtro en el JOIN,
+    # las agregaciones sumarían interacciones del alumno en OTROS salones.
+    escenarios_salon_subq = (
+        select(Escenario.idescenario)
+        .where(Escenario.idsalon == idsalon)
+        .where(Escenario.activo.is_(True))
+        .scalar_subquery()
+    )
+
+    # Query para obtener estadísticas de alumnos con outer join para incluir
+    # alumnos sin interacciones. Las métricas se restringen estrictamente a
+    # interacciones cuyos escenarios pertenecen a este salón.
     query = (
         select(
             Alumno.idalumno,
@@ -269,10 +280,15 @@ async def obtener_progreso_salon(
             func.max(InteraccionEscenario.puntuacion).label("mejor_puntuacion"),
             coalesce(func.sum(InteraccionEscenario.intentosrealizados), 0).label("total_intentos"),
             coalesce(
-                func.sum(
-                    case(
-                        (InteraccionEscenario.completado.is_(True), 1),
-                        else_=0,
+                func.count(
+                    func.distinct(
+                        case(
+                            (
+                                InteraccionEscenario.completado.is_(True),
+                                InteraccionEscenario.idescenario,
+                            ),
+                            else_=None,
+                        )
                     )
                 ),
                 0,
@@ -281,7 +297,13 @@ async def obtener_progreso_salon(
         )
         .join(AlumnoEnSalon, Alumno.idalumno == AlumnoEnSalon.idalumno)
         .join(Usuario, Alumno.idusuario == Usuario.idusuario)
-        .outerjoin(InteraccionEscenario, Alumno.idalumno == InteraccionEscenario.idalumno)
+        .outerjoin(
+            InteraccionEscenario,
+            and_(
+                Alumno.idalumno == InteraccionEscenario.idalumno,
+                InteraccionEscenario.idescenario.in_(escenarios_salon_subq),
+            ),
+        )
         .where(AlumnoEnSalon.idsalon == idsalon)
         .where(AlumnoEnSalon.activo.is_(True))
         .group_by(
@@ -346,7 +368,18 @@ async def listar_estudiantes_salon(
     )
     total_escenarios = total_escenarios_result.scalar() or 0
 
-    # Query para obtener estudiantes con información de progreso
+    # Subquery: escenarios activos del salón (para limitar el conteo de
+    # interacciones a las que pertenecen a este salón).
+    escenarios_salon_subq = (
+        select(Escenario.idescenario)
+        .where(Escenario.idsalon == idsalon)
+        .where(Escenario.activo.is_(True))
+        .scalar_subquery()
+    )
+
+    # Query para obtener estudiantes con información de progreso.
+    # Cuenta escenarios únicos completados (DISTINCT idescenario) para que
+    # múltiples intentos sobre el mismo escenario no inflen el progreso.
     query = (
         select(
             Alumno.idalumno,
@@ -357,9 +390,14 @@ async def listar_estudiantes_salon(
             Usuario.ultimoacceso,
             coalesce(
                 func.count(
-                    case(
-                        (InteraccionEscenario.completado.is_(True), 1),
-                        else_=None,
+                    func.distinct(
+                        case(
+                            (
+                                InteraccionEscenario.completado.is_(True),
+                                InteraccionEscenario.idescenario,
+                            ),
+                            else_=None,
+                        )
                     )
                 ),
                 0,
@@ -367,7 +405,13 @@ async def listar_estudiantes_salon(
         )
         .join(AlumnoEnSalon, Alumno.idalumno == AlumnoEnSalon.idalumno)
         .join(Usuario, Alumno.idusuario == Usuario.idusuario)
-        .outerjoin(InteraccionEscenario, Alumno.idalumno == InteraccionEscenario.idalumno)
+        .outerjoin(
+            InteraccionEscenario,
+            and_(
+                Alumno.idalumno == InteraccionEscenario.idalumno,
+                InteraccionEscenario.idescenario.in_(escenarios_salon_subq),
+            ),
+        )
         .where(AlumnoEnSalon.idsalon == idsalon)
         .where(AlumnoEnSalon.activo.is_(True))
         .group_by(
@@ -573,52 +617,129 @@ async def obtener_desempeno_alumno(
         raise HTTPException(status_code=404, detail="Alumno no encontrado")
     _alumno, usuario = row
 
-    # Interacciones del alumno en escenarios de este salón
+    # Total de escenarios activos asignados al salón — denominador del progreso.
+    total_escenarios_result = await db.execute(
+        select(func.count(Escenario.idescenario)).where(
+            Escenario.idsalon == idsalon,
+            Escenario.activo.is_(True),
+        )
+    )
+    total_escenarios_salon = int(total_escenarios_result.scalar() or 0)
+
+    # Interacciones del alumno en escenarios activos de este salón.
+    # Orden DESC por fechainicio para que, al agrupar, el primer registro de
+    # cada escenario sea el intento más reciente.
     interacciones_result = await db.execute(
         select(InteraccionEscenario, Escenario)
         .join(Escenario, InteraccionEscenario.idescenario == Escenario.idescenario)
         .where(InteraccionEscenario.idalumno == idalumno)
         .where(Escenario.idsalon == idsalon)
+        .where(Escenario.activo.is_(True))
         .order_by(InteraccionEscenario.fechainicio.desc())
     )
     rows = interacciones_result.all()
 
-    interacciones_payload: list[InteraccionConEscenario] = []
-    puntuaciones: list[float] = []
-    tiempos: list[int] = []
-    intentos_total = 0
-    completados = 0
+    # Agrupar por escenario: una sola fila por escenario, con la mejor
+    # puntuación y la suma de tiempos / intentos de todos los intentos.
+    grupos: dict[UUID, dict] = {}
+    intentos_total_global = 0
+    tiempo_total_segundos = 0
 
     for interaccion, escenario in rows:
+        punt = (
+            float(interaccion.puntuacion)
+            if interaccion.puntuacion is not None
+            else None
+        )
+        tiempo = interaccion.tiempototal or 0
+        intentos = interaccion.intentosrealizados or 0
+        completado = bool(interaccion.completado)
+
+        intentos_total_global += intentos
+        tiempo_total_segundos += tiempo
+
+        grupo = grupos.get(interaccion.idescenario)
+        if grupo is None:
+            # Primer registro = más reciente (rows vienen DESC por fechainicio).
+            grupos[interaccion.idescenario] = {
+                "escenario": escenario,
+                "mejor_interaccion": interaccion,
+                "mejor_puntuacion": punt,
+                "tiempo_sum": tiempo,
+                "intentos_sum": intentos,
+                "completado": completado,
+                "fechainicio_first": interaccion.fechainicio,
+                "fechafin_last": interaccion.fechafin,
+            }
+            continue
+
+        grupo["tiempo_sum"] += tiempo
+        grupo["intentos_sum"] += intentos
+        grupo["completado"] = grupo["completado"] or completado
+
+        # Conservar la interacción con la mejor puntuación como representante.
+        if punt is not None and (
+            grupo["mejor_puntuacion"] is None or punt > grupo["mejor_puntuacion"]
+        ):
+            grupo["mejor_interaccion"] = interaccion
+            grupo["mejor_puntuacion"] = punt
+
+        # Rango de fechas del escenario: inicio más temprano, fin más reciente.
+        if interaccion.fechainicio is not None and (
+            grupo["fechainicio_first"] is None
+            or interaccion.fechainicio < grupo["fechainicio_first"]
+        ):
+            grupo["fechainicio_first"] = interaccion.fechainicio
+        if interaccion.fechafin is not None and (
+            grupo["fechafin_last"] is None
+            or interaccion.fechafin > grupo["fechafin_last"]
+        ):
+            grupo["fechafin_last"] = interaccion.fechafin
+
+    interacciones_payload: list[InteraccionConEscenario] = []
+    mejores_por_escenario: list[float] = []
+    completados = 0
+
+    for grupo in grupos.values():
+        escenario = grupo["escenario"]
+        mejor_interaccion: InteraccionEscenario = grupo["mejor_interaccion"]
+        mejor_puntuacion: float | None = grupo["mejor_puntuacion"]
+        if grupo["completado"]:
+            completados += 1
+        if mejor_puntuacion is not None:
+            mejores_por_escenario.append(mejor_puntuacion)
+
         interacciones_payload.append(
             InteraccionConEscenario(
-                idinteraccion=interaccion.idinteraccion,
-                idescenario=interaccion.idescenario,
+                idinteraccion=mejor_interaccion.idinteraccion,
+                idescenario=escenario.idescenario,
                 escenario_nombre=escenario.nombre,
                 escenario_dificultad=escenario.niveldificultad,
-                fechainicio=interaccion.fechainicio,
-                fechafin=interaccion.fechafin,
-                tiempototal=interaccion.tiempototal,
-                intentosrealizados=interaccion.intentosrealizados,
-                puntuacion=interaccion.puntuacion,
-                completado=interaccion.completado,
-                datosinteraccion=interaccion.datosinteraccion,
+                fechainicio=grupo["fechainicio_first"],
+                fechafin=grupo["fechafin_last"],
+                tiempototal=grupo["tiempo_sum"],
+                intentosrealizados=grupo["intentos_sum"],
+                puntuacion=(
+                    Decimal(str(mejor_puntuacion))
+                    if mejor_puntuacion is not None
+                    else None
+                ),
+                completado=grupo["completado"],
+                datosinteraccion=mejor_interaccion.datosinteraccion,
             )
         )
-        if interaccion.puntuacion is not None:
-            puntuaciones.append(float(interaccion.puntuacion))
-        if interaccion.tiempototal is not None:
-            tiempos.append(interaccion.tiempototal)
-        if interaccion.intentosrealizados is not None:
-            intentos_total += interaccion.intentosrealizados
-        if interaccion.completado:
-            completados += 1
 
     promedio = (
-        Decimal(sum(puntuaciones) / len(puntuaciones)) if puntuaciones else None
+        Decimal(str(sum(mejores_por_escenario) / len(mejores_por_escenario)))
+        if mejores_por_escenario
+        else None
     )
-    mejor = Decimal(max(puntuaciones)) if puntuaciones else None
-    tiempo_min = sum(tiempos) / 60.0 if tiempos else 0.0
+    mejor = (
+        Decimal(str(max(mejores_por_escenario)))
+        if mejores_por_escenario
+        else None
+    )
+    tiempo_min = tiempo_total_segundos / 60.0 if tiempo_total_segundos else 0.0
 
     return DesempenoAlumnoEnSalon(
         idalumno=idalumno,
@@ -626,11 +747,12 @@ async def obtener_desempeno_alumno(
         apellidopaterno=usuario.apellidopaterno,
         apellidomaterno=usuario.apellidomaterno,
         email=usuario.email,
-        total_interacciones=len(interacciones_payload),
+        # Denominador del progreso: escenarios únicos asignados al salón.
+        total_interacciones=total_escenarios_salon,
         escenarios_completados=completados,
         promedio_puntuacion=promedio,
         mejor_puntuacion=mejor,
-        total_intentos=intentos_total,
+        total_intentos=intentos_total_global,
         tiempo_total_minutos=tiempo_min,
         interacciones=interacciones_payload,
     )
