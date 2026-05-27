@@ -4,9 +4,16 @@ import { Button, Input } from "amvasdev-ui";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import PhysicsConfigBuilder from "@/components/PhysicsConfigBuilder";
+import ScenarioAssetsBuilder from "@/components/ScenarioAssetsBuilder";
 import { DIFFICULTY_LEVELS } from "@/constants/difficultyLevels";
 import { PHYSICS_DEFAULTS } from "@/constants/physicsDefaults";
 import { SCENARIO_TYPES } from "@/constants/scenarioTypes";
+import {
+  DEFAULT_ASSETS,
+  type CannonAssetKey,
+  type ProjectileAssetKey,
+  type TargetAssetKey,
+} from "@/constants/simulatorAssets";
 import { useCreateEscenario } from "@/mutations/useCreateEscenario";
 import { useUpdateEscenario } from "@/mutations/useUpdateEscenario";
 import { DIFFICULTY_MAP, TYPE_MAP } from "@/utils/scenarioMappers";
@@ -15,7 +22,10 @@ import {
   useScenarioEditor,
 } from "@/contexts/ScenarioEditorContext";
 import type { Scenario } from "@/models/scenario";
-import type { PhysicsConfig } from "@/types/physicsConfig";
+import type {
+  AssetSelection,
+  PhysicsConfig,
+} from "@/types/physicsConfig";
 import type {
   ScenarioFormData,
   ScenarioFormErrors,
@@ -36,6 +46,27 @@ const ScenarioEditorForm = ({
   const router = useRouter();
   const isEditing = Boolean(scenarioId && initialData);
   const { physicsConfig, setPhysicsConfig } = useScenarioEditor();
+
+  const initialCfg = (initialData?.configuracionescenario ?? {}) as {
+    assets?: Partial<AssetSelection>;
+    orden?: number;
+  };
+  const [assets, setAssets] = useState<{
+    cannon: CannonAssetKey;
+    projectile: ProjectileAssetKey;
+    target: TargetAssetKey;
+  }>({
+    cannon:
+      (initialCfg.assets?.cannon as CannonAssetKey | undefined) ??
+      DEFAULT_ASSETS.cannon,
+    projectile:
+      (initialCfg.assets?.projectile as ProjectileAssetKey | undefined) ??
+      DEFAULT_ASSETS.projectile,
+    target:
+      (initialCfg.assets?.target as TargetAssetKey | undefined) ??
+      DEFAULT_ASSETS.target,
+  });
+  const [orden, setOrden] = useState<number>(initialCfg.orden ?? 0);
 
   const [formData, setFormData] = useState<ScenarioFormData>({
     nombre: initialData?.nombre || "",
@@ -78,9 +109,11 @@ const ScenarioEditorForm = ({
       configuracionescenario: {
         ...prev.configuracionescenario,
         physics: physicsConfig,
+        assets,
+        orden,
       },
     }));
-  }, [physicsConfig]);
+  }, [physicsConfig, assets, orden]);
 
   const validateForm = (): boolean => {
     const newErrors: ScenarioFormErrors = {};
@@ -387,6 +420,24 @@ const ScenarioEditorForm = ({
           <PhysicsConfigBuilder
             config={physicsConfig}
             onChange={setPhysicsConfig}
+          />
+        </div>
+
+        {/* Visuales y Progresión */}
+        <div className="bg-base-200 p-4 sm:p-6 rounded-lg">
+          <ScenarioAssetsBuilder
+            cannon={assets.cannon}
+            projectile={assets.projectile}
+            target={assets.target}
+            orden={orden}
+            onChange={(next) => {
+              setAssets({
+                cannon: next.cannon,
+                projectile: next.projectile,
+                target: next.target,
+              });
+              setOrden(next.orden);
+            }}
           />
         </div>
 

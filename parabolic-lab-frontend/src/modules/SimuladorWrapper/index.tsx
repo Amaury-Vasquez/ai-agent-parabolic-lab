@@ -8,10 +8,17 @@ import { useCookies } from "react-cookie";
 import ReporteIntentoModal from "@/components/ReporteIntentoModal";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import { createInteraccion, updateInteraccion } from "@/fetchers/interacciones";
-import { MIS_INTERACCIONES_QUERY_KEY, PROGRESO_ALUMNO_QUERY_KEY } from "@/fetchers/interaccionesAlumno";
+import {
+  MIS_INTERACCIONES_QUERY_KEY,
+  PROGRESO_ALUMNO_QUERY_KEY,
+} from "@/fetchers/interaccionesAlumno";
 import { Scenario } from "@/models/scenario";
+import CompletionModal from "@/modules/SimuladorTiroParabolico/CompletionModal";
 import SimuladorTiroParabolico from "@/modules/SimuladorTiroParabolico";
-import type { ScoreState } from "@/modules/SimuladorTiroParabolico/types";
+import type {
+  ScoreState,
+  ShotOutcome,
+} from "@/modules/SimuladorTiroParabolico/types";
 import {
   DatosInteraccion,
   Disparo,
@@ -49,8 +56,10 @@ const SimuladorWrapper = ({
   const startTimeRef = useRef<number>(Date.now());
 
   const [disparos, setDisparos] = useState<Disparo[]>([]);
-  const [resolucion, setResolucion] = useState<ResolucionAlumno>(EMPTY_RESOLUCION);
+  const [resolucion, setResolucion] =
+    useState<ResolucionAlumno>(EMPTY_RESOLUCION);
   const [score, setScore] = useState<ScoreState>(INITIAL_SCORE);
+  const [bestAutoScore, setBestAutoScore] = useState(0);
   const [loading, setLoading] = useState(true);
   const [createError, setCreateError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -60,12 +69,18 @@ const SimuladorWrapper = ({
   const [reporteModalOpen, setReporteModalOpen] = useState(false);
   const [reporteInteraccionId, setReporteInteraccionId] = useState<string | null>(null);
 
+  const [completionOpen, setCompletionOpen] = useState(false);
+  const [completionHit, setCompletionHit] = useState(false);
+
   const disparosRef = useRef(disparos);
   const resolucionRef = useRef(resolucion);
   const scoreRef = useRef(score);
+  const bestAutoScoreRef = useRef(bestAutoScore);
   const dirtyRef = useRef(false);
   const finishedRef = useRef(false);
+  const completionShownRef = useRef(false);
   const saveTimerRef = useRef<number | null>(null);
+  const finishReasonRef = useRef<"manual" | "tiempo">("manual");
 
   useEffect(() => {
     disparosRef.current = disparos;
@@ -76,6 +91,9 @@ const SimuladorWrapper = ({
   useEffect(() => {
     scoreRef.current = score;
   }, [score]);
+  useEffect(() => {
+    bestAutoScoreRef.current = bestAutoScore;
+  }, [bestAutoScore]);
 
   useEffect(() => {
     if (!token) return;
@@ -103,7 +121,8 @@ const SimuladorWrapper = ({
   const buildDatosInteraccion = (): DatosInteraccion => ({
     disparos: disparosRef.current,
     resolucion: resolucionRef.current,
-    puntuacionFinal: scoreRef.current.points,
+    puntuacionFinal: bestAutoScoreRef.current,
+    autoScoreMejor: bestAutoScoreRef.current,
     intentosUsados: scoreRef.current.shots,
     tiempoTotalSegundos: Math.floor(
       (Date.now() - startTimeRef.current) / 1000
@@ -118,7 +137,7 @@ const SimuladorWrapper = ({
       const datos = buildDatosInteraccion();
       await updateInteraccion(token, interaccionId.current, {
         datosinteraccion: datos as unknown as Record<string, unknown>,
-        puntuacion: datos.puntuacionFinal,
+        puntuacion: bestAutoScoreRef.current,
         tiempototal: datos.tiempoTotalSegundos,
         ...(final ? { completado: true } : {}),
       });
@@ -151,7 +170,7 @@ const SimuladorWrapper = ({
     return () => {
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     };
-  }, [disparos, resolucion, score]);
+  }, [disparos, resolucion, score, bestAutoScore]);
 
   const handleDisparo = (d: Disparo) => {
     dirtyRef.current = true;
@@ -170,15 +189,39 @@ const SimuladorWrapper = ({
     )
       return;
     setScore(s);
+    if (
+      scenario?.intentospermitidos &&
+      s.shots >= scenario.intentospermitidos &&
+      !completionShownRef.current &&
+      !finishedRef.current
+    ) {
+      completionShownRef.current = true;
+      setCompletionHit(false);
+      setCompletionOpen(true);
+    }
+  };
+
+  const handleAutoScoreChange = (best: number) => {
+    if (best > bestAutoScoreRef.current) {
+      dirtyRef.current = true;
+      setBestAutoScore(best);
+    }
+  };
+
+  const handleShotOutcome = (outcome: ShotOutcome) => {
+    if (outcome.hit && !completionShownRef.current && !finishedRef.current) {
+      completionShownRef.current = true;
+      setCompletionHit(true);
+      setCompletionOpen(true);
+    }
   };
 
   const finish = async (motivo: "manual" | "tiempo") => {
     if (finishedRef.current) return;
     finishedRef.current = true;
+    finishReasonRef.current = motivo;
     setIsFinishing(true);
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
-    // Si un autosave está en vuelo, esperarlo antes de disparar el save final
-    // (dos PATCH concurrentes al mismo recurso pueden ser cancelados por el browser).
     if (inFlightSaveRef.current) {
       try {
         await inFlightSaveRef.current;
@@ -193,8 +236,12 @@ const SimuladorWrapper = ({
       finishedRef.current = false;
       return;
     }
-    await queryClient.invalidateQueries({ queryKey: PROGRESO_ALUMNO_QUERY_KEY });
-    await queryClient.invalidateQueries({ queryKey: MIS_INTERACCIONES_QUERY_KEY });
+    await queryClient.invalidateQueries({
+      queryKey: PROGRESO_ALUMNO_QUERY_KEY,
+    });
+    await queryClient.invalidateQueries({
+      queryKey: MIS_INTERACCIONES_QUERY_KEY,
+    });
     setReporteInteraccionId(interaccionId.current);
     setReporteModalOpen(true);
     setIsFinishing(false);
@@ -205,11 +252,22 @@ const SimuladorWrapper = ({
     const fallbackBase = idactividad
       ? `/alumno/actividad/${idactividad}`
       : `/alumno/escenarios`;
-    router.push(returnUrl ?? fallbackBase);
+    // Preservar la señal de "tiempo agotado" para que la página destino
+    // muestre el aviso correspondiente (comportamiento heredado de main).
+    const destino =
+      finishReasonRef.current === "tiempo"
+        ? `${fallbackBase}?tiempo=agotado`
+        : fallbackBase;
+    router.push(returnUrl ?? destino);
   };
 
   const handleTerminar = () => finish("manual");
   const handleTiempoAgotado = () => finish("tiempo");
+
+  const handleCompletionContinue = () => finish("manual");
+  const handleKeepPracticing = () => {
+    setCompletionOpen(false);
+  };
 
   if (loading) {
     return (
@@ -259,6 +317,8 @@ const SimuladorWrapper = ({
           onResolucionChange={handleResolucionChange}
           onDisparo={handleDisparo}
           onScoreChange={handleScoreChange}
+          onAutoScoreChange={handleAutoScoreChange}
+          onShotOutcome={handleShotOutcome}
           onTiempoAgotado={handleTiempoAgotado}
           startTime={startTimeRef.current}
         />
@@ -273,6 +333,19 @@ const SimuladorWrapper = ({
             {isFinishing ? "Terminando..." : "Terminar actividad"}
           </Button>
         </div>
+        <CompletionModal
+          open={completionOpen}
+          hit={completionHit}
+          autoScore={bestAutoScore}
+          intentosUsados={score.shots}
+          intentosPermitidos={scenario?.intentospermitidos ?? null}
+          tiempoTotalSegundos={Math.floor(
+            (Date.now() - startTimeRef.current) / 1000
+          )}
+          isSaving={isFinishing}
+          onContinue={handleCompletionContinue}
+          onKeepPracticing={completionHit ? handleKeepPracticing : undefined}
+        />
       </div>
       <ReporteIntentoModal
         isOpen={reporteModalOpen}

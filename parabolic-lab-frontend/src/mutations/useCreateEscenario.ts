@@ -1,11 +1,11 @@
 "use client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCookies } from "react-cookie";
+import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import { Scenario } from "@/models/scenario";
+import { MY_SALONES_QUERY_KEY } from "@/fetchers/salones";
 import { post } from "@/services/api";
 import { sanitizeData } from "@/utils/sanitizeData";
-import { Scenario } from "@/models/scenario";
-import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-import { MIS_ESCENARIOS_QUERY_KEY } from "@/fetchers/escenarios";
 
 async function createEscenario(
   token: string,
@@ -22,7 +22,6 @@ async function createEscenario(
     configuracionescenario?: Record<string, unknown>;
   }
 ): Promise<Scenario> {
-  // Sanitizar los datos para evitar enviar campos innecesarios
   const sanitizedData = sanitizeData(data);
   return post<Scenario>("/escenarios/", sanitizedData, { token });
 }
@@ -36,8 +35,10 @@ export function useCreateEscenario() {
     mutationFn: (data: Parameters<typeof createEscenario>[1]) =>
       createEscenario(token, data),
     onSuccess: () => {
-      // Invalidar el cache de mis escenarios para que se refleje el nuevo escenario
-      queryClient.invalidateQueries({ queryKey: MIS_ESCENARIOS_QUERY_KEY });
+      // Invalida listados de escenarios y salones (que embeben escenarios)
+      // para que toda vista refleje el nuevo escenario.
+      queryClient.invalidateQueries({ queryKey: ["escenarios"] });
+      queryClient.invalidateQueries({ queryKey: MY_SALONES_QUERY_KEY });
     },
   });
 }
