@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { EstudianteEnSalon } from "@/models/estudiante";
 import { useDarDeBajaEstudiante } from "@/mutations/useDarDeBajaEstudiante";
 import { useEstudiantesBySalon } from "@/queries/useEstudiantesBySalon";
+import EmptyState from "@/components/EmptyState";
 import AgregarEstudianteModal from "./AgregarEstudianteModal";
 
 interface GestionEstudiantesProps {
@@ -106,22 +107,13 @@ const GestionEstudiantes = ({ salonId }: GestionEstudiantesProps) => {
       ) : null}
 
       {!estudiantes || estudiantes.length === 0 ? (
-        <div className="card bg-base-200">
-          <div className="card-body items-center justify-center h-64">
-            <p className="text-center opacity-60">
-              No hay estudiantes en este salón aún
-            </p>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setIsAgregarModalOpen(true)}
-              className="gap-2 mt-4"
-            >
-              <Plus size={16} />
-              Agregar primer estudiante
-            </Button>
-          </div>
-        </div>
+        <EmptyState
+          emoji="👨🎓"
+          title="No hay estudiantes en este salón"
+          subtitle="Agrega estudiantes por correo electrónico o comparte el código de acceso del salón."
+          actionLabel="Agregar estudiante"
+          onAction={() => setIsAgregarModalOpen(true)}
+        />
       ) : (
         <div className="overflow-x-auto bg-base-100 rounded-lg border border-base-300">
           <table className="table w-full">

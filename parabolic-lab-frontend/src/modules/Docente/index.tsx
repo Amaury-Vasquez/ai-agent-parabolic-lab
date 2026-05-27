@@ -2,6 +2,8 @@
 import { Button } from "amvasdev-ui";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import EmptyState from "@/components/EmptyState";
+import TutorialModal from "@/components/TutorialModal";
 import SalonCard from "./SalonCard";
 import CreateClassroomModal from "@/components/CreateClassroomModal";
 import InstitutionIdCard from "@/components/InstitutionIdCard";
@@ -27,6 +29,9 @@ function sortSalones(salones: Salon[], sortBy: string): Salon[] {
 const Docente = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState("reciente");
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [showTutorialPrompt, setShowTutorialPrompt] = useState(true);
+
   const { data: salones, isLoading } = useMySalones();
   const { data: me } = useMe();
   const { data: institucion } = useInstitucion(me?.idinstitucion);
@@ -85,12 +90,13 @@ const Docente = () => {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 opacity-60">
-          <p className="text-lg">No tienes salones asignados aún.</p>
-          <p className="text-sm mt-1">
-            Crea un nuevo salón para comenzar.
-          </p>
-        </div>
+        <EmptyState
+          emoji="🏫"
+          title="Aún no tienes salones creados"
+          subtitle="Crea tu primer salón y comienza a gestionar tus clases de física."
+          actionLabel="Crear mi primer salón"
+          onAction={() => setIsModalOpen(true)}
+        />
       )}
 
       {/* Create Classroom Modal */}
@@ -98,6 +104,37 @@ const Docente = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
+
+      <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} />
+
+      {/* Floating tutorial prompt widget */}
+      {showTutorialPrompt && !isTutorialOpen ? (
+        <div className="fixed bottom-6 right-6 z-40 bg-base-100 shadow-xl border border-base-300 rounded-2xl p-4 max-w-sm animate-fade-in">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl select-none">🎓</span>
+            <p className="text-sm font-semibold text-base-content">
+              ¡Hola! ¿Deseas ver un recorrido rápido por el sistema?
+            </p>
+          </div>
+          <div className="flex gap-2 mt-3 justify-end">
+            <button
+              className="btn btn-ghost btn-sm text-base-content/60"
+              onClick={() => setShowTutorialPrompt(false)}
+            >
+              No, gracias
+            </button>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                setShowTutorialPrompt(false);
+                setIsTutorialOpen(true);
+              }}
+            >
+              Sí, ver tutorial
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

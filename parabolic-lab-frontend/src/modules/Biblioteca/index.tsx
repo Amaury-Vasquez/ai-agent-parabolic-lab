@@ -7,6 +7,7 @@ import type { Scenario } from "@/models/scenario";
 import { useDeleteEscenario } from "@/mutations/useDeleteEscenario";
 import { useMisEscenarios } from "@/queries/useMisEscenarios";
 import { useMySalones } from "@/queries/useMySalones";
+import EmptyState from "@/components/EmptyState";
 import AsignarEscenarioModal from "./AsignarEscenarioModal";
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -230,13 +231,13 @@ const Biblioteca = () => {
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 opacity-60">
-          <BookOpen size={48} className="mx-auto mb-4 opacity-40" />
-          <p className="text-lg font-medium">No tienes escenarios creados aún</p>
-          <p className="text-sm mt-1">
-            Crea tu primer escenario para asignarlo a tus salones
-          </p>
-        </div>
+        <EmptyState
+          emoji="🔬"
+          title="Tu biblioteca está vacía"
+          subtitle="Diseña escenarios de simulación y asígnalos a tus grupos cuando quieras."
+          actionLabel="Crear escenario"
+          onAction={() => router.push("/docente/biblioteca/nuevo")}
+        />
       )}
       {escenarioSeleccionado ? (
         <AsignarEscenarioModal
