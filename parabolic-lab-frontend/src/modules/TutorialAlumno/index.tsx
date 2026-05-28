@@ -14,6 +14,7 @@ import {
   Home,
   Lightbulb,
   Rocket,
+  SkipForward,
   Star,
   Target,
   Trophy,
@@ -22,8 +23,9 @@ import {
   Zap,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { tutorialStorageKey } from "@/components/TutorialAutoRedirect";
 import { useMe } from "@/queries/useMe";
+
+const tutorialStorageKey = (idusuario: string) => `tutorial_visto_${idusuario}`;
 
 /* ─── tipos ─────────────────────────────────────────────────── */
 
@@ -117,6 +119,13 @@ const TutorialAlumno = () => {
     router.push("/alumno");
   };
 
+  const handleOmitir = () => {
+    if (me?.idusuario) {
+      localStorage.setItem(tutorialStorageKey(me.idusuario), "1");
+    }
+    router.push("/alumno");
+  };
+
   return (
     <div className="p-4 md:p-8 flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
       {/* Índice lateral — solo desktop */}
@@ -137,6 +146,18 @@ const TutorialAlumno = () => {
 
       {/* Contenido principal */}
       <main className="flex-1 min-w-0 flex flex-col gap-5">
+
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleOmitir}
+            className="gap-2"
+          >
+            <SkipForward className="size-4" />
+            Omitir tutorial
+          </Button>
+        </div>
 
         {/* ① Bienvenida */}
         <Seccion id="bienvenida" icono={<Rocket className="size-8" />} color="text-primary" titulo="¡Bienvenido a ParabolicLab!">
