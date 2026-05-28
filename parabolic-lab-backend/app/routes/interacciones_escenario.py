@@ -79,7 +79,11 @@ async def obtener_interaccion_escenario(
     db: AsyncSession = Depends(get_db),
     _: Usuario = Depends(get_current_user),
 ):
-    result = await db.execute(select(InteraccionEscenario).where(InteraccionEscenario.idinteraccion == idinteraccion))
+    result = await db.execute(
+        select(InteraccionEscenario)
+        .where(InteraccionEscenario.idinteraccion == idinteraccion)
+        .options(selectinload(InteraccionEscenario.escenario))
+    )
     interaccion = result.scalar_one_or_none()
     if not interaccion:
         raise HTTPException(status_code=404, detail="Interaccion de escenario no encontrada")
@@ -107,7 +111,7 @@ async def crear_interaccion_escenario(
     )
     db.add(interaccion)
     await db.commit()
-    await db.refresh(interaccion)
+    await db.refresh(interaccion, attribute_names=["escenario"])
     return interaccion
 
 
@@ -118,7 +122,11 @@ async def actualizar_interaccion_escenario(
     db: AsyncSession = Depends(get_db),
     _: Usuario = Depends(get_current_user),
 ):
-    result = await db.execute(select(InteraccionEscenario).where(InteraccionEscenario.idinteraccion == idinteraccion))
+    result = await db.execute(
+        select(InteraccionEscenario)
+        .where(InteraccionEscenario.idinteraccion == idinteraccion)
+        .options(selectinload(InteraccionEscenario.escenario))
+    )
     interaccion = result.scalar_one_or_none()
     if not interaccion:
         raise HTTPException(status_code=404, detail="Interaccion de escenario no encontrada")
