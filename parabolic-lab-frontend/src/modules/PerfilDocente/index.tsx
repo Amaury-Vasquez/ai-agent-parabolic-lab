@@ -7,7 +7,7 @@ import SaveMessageBanner, {
   type SaveMessage,
 } from "@/components/SaveMessage";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
-import TutorialModal from "@/components/TutorialModal";
+
 import type { UpdateInstitucionPayload } from "@/models/institucion";
 import type {
   UpdateDocentePayload,
@@ -44,7 +44,7 @@ const PerfilDocente = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isEditingInstitution, setIsEditingInstitution] = useState(false);
   const [saveMessage, setSaveMessage] = useState<SaveMessage | null>(null);
-  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+
 
   const [profileForm, setProfileForm] =
     useState<ProfileFormState>(EMPTY_PROFILE_FORM);
@@ -215,21 +215,19 @@ const PerfilDocente = () => {
 
       <ThemeSwitcher />
 
-      {/* Tutorial section */}
-      <div className="bg-base-200 rounded-lg p-6">
-        <h3 className="text-sm font-semibold text-base-content/60 uppercase tracking-wide mb-3">
-          Tutorial
-        </h3>
+      {/* Ayuda */}
+      <div className="mt-6 pt-6 border-t border-base-300">
+        <p className="text-sm text-base-content/60 mb-3 uppercase tracking-wide font-semibold">
+          Ayuda
+        </p>
         <Button
           outlined
-          onClick={() => setIsTutorialOpen(true)}
-          className="gap-2"
+          className="gap-2 active:scale-95"
+          onClick={() => router.push("/docente/tutorial")}
         >
-          🎓 Ver tutorial
+          Ver tutorial de la plataforma
         </Button>
       </div>
-
-      <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} />
     </div>
   );
 };
