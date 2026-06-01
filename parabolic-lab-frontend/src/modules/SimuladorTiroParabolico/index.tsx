@@ -544,8 +544,14 @@ const SimuladorTiroParabolico = ({
         />
       ) : null}
 
+      {/*
+        En móvil el orden del DOM define el apilado: canvas → controles →
+        trayectoria, para que los controles queden pegados al canvas y la
+        información de la trayectoria pase al fondo. En escritorio se conserva
+        el layout original mediante colocación explícita en la grid.
+      */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 flex flex-col gap-4">
+        <div className="flex flex-col gap-4 lg:col-span-2 lg:col-start-1 lg:row-start-1">
           <GameCanvas
             settings={settings}
             onSettingsChange={handleSettingsChange}
@@ -560,7 +566,6 @@ const SimuladorTiroParabolico = ({
             targetAsset={effectiveAssets.target}
             backgroundAsset={effectiveAssets.background}
           />
-          <TrajectoryHUD metrics={metrics} inFlight={inFlight} />
           {sinIntentos ? (
             <div className="alert alert-warning">
               <span>
@@ -570,7 +575,7 @@ const SimuladorTiroParabolico = ({
             </div>
           ) : null}
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:row-span-2">
           <ControlPanel
             scenario={scenario}
             settings={settings}
@@ -607,6 +612,9 @@ const SimuladorTiroParabolico = ({
             bestAutoScore={bestAutoScore}
             lastAutoScore={lastAutoScore}
           />
+        </div>
+        <div className="lg:col-span-2 lg:col-start-1 lg:row-start-2">
+          <TrajectoryHUD metrics={metrics} inFlight={inFlight} />
         </div>
       </div>
 
