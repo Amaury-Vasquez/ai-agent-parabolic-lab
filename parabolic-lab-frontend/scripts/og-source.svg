@@ -1,0 +1,30 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1e40af"/>
+      <stop offset="0.55" stop-color="#1d4ed8"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Trayectoria parabólica decorativa -->
+  <path d="M70 540 Q360 60 650 540" stroke="#ffffff" stroke-opacity="0.20" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 26" fill="none"/>
+
+  <!-- Insignia con cohete -->
+  <g transform="translate(96 175)">
+    <rect width="280" height="280" rx="64" fill="#ffffff" fill-opacity="0.12" stroke="#ffffff" stroke-opacity="0.30" stroke-width="2"/>
+    <g transform="translate(54 54) scale(7.2)" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+      <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+    </g>
+  </g>
+
+  <!-- Texto -->
+  <text x="430" y="270" font-family="Helvetica, Arial, sans-serif" font-size="92" font-weight="700" fill="#ffffff">ParabolicLab</text>
+  <text x="432" y="338" font-family="Helvetica, Arial, sans-serif" font-size="40" font-weight="400" fill="#ffffff" fill-opacity="0.92">Aprende tiro parabólico simulando</text>
+  <text x="432" y="402" font-family="Helvetica, Arial, sans-serif" font-size="28" font-weight="400" fill="#ffffff" fill-opacity="0.72">Simulaciones interactivas para docentes y estudiantes</text>
+  <text x="432" y="470" font-family="Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#ffffff" fill-opacity="0.85">paraboliclab.app</text>
+</svg>

@@ -3,6 +3,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import GestionEstudiantesGlobal from "@/modules/GestionEstudiantesGlobal";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
@@ -12,6 +13,14 @@ import {
   fetchMySalones,
   MY_SALONES_QUERY_KEY,
 } from "@/fetchers/salones";
+import { buildMetadata } from "@/utils/metadata";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Estudiantes",
+  description:
+    "Consulta y administra a todos los estudiantes de tus salones y revisa su desempeño en ParabolicLab.",
+  noindex: true,
+});
 
 export default async function EstudiantesPage() {
   const queryClient = new QueryClient();

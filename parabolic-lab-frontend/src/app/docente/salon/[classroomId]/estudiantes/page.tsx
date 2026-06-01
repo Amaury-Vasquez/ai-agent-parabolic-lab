@@ -3,6 +3,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import GestionEstudiantes from "@/modules/GestionEstudiantes";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
@@ -10,6 +11,14 @@ import {
   fetchEstudiantesBySalon,
   SALON_ESTUDIANTES_QUERY_KEY,
 } from "@/fetchers/salones";
+import { buildMetadata } from "@/utils/metadata";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Estudiantes del salón",
+  description:
+    "Administra a los estudiantes inscritos en este salón de ParabolicLab.",
+  noindex: true,
+});
 
 interface EstudiantesPageProps {
   params: Promise<{

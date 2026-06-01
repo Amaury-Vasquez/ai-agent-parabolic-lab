@@ -3,6 +3,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import {
@@ -12,6 +13,14 @@ import {
   ME_QUERY_KEY,
 } from "@/fetchers/auth";
 import PerfilDocente from "@/modules/PerfilDocente";
+import { buildMetadata } from "@/utils/metadata";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Mi perfil",
+  description:
+    "Consulta y actualiza la información de tu perfil de administrador y de tu institución.",
+  noindex: true,
+});
 
 export default async function AdminPerfilPage() {
   const queryClient = new QueryClient();
