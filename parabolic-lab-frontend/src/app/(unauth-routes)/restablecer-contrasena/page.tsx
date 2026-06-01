@@ -1,6 +1,15 @@
 import { KeyRound } from "lucide-react";
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import RestablecerContrasena from "@/modules/RestablecerContrasena";
+import { buildMetadata } from "@/utils/metadata";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Restablecer contraseña",
+  description:
+    "Define una nueva contraseña para tu cuenta de ParabolicLab y recupera el acceso a tus salones y simulaciones.",
+  noindex: true,
+});
 
 const Fallback = () => (
   <div className="flex justify-center py-12">

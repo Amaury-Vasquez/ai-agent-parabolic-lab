@@ -3,6 +3,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import {
@@ -14,6 +15,14 @@ import {
   MIS_INTERACCIONES_QUERY_KEY,
 } from "@/fetchers/interaccionesAlumno";
 import EscenariosAlumno from "@/modules/EscenariosAlumno";
+import { buildMetadata } from "@/utils/metadata";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Escenarios",
+  description:
+    "Practica con los escenarios de tiro parabólico disponibles y mejora tu dominio del movimiento de proyectiles.",
+  noindex: true,
+});
 
 export default async function EscenariosAlumnoPage() {
   const queryClient = new QueryClient();
