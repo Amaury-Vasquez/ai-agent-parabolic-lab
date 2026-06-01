@@ -7,7 +7,7 @@ import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import { useReporteAlumnoDocente } from "@/queries/useReporteAlumnoDocente";
 import { downloadReport } from "@/services/api";
 
-type FormatoDescarga = "pdf" | "xlsx";
+type FormatoDescarga = "pdf" | "csv";
 
 interface ReporteAlumnoDocenteProps {
   idalumno: string;
@@ -80,13 +80,13 @@ const ReporteAlumnoDocente = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleDescargar("xlsx")}
-            disabled={descargando === "xlsx"}
+            onClick={() => handleDescargar("csv")}
+            disabled={descargando === "csv"}
           >
-            {descargando === "xlsx" ? (
+            {descargando === "csv" ? (
               <span className="loading loading-spinner loading-xs" />
             ) : (
-              "XLSX"
+              "CSV"
             )}
           </Button>
           <Button
