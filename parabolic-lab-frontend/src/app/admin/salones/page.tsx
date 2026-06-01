@@ -3,6 +3,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import {
@@ -10,6 +11,14 @@ import {
   fetchAdminSalones,
 } from "@/fetchers/admin";
 import AdminSalones from "@/modules/AdminSalones";
+import { buildMetadata } from "@/utils/metadata";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Salones",
+  description:
+    "Administra todos los salones de tiro parabólico de tu institución en ParabolicLab.",
+  noindex: true,
+});
 
 export default async function AdminSalonesPage() {
   const queryClient = new QueryClient();

@@ -1,5 +1,14 @@
 import { KeyRound } from "lucide-react";
+import type { Metadata } from "next";
 import RecuperarContrasena from "@/modules/RecuperarContrasena";
+import { buildMetadata } from "@/utils/metadata";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Recuperar contraseña",
+  description:
+    "¿Olvidaste tu contraseña? Te enviaremos un enlace para restablecer el acceso a tu cuenta de ParabolicLab.",
+  noindex: true,
+});
 
 export default function RecuperarContrasenaPage() {
   return (

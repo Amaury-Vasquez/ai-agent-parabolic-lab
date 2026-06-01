@@ -3,6 +3,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import ClassroomDetail from "@/modules/ClassroomDetail";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
@@ -12,11 +13,38 @@ import {
   SALON_PROGRESO_QUERY_KEY,
   MY_SALONES_QUERY_KEY,
 } from "@/fetchers/salones";
+import { buildMetadata } from "@/utils/metadata";
 
 interface ClassroomDetailPageProps {
   params: Promise<{
     classroomId: string;
   }>;
+}
+
+export async function generateMetadata({
+  params,
+}: ClassroomDetailPageProps): Promise<Metadata> {
+  const { classroomId } = await params;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
+  let nombre: string | null = null;
+  if (token) {
+    try {
+      const salones = await fetchMySalones(token);
+      nombre =
+        salones.find((s) => s.codigoacceso === classroomId)?.nombresalon ??
+        null;
+    } catch {
+      nombre = null;
+    }
+  }
+  return buildMetadata({
+    title: nombre ? `Salón ${nombre}` : "Detalle del salón",
+    description: nombre
+      ? `Revisa el progreso y los escenarios del salón «${nombre}» en ParabolicLab.`
+      : "Revisa el progreso y los escenarios de tu salón en ParabolicLab.",
+    noindex: true,
+  });
 }
 
 export default async function ClassroomDetailPage({

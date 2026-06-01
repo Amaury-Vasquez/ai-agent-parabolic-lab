@@ -3,6 +3,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import {
@@ -11,6 +12,14 @@ import {
 } from "@/fetchers/interaccionesAlumno";
 import { fetchMySalones, MY_SALONES_QUERY_KEY } from "@/fetchers/salones";
 import Actividades from "@/modules/Actividades";
+import { buildMetadata } from "@/utils/metadata";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Mis actividades",
+  description:
+    "Consulta las actividades de tiro parabólico asignadas en tus salones y continúa donde lo dejaste.",
+  noindex: true,
+});
 
 export default async function ActividadesPage() {
   const queryClient = new QueryClient();

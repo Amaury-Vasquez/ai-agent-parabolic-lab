@@ -4,6 +4,10 @@
       "command": "npx",
       "args": ["chrome-devtools-mcp@latest"]
     },
+    "next-devtools": {
+      "command": "npx",
+      "args": ["-y", "next-devtools-mcp@latest"]
+    },
     "stack-auth": {
       "type": "http",
       "url": "https://mcp.stack-auth.com/"

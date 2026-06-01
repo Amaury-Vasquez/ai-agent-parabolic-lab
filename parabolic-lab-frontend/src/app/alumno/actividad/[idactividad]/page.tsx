@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import {
   dehydrate,
@@ -12,6 +13,14 @@ import {
   MIS_INTERACCIONES_QUERY_KEY,
 } from "@/fetchers/interaccionesAlumno";
 import ActividadDetalle from "@/modules/ActividadDetalle";
+import { buildMetadata } from "@/utils/metadata";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Actividad",
+  description:
+    "Resuelve los escenarios de esta actividad de tiro parabólico y registra tu progreso.",
+  noindex: true,
+});
 
 interface ActividadPageProps {
   params: Promise<{ idactividad: string }>;
