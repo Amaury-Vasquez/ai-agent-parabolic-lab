@@ -8,9 +8,10 @@ import { useMySalones } from "@/queries/useMySalones";
 
 interface EscenarioRowProps {
   escenario: { idescenario: string; nombre: string };
+  salonCodigo: string;
 }
 
-const EscenarioRow = ({ escenario }: EscenarioRowProps) => {
+const EscenarioRow = ({ escenario, salonCodigo }: EscenarioRowProps) => {
   const { completado, mejorPuntuacion } = useEscenarioCompletion(
     escenario.idescenario
   );
@@ -26,7 +27,7 @@ const EscenarioRow = ({ escenario }: EscenarioRowProps) => {
         ) : null}
       </div>
       <CustomLink
-        href={`/alumno/escenario/${escenario.idescenario}`}
+        href={`/alumno/salon/${salonCodigo}/escenario/${escenario.idescenario}`}
         variant={completado ? "ghost" : "primary"}
         size="sm"
         className="whitespace-nowrap"
@@ -94,6 +95,7 @@ const Actividades = () => {
                     <EscenarioRow
                       key={escenario.idescenario}
                       escenario={escenario}
+                      salonCodigo={salon.codigoacceso}
                     />
                   ))}
                 </div>

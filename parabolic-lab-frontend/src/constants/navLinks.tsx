@@ -83,11 +83,6 @@ export const STUDENT_NAV_LINKS: NavLink[] = [
     icon: <ClipboardList className="size-5" />,
   },
   {
-    href: "/alumno/escenarios",
-    label: "Mis Escenarios",
-    icon: <Rocket className="size-5" />,
-  },
-  {
     href: "/alumno/logros",
     label: "Logros y Ranking",
     icon: <Trophy className="size-5" />,

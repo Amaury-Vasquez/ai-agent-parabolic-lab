@@ -1,41 +1,8 @@
-import {
-  dehydrate,
-  HydrationBoundary,
-  QueryClient,
-} from "@tanstack/react-query";
-import { cookies } from "next/headers";
-import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-import {
-  fetchMisEscenarios,
-  MIS_ESCENARIOS_QUERY_KEY,
-} from "@/fetchers/escenarios";
-import {
-  fetchMisInteracciones,
-  MIS_INTERACCIONES_QUERY_KEY,
-} from "@/fetchers/interaccionesAlumno";
-import EscenariosAlumno from "@/modules/EscenariosAlumno";
+import { redirect } from "next/navigation";
 
-export default async function EscenariosAlumnoPage() {
-  const queryClient = new QueryClient();
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
-
-  if (token) {
-    await Promise.all([
-      queryClient.prefetchQuery({
-        queryKey: MIS_ESCENARIOS_QUERY_KEY,
-        queryFn: () => fetchMisEscenarios(token),
-      }),
-      queryClient.prefetchQuery({
-        queryKey: MIS_INTERACCIONES_QUERY_KEY,
-        queryFn: () => fetchMisInteracciones(token),
-      }),
-    ]);
-  }
-
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <EscenariosAlumno />
-    </HydrationBoundary>
-  );
+// Los escenarios son una función que el docente crea y asigna a cada salón.
+// El alumno solo accede a los escenarios asignados desde su salón, no a un
+// listado global, por lo que esta ruta redirige a sus salones.
+export default function EscenariosAlumnoPage() {
+  redirect("/alumno");
 }
