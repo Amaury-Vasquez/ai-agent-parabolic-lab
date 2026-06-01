@@ -225,12 +225,14 @@ const BackgroundSelectorRow = ({
         const selected = k === value;
         const theme = BACKGROUND_THEMES[k];
         return (
-          <button
+          <Button
             key={k}
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => onChange(k)}
             className={clsx(
-              "rounded-md border-2 p-1 transition flex flex-col items-center gap-0.5",
+              "!h-auto min-h-0 rounded-md border-2 p-1 transition flex flex-col items-center gap-0.5",
               selected
                 ? "border-primary bg-primary/10"
                 : "border-base-300 hover:border-base-content/30"
@@ -246,7 +248,7 @@ const BackgroundSelectorRow = ({
             <span className="text-[9px] font-medium leading-tight">
               {BACKGROUND_LABELS[k]}
             </span>
-          </button>
+          </Button>
         );
       })}
     </div>
