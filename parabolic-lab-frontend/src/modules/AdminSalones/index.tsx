@@ -2,6 +2,7 @@
 import { School } from "lucide-react";
 import SalonCard from "./SalonCard";
 import SalonRow from "./SalonRow";
+import BackButton from "@/components/BackButton";
 import useIsMobileOrTablet from "@/hooks/useIsMobileOrTablet";
 import { useAdminSalones } from "@/queries/useAdminSalones";
 
@@ -12,7 +13,10 @@ const AdminSalones = () => {
   return (
     <div className="p-4 md:p-6 lg:p-8 flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl md:text-3xl font-bold">Salones</h1>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <h1 className="text-2xl md:text-3xl font-bold">Salones</h1>
+        </div>
         <p className="text-sm md:text-base opacity-70">
           Todos los salones registrados en tu institución
         </p>

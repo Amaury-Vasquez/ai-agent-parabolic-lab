@@ -34,6 +34,11 @@ import {
   type TargetAssetKey,
 } from "@/constants/simulatorAssets";
 import {
+  BACKGROUND_ASSET_KEYS,
+  DEFAULT_BACKGROUND,
+  type BackgroundAssetKey,
+} from "@/constants/simulatorBackgrounds";
+import {
   DEFAULT_MUSIC_TRACK,
   DEFAULT_PLAYBACK_SPEED,
   MUSIC_TRACK_KEYS,
@@ -90,6 +95,7 @@ interface ResolvedConfig {
     cannon: CannonAssetKey;
     projectile: ProjectileAssetKey;
     target: TargetAssetKey;
+    background: BackgroundAssetKey;
   };
 }
 
@@ -173,6 +179,11 @@ function resolveConfig(scenario?: Scenario): ResolvedConfig {
       TARGET_ASSET_KEYS.includes(cfg!.assets!.target as TargetAssetKey)
         ? (cfg!.assets!.target as TargetAssetKey)
         : DEFAULT_ASSETS.target,
+    background:
+      (cfg?.assets?.background as BackgroundAssetKey | undefined) &&
+      BACKGROUND_ASSET_KEYS.includes(cfg!.assets!.background as BackgroundAssetKey)
+        ? (cfg!.assets!.background as BackgroundAssetKey)
+        : DEFAULT_BACKGROUND,
   };
 
   return {
@@ -217,6 +228,7 @@ function loadAssetOverride(idescenario?: string): Partial<{
   cannon: CannonAssetKey;
   projectile: ProjectileAssetKey;
   target: TargetAssetKey;
+  background: BackgroundAssetKey;
 }> {
   if (typeof window === "undefined" || !idescenario) return {};
   try {
@@ -229,6 +241,9 @@ function loadAssetOverride(idescenario?: string): Partial<{
         ? parsed.projectile
         : undefined,
       target: TARGET_ASSET_KEYS.includes(parsed.target) ? parsed.target : undefined,
+      background: BACKGROUND_ASSET_KEYS.includes(parsed.background)
+        ? parsed.background
+        : undefined,
     };
   } catch {
     return {};
@@ -241,6 +256,7 @@ function saveAssetOverride(
     cannon: CannonAssetKey;
     projectile: ProjectileAssetKey;
     target: TargetAssetKey;
+    background: BackgroundAssetKey;
   }
 ) {
   if (typeof window === "undefined" || !idescenario) return;
@@ -299,13 +315,15 @@ const SimuladorTiroParabolico = ({
       projectile:
         overrideRef.current.projectile ?? config.teacherAssets.projectile,
       target: overrideRef.current.target ?? config.teacherAssets.target,
+      background:
+        overrideRef.current.background ?? config.teacherAssets.background,
     };
   }, [config.teacherAssets, overrideVersion]);
 
   const isAssetOverridden = useMemo(() => {
     void overrideVersion;
     const o = overrideRef.current;
-    return Boolean(o.cannon || o.projectile || o.target);
+    return Boolean(o.cannon || o.projectile || o.target || o.background);
   }, [overrideVersion]);
 
   const lastResultRef = useRef<ShotOutcome | null>(null);
@@ -493,6 +511,7 @@ const SimuladorTiroParabolico = ({
       cannon: CannonAssetKey;
       projectile: ProjectileAssetKey;
       target: TargetAssetKey;
+      background: BackgroundAssetKey;
     }>
   ) => {
     overrideRef.current = { ...overrideRef.current, ...patch };
@@ -501,6 +520,8 @@ const SimuladorTiroParabolico = ({
       projectile:
         overrideRef.current.projectile ?? config.teacherAssets.projectile,
       target: overrideRef.current.target ?? config.teacherAssets.target,
+      background:
+        overrideRef.current.background ?? config.teacherAssets.background,
     };
     saveAssetOverride(scenario?.idescenario, merged);
     setOverrideVersion((v) => v + 1);
@@ -537,6 +558,7 @@ const SimuladorTiroParabolico = ({
             cannonAsset={effectiveAssets.cannon}
             projectileAsset={effectiveAssets.projectile}
             targetAsset={effectiveAssets.target}
+            backgroundAsset={effectiveAssets.background}
           />
           <TrajectoryHUD metrics={metrics} inFlight={inFlight} />
           {sinIntentos ? (
@@ -574,9 +596,11 @@ const SimuladorTiroParabolico = ({
             cannonAsset={effectiveAssets.cannon}
             projectileAsset={effectiveAssets.projectile}
             targetAsset={effectiveAssets.target}
+            backgroundAsset={effectiveAssets.background}
             onCannonAssetChange={(k) => updateOverride({ cannon: k })}
             onProjectileAssetChange={(k) => updateOverride({ projectile: k })}
             onTargetAssetChange={(k) => updateOverride({ target: k })}
+            onBackgroundAssetChange={(k) => updateOverride({ background: k })}
             onResetAssetsToTeacherDefault={handleResetAssets}
             isAssetOverridden={isAssetOverridden}
             hint={hint}

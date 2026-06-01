@@ -3,6 +3,7 @@ import { Badge, Button } from "amvasdev-ui";
 import { FileText } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import BackButton from "@/components/BackButton";
 import ReporteIntentoModal from "@/components/ReporteIntentoModal";
 import { InteraccionEscenario } from "@/models/interaccion_escenario";
 import { useMisEscenarios } from "@/queries/useMisEscenarios";
@@ -100,7 +101,10 @@ const ProgresoAlumno = () => {
 
   return (
     <div className="p-4 md:p-8 flex flex-col gap-6">
-      <h1 className="text-2xl md:text-3xl font-bold">Mi Progreso</h1>
+      <div className="flex items-center gap-3">
+        <BackButton />
+        <h1 className="text-2xl md:text-3xl font-bold">Mi Progreso</h1>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <StatCard label="Escenarios totales" value={progreso.total_escenarios} />
