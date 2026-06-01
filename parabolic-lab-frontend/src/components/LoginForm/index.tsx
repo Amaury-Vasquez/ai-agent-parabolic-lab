@@ -37,7 +37,17 @@ const LoginForm = () => {
       setCookie(USER_TYPE_COOKIE, data.tipousuario, { path: "/" });
       router.push(AUTH_REDIRECT[data.tipousuario] ?? "/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al iniciar sesión");
+      const message = err instanceof Error ? err.message : "";
+      if (
+        message.includes("401") ||
+        message.toLowerCase().includes("credenciales")
+      ) {
+        setError("Correo o contraseña incorrectos.");
+      } else {
+        setError(
+          "No se pudo iniciar sesión. Revisa tu conexión e intenta de nuevo.",
+        );
+      }
     }
   };
 
