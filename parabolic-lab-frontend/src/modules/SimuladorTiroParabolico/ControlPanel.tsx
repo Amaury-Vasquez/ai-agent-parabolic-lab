@@ -308,7 +308,7 @@ const ControlPanel = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 order-2 lg:order-none">
         <div className="bg-base-100 rounded-lg p-2 text-center">
           <div className="text-[10px] opacity-60">Auto-score</div>
           <div className="text-lg font-bold tabular-nums text-primary">
@@ -337,13 +337,13 @@ const ControlPanel = ({
       </div>
 
       {hint ? (
-        <div className="bg-info/10 border border-info/30 rounded-lg p-2 flex gap-2 items-start">
+        <div className="bg-info/10 border border-info/30 rounded-lg p-2 flex gap-2 items-start order-3 lg:order-none">
           <Lightbulb className="w-4 h-4 text-info shrink-0 mt-0.5" />
           <p className="text-xs leading-snug">{hint.message}</p>
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 order-1 lg:order-none">
         <Slider
           label="Ángulo"
           value={settings.angle}
@@ -389,7 +389,7 @@ const ControlPanel = ({
         />
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 order-4 lg:order-none">
         <Button
           variant="primary"
           className="w-full gap-2"
@@ -448,7 +448,7 @@ const ControlPanel = ({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 order-5 lg:order-none">
         <div className="flex items-center justify-between">
           <span className="text-[10px] uppercase opacity-60 font-semibold">
             Música
@@ -484,7 +484,7 @@ const ControlPanel = ({
         </div>
       </div>
 
-      <details className="bg-base-100 rounded-lg">
+      <details className="bg-base-100 rounded-lg order-6 lg:order-none">
         <summary className="cursor-pointer px-3 py-2 text-sm font-semibold flex items-center gap-2">
           <Wand2 className="w-4 h-4 text-secondary" />
           Personalizar visuales
