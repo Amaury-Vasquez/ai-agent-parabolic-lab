@@ -29,6 +29,12 @@ import {
   type TargetAssetKey,
 } from "@/constants/simulatorAssets";
 import {
+  BACKGROUND_ASSET_KEYS,
+  BACKGROUND_LABELS,
+  BACKGROUND_THEMES,
+  type BackgroundAssetKey,
+} from "@/constants/simulatorBackgrounds";
+import {
   MUSIC_TRACK_KEYS,
   MUSIC_TRACK_LABELS,
   PLAYBACK_SPEEDS,
@@ -78,9 +84,11 @@ interface ControlPanelProps {
   cannonAsset: CannonAssetKey;
   projectileAsset: ProjectileAssetKey;
   targetAsset: TargetAssetKey;
+  backgroundAsset: BackgroundAssetKey;
   onCannonAssetChange: (key: CannonAssetKey) => void;
   onProjectileAssetChange: (key: ProjectileAssetKey) => void;
   onTargetAssetChange: (key: TargetAssetKey) => void;
+  onBackgroundAssetChange: (key: BackgroundAssetKey) => void;
   onResetAssetsToTeacherDefault: () => void;
   isAssetOverridden: boolean;
   hint: ContextualHint | null;
@@ -199,6 +207,52 @@ const AssetSelectorRow = <K extends string>({
   </div>
 );
 
+const BackgroundSelectorRow = ({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: BackgroundAssetKey;
+  onChange: (k: BackgroundAssetKey) => void;
+}) => (
+  <div className="flex flex-col gap-1">
+    <span className="text-[10px] uppercase opacity-60 font-semibold">
+      {label}
+    </span>
+    <div className="flex flex-wrap gap-1.5">
+      {BACKGROUND_ASSET_KEYS.map((k) => {
+        const selected = k === value;
+        const theme = BACKGROUND_THEMES[k];
+        return (
+          <button
+            key={k}
+            type="button"
+            onClick={() => onChange(k)}
+            className={clsx(
+              "rounded-md border-2 p-1 transition flex flex-col items-center gap-0.5",
+              selected
+                ? "border-primary bg-primary/10"
+                : "border-base-300 hover:border-base-content/30"
+            )}
+            title={BACKGROUND_LABELS[k]}
+          >
+            <span
+              className="block w-[42px] h-[42px] rounded"
+              style={{
+                background: `linear-gradient(to bottom, ${theme.sky[0]}, ${theme.sky[1]} 45%, ${theme.sky[2]} 62%, ${theme.ground[0]} 62%, ${theme.ground[1]} 80%, ${theme.ground[2]})`,
+              }}
+            />
+            <span className="text-[9px] font-medium leading-tight">
+              {BACKGROUND_LABELS[k]}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
+
 const ControlPanel = ({
   settings,
   onSettingsChange,
@@ -221,9 +275,11 @@ const ControlPanel = ({
   cannonAsset,
   projectileAsset,
   targetAsset,
+  backgroundAsset,
   onCannonAssetChange,
   onProjectileAssetChange,
   onTargetAssetChange,
+  onBackgroundAssetChange,
   onResetAssetsToTeacherDefault,
   isAssetOverridden,
   hint,
@@ -455,6 +511,11 @@ const ControlPanel = ({
             labels={TARGET_LABELS}
             value={targetAsset}
             onChange={onTargetAssetChange}
+          />
+          <BackgroundSelectorRow
+            label="Fondo"
+            value={backgroundAsset}
+            onChange={onBackgroundAssetChange}
           />
           {isAssetOverridden ? (
             <button

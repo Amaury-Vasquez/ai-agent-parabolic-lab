@@ -32,6 +32,11 @@ import {
   type ProjectileAssetKey,
   type TargetAssetKey,
 } from "@/constants/simulatorAssets";
+import {
+  BACKGROUND_THEMES,
+  DEFAULT_BACKGROUND,
+  type BackgroundAssetKey,
+} from "@/constants/simulatorBackgrounds";
 
 interface GameCanvasProps {
   settings: SimSettings;
@@ -45,6 +50,7 @@ interface GameCanvasProps {
   cannonAsset?: CannonAssetKey;
   projectileAsset?: ProjectileAssetKey;
   targetAsset?: TargetAssetKey;
+  backgroundAsset?: BackgroundAssetKey;
 }
 
 const PADDING_LEFT_M = 4;
@@ -82,6 +88,7 @@ const GameCanvas = ({
   cannonAsset = DEFAULT_ASSETS.cannon,
   projectileAsset = DEFAULT_ASSETS.projectile,
   targetAsset = DEFAULT_ASSETS.target,
+  backgroundAsset = DEFAULT_BACKGROUND,
 }: GameCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -116,6 +123,7 @@ const GameCanvas = ({
     cannon: cannonAsset,
     projectile: projectileAsset,
     target: targetAsset,
+    background: backgroundAsset,
   });
   const metricsRef = useRef<TrajectoryMetrics>({ ...EMPTY_METRICS });
   const bestPointRef = useRef<{ x: number; y: number; distance: number } | null>(
@@ -147,8 +155,9 @@ const GameCanvas = ({
       cannon: cannonAsset,
       projectile: projectileAsset,
       target: targetAsset,
+      background: backgroundAsset,
     };
-  }, [cannonAsset, projectileAsset, targetAsset]);
+  }, [cannonAsset, projectileAsset, targetAsset, backgroundAsset]);
 
   const resizeCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -473,17 +482,19 @@ const GameCanvas = ({
     };
 
     const drawSky = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
+      const theme = BACKGROUND_THEMES[assetsRef.current.background];
       const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, "#7dd3fc");
-      grad.addColorStop(0.55, "#bae6fd");
-      grad.addColorStop(1, "#fef3c7");
+      grad.addColorStop(0, theme.sky[0]);
+      grad.addColorStop(0.55, theme.sky[1]);
+      grad.addColorStop(1, theme.sky[2]);
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
     };
 
     const drawClouds = (ctx: CanvasRenderingContext2D, w: number) => {
+      const theme = BACKGROUND_THEMES[assetsRef.current.background];
       ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      ctx.fillStyle = theme.cloud;
       const cloud = (cx: number, cy: number, scale: number) => {
         ctx.beginPath();
         ctx.arc(cx, cy, 18 * scale, 0, Math.PI * 2);
@@ -504,13 +515,14 @@ const GameCanvas = ({
       groundY: number,
       h: number
     ) => {
+      const theme = BACKGROUND_THEMES[assetsRef.current.background];
       const grad = ctx.createLinearGradient(0, groundY, 0, h);
-      grad.addColorStop(0, "#22c55e");
-      grad.addColorStop(0.5, "#15803d");
-      grad.addColorStop(1, "#064e3b");
+      grad.addColorStop(0, theme.ground[0]);
+      grad.addColorStop(0.5, theme.ground[1]);
+      grad.addColorStop(1, theme.ground[2]);
       ctx.fillStyle = grad;
       ctx.fillRect(0, groundY, w, h - groundY);
-      ctx.fillStyle = "rgba(0,0,0,0.18)";
+      ctx.fillStyle = theme.grassShadow;
       for (let x = 0; x < w; x += 6) {
         const grassH = 3 + ((x * 7) % 5);
         ctx.fillRect(x, groundY - grassH, 1, grassH);

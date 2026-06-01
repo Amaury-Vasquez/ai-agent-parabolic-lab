@@ -12,6 +12,7 @@ import {
   Target,
   Trophy,
 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { ProgresoAlumnoData } from "@/fetchers/interaccionesAlumno";
 import { useProgresoAlumno } from "@/queries/useProgresoAlumno";
 
@@ -143,11 +144,14 @@ const LogrosAlumno = () => {
 
   return (
     <div className="p-4 md:p-8 flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold">Mis Logros</h1>
-        <p className="mt-1 opacity-60">
-          {totalDesbloqueados} de {LOGROS.length} logros desbloqueados
-        </p>
+      <div className="flex items-center gap-3">
+        <BackButton />
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">Mis Logros</h1>
+          <p className="mt-1 opacity-60">
+            {totalDesbloqueados} de {LOGROS.length} logros desbloqueados
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

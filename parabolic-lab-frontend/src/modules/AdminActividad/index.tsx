@@ -2,6 +2,7 @@
 import { Activity } from "lucide-react";
 import AlumnoCard from "./AlumnoCard";
 import AlumnoRow from "./AlumnoRow";
+import BackButton from "@/components/BackButton";
 import useIsMobileOrTablet from "@/hooks/useIsMobileOrTablet";
 import { useAdminAlumnosActividad } from "@/queries/useAdminAlumnosActividad";
 
@@ -12,7 +13,12 @@ const AdminActividad = () => {
   return (
     <div className="p-4 md:p-6 lg:p-8 flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl md:text-3xl font-bold">Actividad de Alumnos</h1>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <h1 className="text-2xl md:text-3xl font-bold">
+            Actividad de Alumnos
+          </h1>
+        </div>
         <p className="text-sm md:text-base opacity-70">
           Resumen del progreso de cada alumno en todos sus salones
         </p>

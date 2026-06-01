@@ -3,6 +3,7 @@ import { Badge } from "amvasdev-ui";
 import clsx from "clsx";
 import { CheckCircle2, Lock, PlayCircle } from "lucide-react";
 import { useMemo } from "react";
+import BackButton from "@/components/BackButton";
 import CustomLink from "@/components/CustomLink";
 import { DIFFICULTY_LEVELS } from "@/constants/difficultyLevels";
 import { Scenario } from "@/models/scenario";
@@ -185,7 +186,10 @@ const EscenariosAlumno = () => {
   return (
     <div className="p-4 md:p-8">
       <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold">Mis Escenarios</h1>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <h1 className="text-2xl md:text-3xl font-bold">Mis Escenarios</h1>
+        </div>
         <p className="mt-1 opacity-60">
           Completa cada escenario para desbloquear el siguiente dentro del mismo
           nivel.
