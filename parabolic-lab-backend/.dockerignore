@@ -1,0 +1,34 @@
+# flyctl launch added from .gitignore
+**/__pycache__
+**/*.py[cod]
+**/*$py.class
+**/*.so
+**/.Python
+**/env
+**/venv
+**/.venv
+**/*.egg-info
+**/dist
+**/build
+**/.eggs
+**/*.egg
+**/.env
+**/.mcp.json
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/.idea
+**/.vscode/*
+!**/.vscode/settings.json
+!**/.vscode/extensions.json
+**/*.swp
+**/*.swo
+**/*~
+
+# flyctl launch added from .ruff_cache/.gitignore
+# Automatically created by ruff.
+.ruff_cache/**/*
+
+# flyctl launch added from .venv/.gitignore
+.venv/**/*
+fly.toml
