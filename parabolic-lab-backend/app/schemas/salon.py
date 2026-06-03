@@ -39,6 +39,7 @@ class SalonRead(BaseModel):
 class EscenarioEnSalon(BaseModel):
     idescenario: UUID
     nombre: str
+    idescenario_origen: UUID | None = None
     model_config = {"from_attributes": True}
 
 

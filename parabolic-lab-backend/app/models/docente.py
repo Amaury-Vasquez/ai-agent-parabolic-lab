@@ -20,3 +20,4 @@ class Docente(Base):
 
     usuario: Mapped["Usuario"] = relationship(back_populates="docente")  # noqa: F821
     salones: Mapped[list["Salon"]] = relationship(back_populates="docente")  # noqa: F821
+    escenarios: Mapped[list["Escenario"]] = relationship(back_populates="docente")  # noqa: F821

@@ -24,6 +24,7 @@ class Escenario(Base):
         CheckConstraint("tiempolimite > 0", name="escenario_tiempolimite_check"),
         CheckConstraint("intentospermitidos > 0", name="escenario_intentospermitidos_check"),
         Index("idx_escenario_salon", "idsalon"),
+        Index("idx_escenario_docente", "iddocente"),
         Index("idx_escenario_tipo", "tipoescenario"),
         Index("idx_escenario_nivel", "niveldificultad"),
         Index("idx_escenario_activo", "activo"),
@@ -33,10 +34,19 @@ class Escenario(Base):
     idescenario: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=func.gen_random_uuid()
     )
-    idsalon: Mapped[uuid.UUID] = mapped_column(
+    # NULL = escenario de biblioteca (sin asignar a un salón). Las copias
+    # asignadas a salones siempre tienen idsalon.
+    idsalon: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("salon.idsalon", onupdate="CASCADE", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
+    )
+    # Docente dueño del escenario; permite resolver permisos y la biblioteca
+    # aunque el escenario no esté asignado a ningún salón.
+    iddocente: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("docente.iddocente", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=True,
     )
     nombre: Mapped[str] = mapped_column(String, nullable=False)
     descripcion: Mapped[str | None] = mapped_column(Text)
@@ -56,6 +66,7 @@ class Escenario(Base):
         nullable=True,
     )
 
-    salon: Mapped["Salon"] = relationship(back_populates="escenarios")  # noqa: F821
+    salon: Mapped["Salon | None"] = relationship(back_populates="escenarios")  # noqa: F821
+    docente: Mapped["Docente | None"] = relationship(back_populates="escenarios")  # noqa: F821
     actividades: Mapped[list["EscenarioEnActividad"]] = relationship(back_populates="escenario")  # noqa: F821
     interacciones: Mapped[list["InteraccionEscenario"]] = relationship(back_populates="escenario")  # noqa: F821

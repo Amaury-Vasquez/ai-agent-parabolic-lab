@@ -10,7 +10,6 @@ import { sanitizeData } from "@/utils/sanitizeData";
 async function createEscenario(
   token: string,
   data: {
-    idsalon: string;
     nombre: string;
     descripcion?: string;
     niveldificultad: string;

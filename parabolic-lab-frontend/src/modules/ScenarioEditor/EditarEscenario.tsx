@@ -4,14 +4,10 @@ import { useEscenario } from "@/queries/useEscenario";
 import ScenarioEditor from "./index";
 
 interface EditarEscenarioProps {
-  classroomId: string;
   scenarioId: string;
 }
 
-const EditarEscenario = ({
-  classroomId,
-  scenarioId,
-}: EditarEscenarioProps) => {
+const EditarEscenario = ({ scenarioId }: EditarEscenarioProps) => {
   const { data: escenario, isLoading } = useEscenario(scenarioId);
 
   if (isLoading) {
@@ -22,14 +18,7 @@ const EditarEscenario = ({
     );
   }
 
-  return (
-    <ScenarioEditor
-      classroomId={classroomId}
-      scenarioId={scenarioId}
-      initialData={escenario}
-    />
-  );
+  return <ScenarioEditor scenarioId={scenarioId} initialData={escenario} />;
 };
 
 export default EditarEscenario;
-

@@ -12,7 +12,6 @@ import { buildMetadata } from "@/utils/metadata";
 
 interface PageProps {
   params: Promise<{
-    classroomId: string;
     scenarioId: string;
   }>;
 }
@@ -40,7 +39,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function EditarEscenarioPage({ params }: PageProps) {
-  const { classroomId, scenarioId } = await params;
+  const { scenarioId } = await params;
   const queryClient = new QueryClient();
   const cookieStore = await cookies();
   const token = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
@@ -54,7 +53,7 @@ export default async function EditarEscenarioPage({ params }: PageProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <EditarEscenario classroomId={classroomId} scenarioId={scenarioId} />
+      <EditarEscenario scenarioId={scenarioId} />
     </HydrationBoundary>
   );
 }

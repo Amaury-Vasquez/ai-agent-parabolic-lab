@@ -6,11 +6,10 @@ from pydantic import BaseModel, Field
 
 
 class AsignarEscenarioRequest(BaseModel):
-    idsalon: UUID
+    idsalones: list[UUID] = Field(..., min_length=1)
 
 
 class EscenarioCreate(BaseModel):
-    idsalon: UUID
     nombre: str = Field(..., min_length=1, max_length=200)
     descripcion: str | None = None
     niveldificultad: str = Field(..., pattern="^(principiante|intermedio|avanzado|experto)$")
@@ -43,7 +42,8 @@ class EscenarioUpdate(BaseModel):
 
 class EscenarioRead(BaseModel):
     idescenario: UUID
-    idsalon: UUID
+    idsalon: UUID | None = None
+    iddocente: UUID | None = None
     nombre: str
     descripcion: str | None = None
     niveldificultad: str

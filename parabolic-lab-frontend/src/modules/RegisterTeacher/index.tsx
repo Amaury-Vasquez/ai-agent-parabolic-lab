@@ -1,6 +1,6 @@
 "use client";
 import { Button, Input, PasswordInput } from "amvasdev-ui";
-import { GraduationCap, Lock, Mail, User } from "lucide-react";
+import { Building2, GraduationCap, Lock, Mail, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useCookies } from "react-cookie";
@@ -20,6 +20,7 @@ interface RegisterTeacherProps {
 }
 
 interface TeacherFormValues {
+  institucion: string;
   nombre: string;
   email: string;
   apellidoPaterno: string;
@@ -36,6 +37,7 @@ const FIELD_MAP: Record<string, keyof TeacherFormValues> = {
   apellidomaterno: "apellidoMaterno",
   gradoacademico: "gradoAcademico",
   password: "contrasena",
+  idinstitucion: "institucion",
 };
 
 const RegisterTeacher = ({ institutionId }: RegisterTeacherProps) => {
@@ -46,7 +48,10 @@ const RegisterTeacher = ({ institutionId }: RegisterTeacherProps) => {
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<keyof TeacherFormValues, string>>
   >({});
-  const { register, handleSubmit } = useForm<TeacherFormValues>();
+  const { register, handleSubmit } = useForm<TeacherFormValues>({
+    // Prellenado desde la URL (leído en el servidor)
+    defaultValues: { institucion: institutionId },
+  });
 
   const onSubmit = async (values: TeacherFormValues) => {
     setError("");
@@ -58,7 +63,7 @@ const RegisterTeacher = ({ institutionId }: RegisterTeacherProps) => {
         nombre: values.nombre,
         apellidopaterno: values.apellidoPaterno,
         apellidomaterno: values.apellidoMaterno || undefined,
-        idinstitucion: institutionId,
+        idinstitucion: values.institucion.trim(),
         tipousuario: "docente",
         gradoacademico: values.gradoAcademico || undefined,
       });
@@ -92,13 +97,24 @@ const RegisterTeacher = ({ institutionId }: RegisterTeacherProps) => {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-2">Registro de Docente</h1>
           <p className="text-base-content/70">
-            ID de Institución:
-            <strong>{` ${institutionId}`}</strong>
+            Crea tu cuenta para gestionar salones y escenarios
           </p>
         </div>
 
         <Card border>
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+            <Input
+              id="institucion"
+              label="ID de Institución"
+              type="text"
+              placeholder="d290f1ee-6c54-4b01-90e6-d701748f0851"
+              leftIcon={<Building2 className="size-4" />}
+              required
+              variant={fieldErrors.institucion ? "error" : undefined}
+              errorMessage={fieldErrors.institucion}
+              {...register("institucion")}
+            />
+
             <Input
               id="nombre"
               label="Nombre"
