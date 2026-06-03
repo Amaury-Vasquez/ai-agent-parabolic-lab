@@ -185,21 +185,21 @@ const ResolucionesEscenarioModule = ({
         detalle={
           selected
             ? {
-                titulo: data.escenario_nombre,
-                subtitulo: [
-                  selected.alumno_nombre,
-                  selected.alumno_apellidopaterno,
-                  selected.alumno_apellidomaterno,
-                ]
-                  .filter(Boolean)
-                  .join(" "),
-                fechafin: selected.fechafin,
-                tiempototal: selected.tiempototal,
-                puntuacion: selected.puntuacion,
-                intentosrealizados: selected.intentosrealizados,
-                completado: selected.completado,
-                datosinteraccion: selected.datosinteraccion ?? undefined,
-              }
+              titulo: data.escenario_nombre,
+              subtitulo: [
+                selected.alumno_nombre,
+                selected.alumno_apellidopaterno,
+                selected.alumno_apellidomaterno,
+              ]
+                .filter(Boolean)
+                .join(" "),
+              fechafin: selected.fechafin,
+              tiempototal: selected.tiempototal,
+              puntuacion: selected.puntuacion,
+              intentosrealizados: selected.intentosrealizados,
+              completado: selected.completado,
+              datosinteraccion: selected.datosinteraccion ?? undefined,
+            }
             : null
         }
       />

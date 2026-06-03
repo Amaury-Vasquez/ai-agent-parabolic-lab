@@ -186,15 +186,15 @@ const EstudianteDetalle = ({
         detalle={
           selected
             ? {
-                titulo: selected.escenario_nombre,
-                subtitulo: `${nombreCompleto} • ${selected.escenario_dificultad}`,
-                fechafin: selected.fechafin,
-                tiempototal: selected.tiempototal,
-                puntuacion: selected.puntuacion,
-                intentosrealizados: selected.intentosrealizados,
-                completado: selected.completado,
-                datosinteraccion: selected.datosinteraccion ?? undefined,
-              }
+              titulo: selected.escenario_nombre,
+              subtitulo: `${nombreCompleto} • ${selected.escenario_dificultad}`,
+              fechafin: selected.fechafin,
+              tiempototal: selected.tiempototal,
+              puntuacion: selected.puntuacion,
+              intentosrealizados: selected.intentosrealizados,
+              completado: selected.completado,
+              datosinteraccion: selected.datosinteraccion ?? undefined,
+            }
             : null
         }
       />
