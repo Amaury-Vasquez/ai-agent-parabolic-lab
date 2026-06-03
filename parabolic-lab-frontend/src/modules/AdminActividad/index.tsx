@@ -1,14 +1,32 @@
 "use client";
 import { Activity } from "lucide-react";
+import { useState } from "react";
 import AlumnoCard from "./AlumnoCard";
 import AlumnoRow from "./AlumnoRow";
+import ReporteAlumnoAdmin from "./ReporteAlumnoAdmin";
 import BackButton from "@/components/BackButton";
 import useIsMobileOrTablet from "@/hooks/useIsMobileOrTablet";
 import { useAdminAlumnosActividad } from "@/queries/useAdminAlumnosActividad";
+import type { AdminAlumnoActividadRow } from "@/types/admin";
 
 const AdminActividad = () => {
   const isMobileOrTablet = useIsMobileOrTablet();
   const { data: alumnos, isLoading } = useAdminAlumnosActividad();
+  const [alumnoSeleccionado, setAlumnoSeleccionado] = useState<{
+    idalumno: string;
+    nombre: string;
+  } | null>(null);
+
+  const handleVerReporte = (alumno: AdminAlumnoActividadRow) => {
+    const fullName = [
+      alumno.nombre,
+      alumno.apellidopaterno,
+      alumno.apellidomaterno,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    setAlumnoSeleccionado({ idalumno: alumno.idalumno, nombre: fullName });
+  };
 
   return (
     <div className="p-4 md:p-6 lg:p-8 flex flex-col gap-6">
@@ -36,7 +54,11 @@ const AdminActividad = () => {
       ) : isMobileOrTablet ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {alumnos.map((alumno) => (
-            <AlumnoCard key={alumno.idalumno} alumno={alumno} />
+            <AlumnoCard
+              key={alumno.idalumno}
+              alumno={alumno}
+              onVerReporte={handleVerReporte}
+            />
           ))}
         </div>
       ) : (
@@ -53,17 +75,34 @@ const AdminActividad = () => {
                   <th>Promedio</th>
                   <th>Tiempo</th>
                   <th>Estado</th>
+                  <th>Reporte</th>
                 </tr>
               </thead>
               <tbody>
                 {alumnos.map((alumno) => (
-                  <AlumnoRow key={alumno.idalumno} alumno={alumno} />
+                  <AlumnoRow
+                    key={alumno.idalumno}
+                    alumno={alumno}
+                    onVerReporte={handleVerReporte}
+                  />
                 ))}
               </tbody>
             </table>
           </div>
         </div>
       )}
+
+      {alumnoSeleccionado ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-base-100 rounded-2xl shadow-2xl w-full max-w-2xl my-4 overflow-hidden">
+            <ReporteAlumnoAdmin
+              idalumno={alumnoSeleccionado.idalumno}
+              nombreAlumno={alumnoSeleccionado.nombre}
+              onClose={() => setAlumnoSeleccionado(null)}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

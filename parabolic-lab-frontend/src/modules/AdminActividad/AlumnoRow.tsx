@@ -1,8 +1,9 @@
-import { Badge } from "amvasdev-ui";
+import { Badge, Button } from "amvasdev-ui";
 import type { AdminAlumnoActividadRow } from "@/types/admin";
 
 interface AlumnoActividadRowProps {
   alumno: AdminAlumnoActividadRow;
+  onVerReporte: (alumno: AdminAlumnoActividadRow) => void;
 }
 
 const formatPuntuacion = (value: number | null | undefined): string => {
@@ -10,7 +11,7 @@ const formatPuntuacion = (value: number | null | undefined): string => {
   return Number(value).toFixed(1);
 };
 
-const AlumnoRow = ({ alumno }: AlumnoActividadRowProps) => {
+const AlumnoRow = ({ alumno, onVerReporte }: AlumnoActividadRowProps) => {
   const isActivo = alumno.activo !== false;
   const fullName = [
     alumno.nombre,
@@ -40,6 +41,11 @@ const AlumnoRow = ({ alumno }: AlumnoActividadRowProps) => {
         <Badge variant={isActivo ? "success" : "error"} soft>
           {isActivo ? "Activo" : "Inactivo"}
         </Badge>
+      </td>
+      <td>
+        <Button variant="ghost" size="xs" onClick={() => onVerReporte(alumno)}>
+          Ver reporte
+        </Button>
       </td>
     </tr>
   );

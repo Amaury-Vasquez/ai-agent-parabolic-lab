@@ -5,24 +5,21 @@ import { useCookies } from "react-cookie";
 import ReporteIntentoContent from "@/components/ReporteIntento";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import { descargarReportePdf, descargarReporteXlsx } from "@/fetchers/reportes";
-import { useReporteAlumnoDocente } from "@/queries/useReporteAlumnoDocente";
-import { downloadReport } from "@/services/api";
+import { useReporteAlumnoAdmin } from "@/queries/useReporteAlumnoAdmin";
 
-type FormatoDescarga = "pdf" | "xlsx" | "csv";
+type FormatoDescarga = "pdf" | "xlsx";
 
-interface ReporteAlumnoDocenteProps {
+interface ReporteAlumnoAdminProps {
   idalumno: string;
-  idsalon: string;
   nombreAlumno: string;
   onClose: () => void;
 }
 
-const ReporteAlumnoDocente = ({
+const ReporteAlumnoAdmin = ({
   idalumno,
-  idsalon,
   nombreAlumno,
   onClose,
-}: ReporteAlumnoDocenteProps) => {
+}: ReporteAlumnoAdminProps) => {
   const [cookies] = useCookies([ACCESS_TOKEN_COOKIE]);
   const token = cookies[ACCESS_TOKEN_COOKIE];
   const [descargando, setDescargando] = useState<FormatoDescarga | null>(null);
@@ -34,27 +31,18 @@ const ReporteAlumnoDocente = ({
     isLoading,
     isError,
     sinReportes,
-  } = useReporteAlumnoDocente(idalumno, idsalon, true);
+  } = useReporteAlumnoAdmin(idalumno, true);
 
   const handleDescargar = async (format: FormatoDescarga) => {
-    if (!token) return;
+    if (!token || !idinteraccion) return;
     setDescargando(format);
     setDescargaError(null);
     try {
-      if (format === "csv") {
-        // Expediente consolidado del estudiante en el salón.
-        await downloadReport(
-          `/reportes/estudiante/${idalumno}/salon/${idsalon}/csv`,
-          token,
-          `reporte_${nombreAlumno.replace(/\s+/g, "_")}.csv`,
-        );
-      } else if (idinteraccion) {
-        // Mismo reporte de intento que descargan los alumnos.
-        if (format === "pdf") {
-          await descargarReportePdf(token, idinteraccion);
-        } else {
-          await descargarReporteXlsx(token, idinteraccion);
-        }
+      // Mismo reporte de intento que descargan alumnos y docentes.
+      if (format === "pdf") {
+        await descargarReportePdf(token, idinteraccion);
+      } else {
+        await descargarReporteXlsx(token, idinteraccion);
       }
     } catch {
       setDescargaError(
@@ -104,18 +92,6 @@ const ReporteAlumnoDocente = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleDescargar("csv")}
-            disabled={descargando === "csv"}
-          >
-            {descargando === "csv" ? (
-              <span className="loading loading-spinner loading-xs" />
-            ) : (
-              "CSV"
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
             className="btn-square"
             onClick={onClose}
           >
@@ -153,4 +129,4 @@ const ReporteAlumnoDocente = ({
   );
 };
 
-export default ReporteAlumnoDocente;
+export default ReporteAlumnoAdmin;
