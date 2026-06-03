@@ -45,6 +45,7 @@ class EscenarioEnSalon(BaseModel):
 
 class SalonWithDetails(BaseModel):
     idsalon: UUID
+    idinstitucion: UUID
     nombresalon: str
     codigoacceso: str
     activo: bool | None = None

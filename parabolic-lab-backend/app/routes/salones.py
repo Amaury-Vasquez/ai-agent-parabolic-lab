@@ -94,6 +94,7 @@ async def mis_salones(
     return [
         SalonWithDetails(
             idsalon=s.idsalon,
+            idinstitucion=s.idinstitucion,
             nombresalon=s.nombresalon,
             codigoacceso=s.codigoacceso,
             activo=s.activo,

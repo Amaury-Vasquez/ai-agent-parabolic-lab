@@ -1,5 +1,5 @@
 import { Badge, Button, Modal } from "amvasdev-ui";
-import { Trash2 } from "lucide-react";
+import { Link2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import Card from "@/components/Card";
 import { useDeleteSalon } from "@/mutations/useDeleteSalon";
@@ -19,6 +19,7 @@ const SalonCard = ({ salon }: SalonCardProps) => {
   const [isSeleccionarEscenarioModalOpen, setIsSeleccionarEscenarioModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [enlaceCopiado, setEnlaceCopiado] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const { mutate: deleteSalon, isPending: isDeleting } = useDeleteSalon();
@@ -27,6 +28,15 @@ const SalonCard = ({ salon }: SalonCardProps) => {
     await navigator.clipboard.writeText(salon.codigoacceso);
     setCopiado(true);
     setTimeout(() => setCopiado(false), 2000);
+  };
+
+  // Enlace de invitación: lleva al registro de alumno con la institución en
+  // la ruta y el código del salón prellenado vía query param.
+  const handleCopiarEnlace = async () => {
+    const enlace = `${window.location.origin}/registro/${salon.idinstitucion}/alumno?salon=${encodeURIComponent(salon.codigoacceso)}`;
+    await navigator.clipboard.writeText(enlace);
+    setEnlaceCopiado(true);
+    setTimeout(() => setEnlaceCopiado(false), 2000);
   };
 
   if (deleted) return null;
@@ -93,6 +103,19 @@ const SalonCard = ({ salon }: SalonCardProps) => {
             )}
           </Button>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full mt-2"
+          onClick={handleCopiarEnlace}
+        >
+          <Link2 className="w-4 h-4" />
+          {enlaceCopiado ? (
+            <span className="text-success">¡Enlace copiado!</span>
+          ) : (
+            "Copiar enlace de invitación"
+          )}
+        </Button>
       </div>
 
       {/* Assigned Scenarios */}

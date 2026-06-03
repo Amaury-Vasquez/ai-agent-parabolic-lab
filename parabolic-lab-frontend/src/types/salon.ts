@@ -6,6 +6,7 @@ export interface EscenarioEnSalon {
 
 export interface Salon {
   idsalon: string;
+  idinstitucion: string;
   nombresalon: string;
   codigoacceso: string;
   activo: boolean | null;
