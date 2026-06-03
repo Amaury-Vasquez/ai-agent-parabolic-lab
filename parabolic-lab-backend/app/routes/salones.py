@@ -94,10 +94,19 @@ async def mis_salones(
     return [
         SalonWithDetails(
             idsalon=s.idsalon,
+            idinstitucion=s.idinstitucion,
             nombresalon=s.nombresalon,
             codigoacceso=s.codigoacceso,
             activo=s.activo,
-            escenarios=[EscenarioEnSalon(idescenario=e.idescenario, nombre=e.nombre) for e in s.escenarios if e.activo],
+            escenarios=[
+                EscenarioEnSalon(
+                    idescenario=e.idescenario,
+                    nombre=e.nombre,
+                    idescenario_origen=e.idescenario_origen,
+                )
+                for e in s.escenarios
+                if e.activo
+            ],
             num_estudiantes=sum(1 for a in s.alumnos if a.activo),
         )
         for s in salones

@@ -34,6 +34,22 @@ async def _verificar_salon_del_docente(idsalon: UUID, docente_id: UUID, db: Asyn
     return salon
 
 
+async def _verificar_escenario_del_docente(escenario: Escenario, docente_id: UUID, db: AsyncSession) -> None:
+    """Verifica que el escenario pertenece al docente.
+
+    La propiedad se resuelve por iddocente; para escenarios previos a esa
+    columna se cae al salón al que están asignados.
+    """
+    if escenario.iddocente is not None:
+        if escenario.iddocente != docente_id:
+            raise HTTPException(status_code=403, detail="No tienes permiso sobre este escenario")
+        return
+    if escenario.idsalon is not None:
+        await _verificar_salon_del_docente(escenario.idsalon, docente_id, db)
+        return
+    raise HTTPException(status_code=403, detail="No tienes permiso sobre este escenario")
+
+
 # ── READ ──────────────────────────────────────────────────────────────────────
 @router.get("/me", response_model=list[EscenarioRead])
 async def mis_escenarios(
@@ -42,7 +58,7 @@ async def mis_escenarios(
 ):
     """Devuelve los escenarios visibles para el usuario actual.
 
-    - Docente: escenarios originales (no copias) de sus salones
+    - Docente: escenarios originales de su biblioteca (no copias)
     - Alumno: escenarios de los salones donde está inscrito
     """
     if current_user.tipousuario == "docente":
@@ -50,8 +66,7 @@ async def mis_escenarios(
             return []
         query = (
             select(Escenario)
-            .join(Salon, Salon.idsalon == Escenario.idsalon)
-            .where(Salon.iddocente == current_user.docente.iddocente)
+            .where(Escenario.iddocente == current_user.docente.iddocente)
             .where(Escenario.activo.is_(True))
             .where(Escenario.idescenario_origen.is_(None))
             .order_by(Escenario.fechacreacion.desc())
@@ -111,12 +126,11 @@ async def crear_escenario(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    """Crea un escenario en un salón. Solo el docente dueño del salón."""
+    """Crea un escenario en la biblioteca del docente (sin asignar a un salón)."""
     _require_docente(current_user)
-    await _verificar_salon_del_docente(data.idsalon, current_user.docente.iddocente, db)
 
     escenario = Escenario(
-        idsalon=data.idsalon,
+        iddocente=current_user.docente.iddocente,
         nombre=data.nombre,
         descripcion=data.descripcion,
         niveldificultad=data.niveldificultad,
@@ -133,14 +147,23 @@ async def crear_escenario(
     return escenario
 
 
-@router.post("/{idescenario}/asignar", response_model=EscenarioRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{idescenario}/asignar",
+    response_model=list[EscenarioRead],
+    status_code=status.HTTP_201_CREATED,
+)
 async def asignar_escenario(
     idescenario: UUID,
     data: AsignarEscenarioRequest,
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    """Crea una copia de un escenario en otro salón. Solo el docente dueño de ambos salones."""
+    """Asigna un escenario a uno o varios salones creando una copia por salón.
+
+    Solo el docente dueño del escenario y de los salones. Los salones donde
+    el escenario ya está asignado se omiten; si no queda ninguno por asignar
+    se responde 409.
+    """
     _require_docente(current_user)
 
     # Obtener el escenario original
@@ -149,51 +172,61 @@ async def asignar_escenario(
     if not escenario_original:
         raise HTTPException(status_code=404, detail="Escenario no encontrado")
 
-    # Verificar que el docente es dueño del salón actual del escenario
-    await _verificar_salon_del_docente(escenario_original.idsalon, current_user.docente.iddocente, db)
-
-    # Verificar que el docente es dueño del salón destino
-    await _verificar_salon_del_docente(data.idsalon, current_user.docente.iddocente, db)
+    # Verificar que el docente es dueño del escenario
+    await _verificar_escenario_del_docente(escenario_original, current_user.docente.iddocente, db)
 
     # Determinar el escenario raíz (si el original ya es una copia, usar su origen)
     idorigen_raiz = escenario_original.idescenario_origen or idescenario
 
-    # Evitar duplicados: si ya existe una copia activa del mismo origen
-    # (o el propio escenario raíz) en el salón destino, no crear otra.
-    duplicado = await db.execute(
-        select(Escenario)
-        .where(Escenario.idsalon == data.idsalon)
+    # Salones (activos) que ya tienen una copia del mismo origen o el propio raíz
+    ya_asignados_result = await db.execute(
+        select(Escenario.idsalon)
+        .where(Escenario.idsalon.is_not(None))
         .where(Escenario.activo.is_(True))
         .where(
             (Escenario.idescenario_origen == idorigen_raiz)
             | (Escenario.idescenario == idorigen_raiz)
         )
     )
-    escenario_existente = duplicado.scalars().first()
-    if escenario_existente:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Este escenario ya está asignado a ese salón",
+    salones_ya_asignados = set(ya_asignados_result.scalars().all())
+
+    nuevos_escenarios: list[Escenario] = []
+    for idsalon in dict.fromkeys(data.idsalones):
+        # Verificar que el docente es dueño del salón destino
+        await _verificar_salon_del_docente(idsalon, current_user.docente.iddocente, db)
+
+        if idsalon in salones_ya_asignados:
+            continue
+
+        # Crear una copia ligada al original
+        nuevos_escenarios.append(
+            Escenario(
+                idsalon=idsalon,
+                iddocente=current_user.docente.iddocente,
+                idescenario_origen=idorigen_raiz,
+                nombre=escenario_original.nombre,
+                descripcion=escenario_original.descripcion,
+                niveldificultad=escenario_original.niveldificultad,
+                tipoescenario=escenario_original.tipoescenario,
+                objetivosaprendizaje=escenario_original.objetivosaprendizaje,
+                instrucciones=escenario_original.instrucciones,
+                tiempolimite=escenario_original.tiempolimite,
+                intentospermitidos=escenario_original.intentospermitidos,
+                configuracionescenario=escenario_original.configuracionescenario or {},
+            )
         )
 
-    # Crear una copia ligada al original
-    nuevo_escenario = Escenario(
-        idsalon=data.idsalon,
-        idescenario_origen=idorigen_raiz,
-        nombre=escenario_original.nombre,
-        descripcion=escenario_original.descripcion,
-        niveldificultad=escenario_original.niveldificultad,
-        tipoescenario=escenario_original.tipoescenario,
-        objetivosaprendizaje=escenario_original.objetivosaprendizaje,
-        instrucciones=escenario_original.instrucciones,
-        tiempolimite=escenario_original.tiempolimite,
-        intentospermitidos=escenario_original.intentospermitidos,
-        configuracionescenario=escenario_original.configuracionescenario or {},
-    )
-    db.add(nuevo_escenario)
+    if not nuevos_escenarios:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Este escenario ya está asignado a los salones seleccionados",
+        )
+
+    db.add_all(nuevos_escenarios)
     await db.commit()
-    await db.refresh(nuevo_escenario)
-    return nuevo_escenario
+    for nuevo in nuevos_escenarios:
+        await db.refresh(nuevo)
+    return nuevos_escenarios
 
 
 async def _actualizar_escenario_impl(
@@ -210,7 +243,7 @@ async def _actualizar_escenario_impl(
     if not escenario:
         raise HTTPException(status_code=404, detail="Escenario no encontrado")
 
-    await _verificar_salon_del_docente(escenario.idsalon, current_user.docente.iddocente, db)
+    await _verificar_escenario_del_docente(escenario, current_user.docente.iddocente, db)
 
     campos = data.model_dump(exclude_unset=True)
     for campo, valor in campos.items():
@@ -244,13 +277,17 @@ async def actualizar_escenario_patch(
     return await _actualizar_escenario_impl(idescenario, data, db, current_user)
 
 
-@router.delete("/{idescenario}", status_code=status.HTTP_204_NO_CONTENT)
-async def eliminar_escenario(
+@router.delete("/{idescenario}/asignacion", status_code=status.HTTP_204_NO_CONTENT)
+async def desasignar_escenario(
     idescenario: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    """Desactiva un escenario (soft delete). Solo el docente dueño."""
+    """Quita un escenario de su salón sin borrarlo de la biblioteca.
+
+    - Copia asignada a un salón: se desactiva (solo existe para ese salón).
+    - Original asignado a un salón (datos previos): se regresa a la biblioteca.
+    """
     _require_docente(current_user)
 
     result = await db.execute(select(Escenario).where(Escenario.idescenario == idescenario))
@@ -258,8 +295,51 @@ async def eliminar_escenario(
     if not escenario:
         raise HTTPException(status_code=404, detail="Escenario no encontrado")
 
-    await _verificar_salon_del_docente(escenario.idsalon, current_user.docente.iddocente, db)
+    await _verificar_escenario_del_docente(escenario, current_user.docente.iddocente, db)
 
-    escenario.activo = False
+    if escenario.idsalon is None:
+        raise HTTPException(status_code=400, detail="El escenario no está asignado a un salón")
+
+    if escenario.idescenario_origen is not None:
+        escenario.activo = False
+    else:
+        escenario.idsalon = None
     escenario.fechamodificacion = datetime.now(UTC).replace(tzinfo=None)
+    await db.commit()
+
+
+@router.delete("/{idescenario}", status_code=status.HTTP_204_NO_CONTENT)
+async def eliminar_escenario(
+    idescenario: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """Desactiva un escenario (soft delete). Solo el docente dueño.
+
+    Si es un original de la biblioteca, también desactiva las copias
+    asignadas a salones.
+    """
+    _require_docente(current_user)
+
+    result = await db.execute(select(Escenario).where(Escenario.idescenario == idescenario))
+    escenario = result.scalar_one_or_none()
+    if not escenario:
+        raise HTTPException(status_code=404, detail="Escenario no encontrado")
+
+    await _verificar_escenario_del_docente(escenario, current_user.docente.iddocente, db)
+
+    ahora = datetime.now(UTC).replace(tzinfo=None)
+    escenario.activo = False
+    escenario.fechamodificacion = ahora
+
+    if escenario.idescenario_origen is None:
+        copias_result = await db.execute(
+            select(Escenario)
+            .where(Escenario.idescenario_origen == idescenario)
+            .where(Escenario.activo.is_(True))
+        )
+        for copia in copias_result.scalars().all():
+            copia.activo = False
+            copia.fechamodificacion = ahora
+
     await db.commit()

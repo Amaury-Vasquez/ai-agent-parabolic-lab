@@ -11,12 +11,19 @@ export const metadata: Metadata = buildMetadata({
 
 interface RegisterStudentPageProps {
   params: Promise<{ institutionId: string }>;
+  searchParams: Promise<{ salon?: string }>;
 }
 
 export default async function RegisterStudentPage({
   params,
+  searchParams,
 }: RegisterStudentPageProps) {
+  // Ambos parámetros se leen en el servidor para que el formulario llegue
+  // prellenado en el primer render.
   const { institutionId } = await params;
+  const { salon } = await searchParams;
 
-  return <RegisterStudent institutionId={institutionId} />;
+  return (
+    <RegisterStudent institutionId={institutionId} salonCode={salon ?? ""} />
+  );
 }

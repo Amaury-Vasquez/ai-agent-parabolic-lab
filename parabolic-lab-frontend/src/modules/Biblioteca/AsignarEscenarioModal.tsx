@@ -1,9 +1,10 @@
 "use client";
 import { Modal } from "amvasdev-ui";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Scenario } from "@/models/scenario";
 import { useAsignarEscenario } from "@/mutations/useAsignarEscenario";
 import type { Salon } from "@/types/salon";
+import { isEscenarioAsignadoASalon } from "@/utils/escenarios";
 
 interface AsignarEscenarioModalProps {
   isOpen: boolean;
@@ -18,18 +19,46 @@ const AsignarEscenarioModal = ({
   escenario,
   salones,
 }: AsignarEscenarioModalProps) => {
-  const [selectedSalon, setSelectedSalon] = useState("");
+  const [seleccionados, setSeleccionados] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const { mutate: asignar, isPending } = useAsignarEscenario();
 
+  // Salones donde el escenario aún no está asignado (los asignados se
+  // muestran deshabilitados con su estado).
+  const salonesDisponibles = useMemo(
+    () =>
+      (salones ?? []).filter(
+        (salon) => !isEscenarioAsignadoASalon(escenario, salon),
+      ),
+    [salones, escenario],
+  );
+
+  const todosSeleccionados =
+    salonesDisponibles.length > 0 &&
+    seleccionados.length === salonesDisponibles.length;
+
+  const toggleSalon = (idsalon: string) => {
+    setSeleccionados((prev) =>
+      prev.includes(idsalon)
+        ? prev.filter((id) => id !== idsalon)
+        : [...prev, idsalon],
+    );
+  };
+
+  const toggleTodos = () => {
+    setSeleccionados(
+      todosSeleccionados ? [] : salonesDisponibles.map((s) => s.idsalon),
+    );
+  };
+
   const handleConfirm = () => {
-    if (selectedSalon.trim() === "") return;
+    if (seleccionados.length === 0) return;
     setError(null);
     asignar(
-      { idescenario: escenario.idescenario, idsalon: selectedSalon },
+      { idescenario: escenario.idescenario, idsalones: seleccionados },
       {
         onSuccess: () => {
-          setSelectedSalon("");
+          setSeleccionados([]);
           onClose();
         },
         onError: (err) => {
@@ -44,7 +73,7 @@ const AsignarEscenarioModal = ({
   };
 
   const handleCancel = () => {
-    setSelectedSalon("");
+    setSeleccionados([]);
     setError(null);
     onClose();
   };
@@ -52,33 +81,77 @@ const AsignarEscenarioModal = ({
   return isOpen ? (
     <Modal
       onClose={handleCancel}
-      title={`Asignar "${escenario.nombre}" a Salón`}
+      title={`Asignar "${escenario.nombre}" a salones`}
       confirmButton={{
-        children: isPending ? "Asignando..." : "Asignar",
+        children: isPending
+          ? "Asignando..."
+          : `Asignar${seleccionados.length > 0 ? ` (${seleccionados.length})` : ""}`,
         variant: "primary",
         onClick: handleConfirm,
-        disabled: selectedSalon.trim() === "" || isPending,
+        disabled: seleccionados.length === 0 || isPending,
       }}
     >
       <div className="flex flex-col py-4 gap-4">
-        <div>
-          <label className="label">
-            <span className="label-text">Selecciona un salón</span>
-          </label>
-          <select
-            className="select select-bordered w-full"
-            value={selectedSalon}
-            onChange={(e) => setSelectedSalon(e.target.value)}
-            disabled={isPending || !salones || salones.length === 0}
-          >
-            <option value="">-- Elige un salón --</option>
-            {salones?.map((salon) => (
-              <option key={salon.idsalon} value={salon.idsalon}>
-                {salon.nombresalon}
-              </option>
-            ))}
-          </select>
-        </div>
+        {(salones ?? []).length === 0 ? (
+          <p className="text-sm opacity-60">
+            Aún no tienes salones. Crea un salón para poder asignar
+            escenarios.
+          </p>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="label-text font-semibold">
+                Selecciona los salones
+              </span>
+              {salonesDisponibles.length > 1 ? (
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm checkbox-primary"
+                    checked={todosSeleccionados}
+                    onChange={toggleTodos}
+                    disabled={isPending}
+                  />
+                  Seleccionar todos
+                </label>
+              ) : null}
+            </div>
+            <ul className="flex flex-col gap-2 max-h-60 overflow-y-auto">
+              {(salones ?? []).map((salon) => {
+                const yaAsignado = isEscenarioAsignadoASalon(escenario, salon);
+
+                return (
+                  <li key={salon.idsalon}>
+                    <label
+                      className={`flex items-center justify-between bg-base-200 rounded-lg px-4 py-2 ${
+                        yaAsignado ? "opacity-60" : "cursor-pointer"
+                      }`}
+                    >
+                      <span className="flex items-center gap-3 text-sm">
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-sm checkbox-primary"
+                          checked={
+                            yaAsignado ||
+                            seleccionados.includes(salon.idsalon)
+                          }
+                          onChange={() => toggleSalon(salon.idsalon)}
+                          disabled={yaAsignado || isPending}
+                        />
+                        {salon.nombresalon}
+                      </span>
+                      {yaAsignado ? (
+                        <span className="badge badge-ghost badge-sm">
+                          Ya asignado
+                        </span>
+                      ) : null}
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
         {error ? <p className="text-error text-sm">{error}</p> : null}
       </div>
     </Modal>

@@ -1,6 +1,6 @@
 "use client";
 import { Button, Input, PasswordInput } from "amvasdev-ui";
-import { Hash, Lock, Mail, User } from "lucide-react";
+import { Building2, Hash, Lock, Mail, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useCookies } from "react-cookie";
@@ -12,11 +12,13 @@ import {
   REFRESH_TOKEN_COOKIE,
   USER_TYPE_COOKIE,
 } from "@/constants/auth";
+import { unirseASalon } from "@/fetchers/salones";
 import { useRegister } from "@/mutations/useRegister";
 import { ApiError } from "@/services/api";
 
 interface RegisterStudentProps {
   institutionId: string;
+  salonCode?: string;
 }
 
 // Mapea los nombres de campo del backend a los del formulario.
@@ -27,18 +29,24 @@ const FIELD_MAP: Record<string, keyof StudentFormValues> = {
   apellidomaterno: "apellidoMaterno",
   matricula: "matricula",
   password: "contrasena",
+  idinstitucion: "institucion",
 };
 
 interface StudentFormValues {
+  institucion: string;
   email: string;
   nombre: string;
   apellidoPaterno: string;
   apellidoMaterno: string;
   matricula: string;
+  codigoSalon: string;
   contrasena: string;
 }
 
-const RegisterStudent = ({ institutionId }: RegisterStudentProps) => {
+const RegisterStudent = ({
+  institutionId,
+  salonCode = "",
+}: RegisterStudentProps) => {
   const router = useRouter();
   const [, setCookie] = useCookies();
   const { registerUser, isPending } = useRegister();
@@ -46,7 +54,10 @@ const RegisterStudent = ({ institutionId }: RegisterStudentProps) => {
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<keyof StudentFormValues, string>>
   >({});
-  const { register, handleSubmit } = useForm<StudentFormValues>();
+  const { register, handleSubmit } = useForm<StudentFormValues>({
+    // Prellenados desde la URL (leídos en el servidor)
+    defaultValues: { institucion: institutionId, codigoSalon: salonCode },
+  });
 
   const onSubmit = async (values: StudentFormValues) => {
     setError("");
@@ -58,13 +69,31 @@ const RegisterStudent = ({ institutionId }: RegisterStudentProps) => {
         nombre: values.nombre,
         apellidopaterno: values.apellidoPaterno,
         apellidomaterno: values.apellidoMaterno || undefined,
-        idinstitucion: institutionId,
+        idinstitucion: values.institucion.trim(),
         tipousuario: "alumno",
         matricula: values.matricula || undefined,
       });
       setCookie(ACCESS_TOKEN_COOKIE, data.access_token, { path: "/" });
       setCookie(REFRESH_TOKEN_COOKIE, data.refresh_token, { path: "/" });
       setCookie(USER_TYPE_COOKIE, data.tipousuario, { path: "/" });
+
+      // Si trae código de salón, unirse antes de entrar al panel. Si el
+      // código falla la cuenta ya existe: avisamos y entramos de cualquier
+      // forma (puede unirse después desde su panel).
+      if (values.codigoSalon.trim()) {
+        try {
+          await unirseASalon(data.access_token, values.codigoSalon.trim());
+        } catch {
+          setError(
+            "Tu cuenta se creó, pero el código de salón no es válido. Podrás unirte a un salón desde tu panel.",
+          );
+          setTimeout(
+            () => router.push(AUTH_REDIRECT[data.tipousuario] ?? "/"),
+            2500,
+          );
+          return;
+        }
+      }
       router.push(AUTH_REDIRECT[data.tipousuario] ?? "/");
     } catch (err) {
       if (err instanceof ApiError && Object.keys(err.fieldErrors).length > 0) {
@@ -93,13 +122,24 @@ const RegisterStudent = ({ institutionId }: RegisterStudentProps) => {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-2">Registro de Alumno</h1>
           <p className="text-base-content/70">
-            ID de Institución:{" "}
-            <span className="font-mono font-bold">{institutionId}</span>
+            Crea tu cuenta para acceder a tus salones y simulaciones
           </p>
         </div>
 
         <Card border>
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+            <Input
+              id="institucion"
+              label="ID de Institución"
+              type="text"
+              placeholder="d290f1ee-6c54-4b01-90e6-d701748f0851"
+              leftIcon={<Building2 className="size-4" />}
+              required
+              variant={fieldErrors.institucion ? "error" : undefined}
+              errorMessage={fieldErrors.institucion}
+              {...register("institucion")}
+            />
+
             <Input
               id="email"
               label="Correo Electrónico"
@@ -156,6 +196,17 @@ const RegisterStudent = ({ institutionId }: RegisterStudentProps) => {
               variant={fieldErrors.matricula ? "error" : undefined}
               errorMessage={fieldErrors.matricula}
               {...register("matricula")}
+            />
+
+            <Input
+              id="codigoSalon"
+              label="Código de Salón (opcional)"
+              type="text"
+              placeholder="FISICA-2024-A1"
+              leftIcon={<Hash className="size-4" />}
+              variant={fieldErrors.codigoSalon ? "error" : undefined}
+              errorMessage={fieldErrors.codigoSalon}
+              {...register("codigoSalon")}
             />
 
             <PasswordInput

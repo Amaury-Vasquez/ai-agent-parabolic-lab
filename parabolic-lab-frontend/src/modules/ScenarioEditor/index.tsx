@@ -14,8 +14,10 @@ import {
   type ProjectileAssetKey,
   type TargetAssetKey,
 } from "@/constants/simulatorAssets";
+import { useAsignarEscenario } from "@/mutations/useAsignarEscenario";
 import { useCreateEscenario } from "@/mutations/useCreateEscenario";
 import { useUpdateEscenario } from "@/mutations/useUpdateEscenario";
+import { useMySalones } from "@/queries/useMySalones";
 import { DIFFICULTY_MAP, TYPE_MAP } from "@/utils/scenarioMappers";
 import {
   ScenarioEditorProvider,
@@ -33,13 +35,11 @@ import type {
 import InteractiveSimulator from "./InteractiveSimulator";
 
 interface ScenarioEditorProps {
-  classroomId?: string;
   scenarioId?: string;
   initialData?: Scenario;
 }
 
 const ScenarioEditorForm = ({
-  classroomId,
   scenarioId,
   initialData,
 }: ScenarioEditorProps) => {
@@ -100,8 +100,32 @@ const ScenarioEditorForm = ({
   const [isSaving, setIsSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState("");
+  // Salones a los que se asignará el escenario al crearlo (opcional)
+  const [salonesSeleccionados, setSalonesSeleccionados] = useState<string[]>(
+    [],
+  );
+  const { data: salones } = useMySalones();
   const { mutateAsync: crearEscenario } = useCreateEscenario();
   const { mutateAsync: actualizarEscenario } = useUpdateEscenario();
+  const { mutateAsync: asignarEscenario } = useAsignarEscenario();
+
+  const todosSeleccionados =
+    (salones?.length ?? 0) > 0 &&
+    salonesSeleccionados.length === (salones?.length ?? 0);
+
+  const toggleSalon = (idsalon: string) => {
+    setSalonesSeleccionados((prev) =>
+      prev.includes(idsalon)
+        ? prev.filter((id) => id !== idsalon)
+        : [...prev, idsalon],
+    );
+  };
+
+  const toggleTodosSalones = () => {
+    setSalonesSeleccionados(
+      todosSeleccionados ? [] : (salones ?? []).map((s) => s.idsalon),
+    );
+  };
   // Sync context physics config with form data
   useEffect(() => {
     setFormData((prev) => ({
@@ -166,8 +190,20 @@ const ScenarioEditorForm = ({
         setSuccessMsg("Escenario actualizado correctamente");
         setTimeout(() => router.push("/docente/biblioteca"), 2000);
       } else {
-        await crearEscenario({ ...datos, idsalon: classroomId! });
-        setSuccessMsg("Escenario creado correctamente");
+        const creado = await crearEscenario(datos);
+        if (salonesSeleccionados.length > 0) {
+          await asignarEscenario({
+            idescenario: creado.idescenario,
+            idsalones: salonesSeleccionados,
+          });
+        }
+        setSuccessMsg(
+          salonesSeleccionados.length > 0
+            ? `Escenario creado y asignado a ${salonesSeleccionados.length} ${
+                salonesSeleccionados.length === 1 ? "salón" : "salones"
+              }`
+            : "Escenario creado correctamente",
+        );
         setTimeout(() => router.push("/docente/biblioteca"), 2000);
       }
     } catch (error) {
@@ -419,6 +455,57 @@ const ScenarioEditorForm = ({
             </span>
           </div>
         </div>
+
+        {/* Asignación a Salones (solo al crear) */}
+        {!isEditing ? (
+          <div className="bg-base-200 p-4 sm:p-6 rounded-lg space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <h2 className="text-lg sm:text-xl font-semibold">
+                Asignar a Salones
+              </h2>
+              {(salones?.length ?? 0) > 1 ? (
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm checkbox-primary"
+                    checked={todosSeleccionados}
+                    onChange={toggleTodosSalones}
+                  />
+                  Seleccionar todos
+                </label>
+              ) : null}
+            </div>
+            {(salones?.length ?? 0) === 0 ? (
+              <p className="text-sm opacity-60">
+                Aún no tienes salones. El escenario se guardará en tu
+                biblioteca y podrás asignarlo después.
+              </p>
+            ) : (
+              <>
+                <p className="text-sm opacity-60">
+                  Opcional: el escenario se guarda en tu biblioteca y se
+                  asigna a los salones que selecciones.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {salones?.map((salon) => (
+                    <label
+                      key={salon.idsalon}
+                      className="flex items-center gap-3 bg-base-100 rounded-lg px-4 py-2 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        className="checkbox checkbox-sm checkbox-primary"
+                        checked={salonesSeleccionados.includes(salon.idsalon)}
+                        onChange={() => toggleSalon(salon.idsalon)}
+                      />
+                      <span className="text-sm">{salon.nombresalon}</span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        ) : null}
 
         {/* Vista Previa Interactiva y Configuración Física */}
         <div className="bg-base-200 p-4 sm:p-6 rounded-lg space-y-6">

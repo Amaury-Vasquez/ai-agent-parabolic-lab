@@ -1,7 +1,7 @@
 "use client";
 import { Button, Input, Modal } from "amvasdev-ui";
 import { useState } from "react";
-import { useDeleteEscenario } from "@/mutations/useDeleteEscenario";
+import { useDesasignarEscenario } from "@/mutations/useDesasignarEscenario";
 import { useUpdateSalon } from "@/mutations/useUpdateSalon";
 import type { Salon } from "@/types/salon";
 
@@ -14,7 +14,10 @@ interface SalonConfigModalProps {
 const SalonConfigModal = ({ isOpen, onClose, salon }: SalonConfigModalProps) => {
   const [nombreSalon, setNombreSalon] = useState(salon.nombresalon);
   const { mutate: updateSalon, isPending: isUpdating } = useUpdateSalon();
-  const { mutate: deleteEscenario } = useDeleteEscenario();
+  // Quita el escenario del salón sin borrarlo de la biblioteca; la
+  // eliminación definitiva solo se hace desde docente/biblioteca.
+  const { mutate: desasignarEscenario, isPending: isDesasignando } =
+    useDesasignarEscenario();
 
   const handleSaveName = () => {
     if (nombreSalon.trim() === "") return;
@@ -73,9 +76,10 @@ const SalonConfigModal = ({ isOpen, onClose, salon }: SalonConfigModalProps) => 
                   <Button
                     variant="error"
                     size="sm"
-                    onClick={() => deleteEscenario(escenario.idescenario)}
+                    disabled={isDesasignando}
+                    onClick={() => desasignarEscenario(escenario.idescenario)}
                   >
-                    Eliminar
+                    Quitar del salón
                   </Button>
                 </li>
               ))}

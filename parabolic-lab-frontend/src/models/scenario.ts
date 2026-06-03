@@ -1,6 +1,7 @@
 export interface Scenario {
   idescenario: string;
-  idsalon: string;
+  idsalon: string | null;
+  iddocente?: string | null;
   idescenario_origen?: string | null;
   nombre: string;
   descripcion?: string | null;

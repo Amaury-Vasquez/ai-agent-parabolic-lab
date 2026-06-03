@@ -1,12 +1,14 @@
 "use client";
-import { Button, Modal } from "amvasdev-ui";
-import { ArrowLeft, BookOpen, ClipboardList, Pencil, Plus, Share2, Trash2 } from "lucide-react";
+import { Button, Input, Modal } from "amvasdev-ui";
+import { ArrowLeft, BookOpen, ClipboardList, Pencil, Plus, Search, Share2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { Scenario } from "@/models/scenario";
 import { useDeleteEscenario } from "@/mutations/useDeleteEscenario";
 import { useMisEscenarios } from "@/queries/useMisEscenarios";
 import { useMySalones } from "@/queries/useMySalones";
+import { getAsignaciones, type AsignacionEscenario } from "@/utils/escenarios";
+import { searchIgnoreAccents } from "@/utils/string";
 import EmptyState from "@/components/EmptyState";
 import AsignarEscenarioModal from "./AsignarEscenarioModal";
 
@@ -36,8 +38,11 @@ const Biblioteca = () => {
     useState<Scenario | null>(null);
   const [escenarioAEliminar, setEscenarioAEliminar] =
     useState<Scenario | null>(null);
+  const [escenarioRespuestas, setEscenarioRespuestas] =
+    useState<Scenario | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("reciente");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const DIFFICULTY_ORDER: Record<string, number> = {
     principiante: 0,
@@ -48,7 +53,10 @@ const Biblioteca = () => {
 
   const escenariosOrdenados = useMemo(() => {
     if (!escenarios) return [];
-    const sorted = [...escenarios];
+    const filtrados = searchTerm.trim()
+      ? escenarios.filter((e) => searchIgnoreAccents(e.nombre, searchTerm))
+      : escenarios;
+    const sorted = [...filtrados];
     switch (sortBy) {
       case "alfabetico":
         return sorted.sort((a, b) => a.nombre.localeCompare(b.nombre));
@@ -65,11 +73,22 @@ const Biblioteca = () => {
       default:
         return sorted;
     }
-  }, [escenarios, sortBy]);
+  }, [escenarios, sortBy, searchTerm]);
 
-  const getSalonNombre = (idsalon: string) => {
-    const salon = salones?.find((s) => s.idsalon === idsalon);
-    return salon?.nombresalon ?? "Salón desconocido";
+  const irARespuestas = (asignacion: AsignacionEscenario) => {
+    setEscenarioRespuestas(null);
+    router.push(
+      `/docente/salon/${asignacion.salon.idsalon}/escenarios/${asignacion.idescenarioEnSalon}/respuestas`,
+    );
+  };
+
+  const handleVerRespuestas = (escenario: Scenario) => {
+    const asignaciones = getAsignaciones(escenario, salones);
+    if (asignaciones.length === 1) {
+      irARespuestas(asignaciones[0]);
+      return;
+    }
+    setEscenarioRespuestas(escenario);
   };
 
   const handleConfirmarEliminacion = () => {
@@ -113,6 +132,20 @@ const Biblioteca = () => {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+          <div className="relative">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none"
+            />
+            <Input
+              id="buscar-escenario"
+              type="search"
+              placeholder="Tiro desde una colina"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.currentTarget.value)}
+              className="input-sm pl-9 w-full sm:w-56"
+            />
+          </div>
           <select
             className="select select-bordered select-sm"
             value={sortBy}
@@ -139,7 +172,10 @@ const Biblioteca = () => {
         </div>
       ) : escenariosOrdenados.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {escenariosOrdenados.map((escenario) => (
+          {escenariosOrdenados.map((escenario) => {
+            const asignaciones = getAsignaciones(escenario, salones);
+
+            return (
             <div
               key={escenario.idescenario}
               className="bg-base-200 rounded-xl p-5 flex flex-col gap-3 border border-base-300"
@@ -163,7 +199,13 @@ const Biblioteca = () => {
 
               <div className="flex items-center gap-2 text-sm opacity-60">
                 <BookOpen size={14} />
-                <span>{getSalonNombre(escenario.idsalon)}</span>
+                <span>
+                  {asignaciones.length > 0
+                    ? `Asignado a: ${asignaciones
+                        .map((a) => a.salon.nombresalon)
+                        .join(", ")}`
+                    : "Sin asignar a salones"}
+                </span>
               </div>
 
               <div className="flex gap-3 text-xs opacity-60">
@@ -183,7 +225,7 @@ const Biblioteca = () => {
                   className="flex-1 min-w-[80px]"
                   onClick={() =>
                     router.push(
-                      `/docente/salon/${escenario.idsalon}/escenarios/${escenario.idescenario}/editar`
+                      `/docente/biblioteca/${escenario.idescenario}/editar`
                     )
                   }
                 >
@@ -194,11 +236,13 @@ const Biblioteca = () => {
                   variant="ghost"
                   size="sm"
                   className="flex-1 min-w-[80px]"
-                  onClick={() =>
-                    router.push(
-                      `/docente/salon/${escenario.idsalon}/escenarios/${escenario.idescenario}/respuestas`
-                    )
+                  disabled={asignaciones.length === 0}
+                  title={
+                    asignaciones.length === 0
+                      ? "Asigna el escenario a un salón para ver respuestas"
+                      : undefined
                   }
+                  onClick={() => handleVerRespuestas(escenario)}
                 >
                   <ClipboardList size={14} />
                   Respuestas
@@ -228,8 +272,15 @@ const Biblioteca = () => {
                 </Button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
+      ) : searchTerm.trim() ? (
+        <EmptyState
+          emoji="🔍"
+          title="Sin resultados"
+          subtitle={`Ningún escenario coincide con "${searchTerm}".`}
+        />
       ) : (
         <EmptyState
           emoji="🔬"
@@ -250,6 +301,34 @@ const Biblioteca = () => {
           salones={salones}
         />
       ) : null}
+      {escenarioRespuestas ? (
+        <Modal
+          onClose={() => setEscenarioRespuestas(null)}
+          title={`Respuestas de "${escenarioRespuestas.nombre}"`}
+        >
+          <div className="flex flex-col gap-2 py-4">
+            <p className="text-sm opacity-70">
+              Selecciona el salón cuyas respuestas quieres revisar:
+            </p>
+            <ul className="flex flex-col gap-2">
+              {getAsignaciones(escenarioRespuestas, salones).map(
+                (asignacion) => (
+                  <li key={asignacion.salon.idsalon}>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => irARespuestas(asignacion)}
+                    >
+                      <ClipboardList size={14} />
+                      {asignacion.salon.nombresalon}
+                    </Button>
+                  </li>
+                ),
+              )}
+            </ul>
+          </div>
+        </Modal>
+      ) : null}
       {escenarioAEliminar ? (
         <Modal
           onClose={handleCerrarConfirmacion}
@@ -264,8 +343,9 @@ const Biblioteca = () => {
           <div className="flex flex-col gap-2 py-4">
             <p>
               ¿Seguro que deseas eliminar el escenario{" "}
-              <strong>{escenarioAEliminar.nombre}</strong>? Esta acción no se
-              puede deshacer.
+              <strong>{escenarioAEliminar.nombre}</strong>? Se eliminará de tu
+              biblioteca y de todos los salones donde esté asignado. Esta
+              acción no se puede deshacer.
             </p>
             {deleteError ? (
               <p className="text-error text-sm">{deleteError}</p>

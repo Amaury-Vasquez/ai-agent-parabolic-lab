@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAsignarEscenario } from "@/mutations/useAsignarEscenario";
 import { useMisEscenarios } from "@/queries/useMisEscenarios";
 import type { Salon } from "@/types/salon";
+import { isEscenarioAsignadoASalon } from "@/utils/escenarios";
 
 interface SeleccionarEscenarioModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ const SeleccionarEscenarioModal = ({
     if (selectedEscenario.trim() === "") return;
     setError(null);
     asignar(
-      { idescenario: selectedEscenario, idsalon: salon.idsalon },
+      { idescenario: selectedEscenario, idsalones: [salon.idsalon] },
       {
         onSuccess: () => {
           setSelectedEscenario("");
@@ -71,14 +72,20 @@ const SeleccionarEscenarioModal = ({
             disabled={isPending || !escenarios || escenarios.length === 0}
           >
             <option value="">-- Elige un escenario --</option>
-            {escenarios?.map((escenario) => (
-              <option
-                key={escenario.idescenario}
-                value={escenario.idescenario}
-              >
-                {escenario.nombre}
-              </option>
-            ))}
+            {escenarios?.map((escenario) => {
+              const yaAsignado = isEscenarioAsignadoASalon(escenario, salon);
+
+              return (
+                <option
+                  key={escenario.idescenario}
+                  value={escenario.idescenario}
+                  disabled={yaAsignado}
+                >
+                  {escenario.nombre}
+                  {yaAsignado ? " (ya asignado)" : ""}
+                </option>
+              );
+            })}
           </select>
         </div>
         {error ? <p className="text-error text-sm">{error}</p> : null}

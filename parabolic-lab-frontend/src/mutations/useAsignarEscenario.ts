@@ -10,11 +10,11 @@ import { MIS_ESCENARIOS_QUERY_KEY } from "@/fetchers/escenarios";
 async function asignarEscenario(
   token: string,
   idescenario: string,
-  idsalon: string
-): Promise<Scenario> {
-  return post<Scenario>(
+  idsalones: string[]
+): Promise<Scenario[]> {
+  return post<Scenario[]>(
     `/escenarios/${idescenario}/asignar`,
-    { idsalon },
+    { idsalones },
     { token }
   );
 }
@@ -25,8 +25,13 @@ export function useAsignarEscenario() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ idescenario, idsalon }: { idescenario: string; idsalon: string }) =>
-      asignarEscenario(token, idescenario, idsalon),
+    mutationFn: ({
+      idescenario,
+      idsalones,
+    }: {
+      idescenario: string;
+      idsalones: string[];
+    }) => asignarEscenario(token, idescenario, idsalones),
     onSuccess: () => {
       // Invalidar el cache de salones y escenarios
       queryClient.invalidateQueries({ queryKey: MY_SALONES_QUERY_KEY });
