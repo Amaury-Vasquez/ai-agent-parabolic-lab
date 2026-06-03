@@ -13,10 +13,21 @@ import {
   USER_TYPE_COOKIE,
 } from "@/constants/auth";
 import { useRegister } from "@/mutations/useRegister";
+import { ApiError } from "@/services/api";
 
 interface RegisterStudentProps {
   institutionId: string;
 }
+
+// Mapea los nombres de campo del backend a los del formulario.
+const FIELD_MAP: Record<string, keyof StudentFormValues> = {
+  email: "email",
+  nombre: "nombre",
+  apellidopaterno: "apellidoPaterno",
+  apellidomaterno: "apellidoMaterno",
+  matricula: "matricula",
+  password: "contrasena",
+};
 
 interface StudentFormValues {
   email: string;
@@ -32,10 +43,14 @@ const RegisterStudent = ({ institutionId }: RegisterStudentProps) => {
   const [, setCookie] = useCookies();
   const { registerUser, isPending } = useRegister();
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof StudentFormValues, string>>
+  >({});
   const { register, handleSubmit } = useForm<StudentFormValues>();
 
   const onSubmit = async (values: StudentFormValues) => {
     setError("");
+    setFieldErrors({});
     try {
       const data = await registerUser({
         email: values.email,
@@ -52,7 +67,23 @@ const RegisterStudent = ({ institutionId }: RegisterStudentProps) => {
       setCookie(USER_TYPE_COOKIE, data.tipousuario, { path: "/" });
       router.push(AUTH_REDIRECT[data.tipousuario] ?? "/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al registrar alumno");
+      if (err instanceof ApiError && Object.keys(err.fieldErrors).length > 0) {
+        const mapped: Partial<Record<keyof StudentFormValues, string>> = {};
+        for (const [campo, mensaje] of Object.entries(err.fieldErrors)) {
+          const formField = FIELD_MAP[campo];
+          if (formField) mapped[formField] = mensaje;
+        }
+        setFieldErrors(mapped);
+        // Si hay errores no mapeables a un campo, muéstralos arriba.
+        const hayNoMapeados = Object.keys(err.fieldErrors).some(
+          (c) => !FIELD_MAP[c],
+        );
+        setError(hayNoMapeados ? err.message : "");
+      } else {
+        setError(
+          err instanceof Error ? err.message : "Error al registrar alumno",
+        );
+      }
     }
   };
 
@@ -76,6 +107,8 @@ const RegisterStudent = ({ institutionId }: RegisterStudentProps) => {
               placeholder="correo@ejemplo.com"
               leftIcon={<Mail className="size-4" />}
               required
+              variant={fieldErrors.email ? "error" : undefined}
+              errorMessage={fieldErrors.email}
               {...register("email")}
             />
 
@@ -86,6 +119,8 @@ const RegisterStudent = ({ institutionId }: RegisterStudentProps) => {
               placeholder="María"
               leftIcon={<User className="size-4" />}
               required
+              variant={fieldErrors.nombre ? "error" : undefined}
+              errorMessage={fieldErrors.nombre}
               {...register("nombre")}
             />
 
@@ -96,6 +131,8 @@ const RegisterStudent = ({ institutionId }: RegisterStudentProps) => {
               placeholder="García"
               leftIcon={<User className="size-4" />}
               required
+              variant={fieldErrors.apellidoPaterno ? "error" : undefined}
+              errorMessage={fieldErrors.apellidoPaterno}
               {...register("apellidoPaterno")}
             />
 
@@ -105,6 +142,8 @@ const RegisterStudent = ({ institutionId }: RegisterStudentProps) => {
               type="text"
               placeholder="Rodríguez"
               leftIcon={<User className="size-4" />}
+              variant={fieldErrors.apellidoMaterno ? "error" : undefined}
+              errorMessage={fieldErrors.apellidoMaterno}
               {...register("apellidoMaterno")}
             />
 
@@ -114,6 +153,8 @@ const RegisterStudent = ({ institutionId }: RegisterStudentProps) => {
               type="text"
               placeholder="2024030123"
               leftIcon={<Hash className="size-4" />}
+              variant={fieldErrors.matricula ? "error" : undefined}
+              errorMessage={fieldErrors.matricula}
               {...register("matricula")}
             />
 
@@ -123,6 +164,8 @@ const RegisterStudent = ({ institutionId }: RegisterStudentProps) => {
               placeholder="••••••••"
               leftIcon={<Lock className="size-4" />}
               required
+              variant={fieldErrors.contrasena ? "error" : undefined}
+              errorMessage={fieldErrors.contrasena}
               {...register("contrasena")}
             />
 

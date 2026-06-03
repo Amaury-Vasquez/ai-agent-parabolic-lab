@@ -3,6 +3,7 @@
 import { Input } from "amvasdev-ui";
 import clsx from "clsx";
 import { Layers } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import AssetPreview from "@/modules/SimuladorTiroParabolico/AssetPreview";
 import {
   CANNON_ASSET_KEYS,
@@ -82,6 +83,14 @@ const ScenarioAssetsBuilder = ({
   orden,
   onChange,
 }: ScenarioAssetsBuilderProps) => {
+  // Texto local del orden: permite vaciar el campo mientras se edita.
+  const [ordenText, setOrdenText] = useState(String(orden));
+  const ordenFocusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!ordenFocusedRef.current) setOrdenText(String(orden));
+  }, [orden]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -137,16 +146,25 @@ const ScenarioAssetsBuilder = ({
           type="number"
           min={0}
           step={1}
-          value={orden}
+          value={ordenText}
           placeholder="1"
-          onChange={(e) =>
-            onChange({
-              cannon,
-              projectile,
-              target,
-              orden: parseInt(e.currentTarget.value, 10) || 0,
-            })
-          }
+          onFocus={() => {
+            ordenFocusedRef.current = true;
+          }}
+          onBlur={() => {
+            ordenFocusedRef.current = false;
+            if (ordenText.trim() === "" || isNaN(parseInt(ordenText, 10))) {
+              setOrdenText(String(orden));
+            }
+          }}
+          onChange={(e) => {
+            const raw = e.currentTarget.value;
+            setOrdenText(raw);
+            const n = parseInt(raw, 10);
+            if (raw.trim() !== "" && !isNaN(n)) {
+              onChange({ cannon, projectile, target, orden: n });
+            }
+          }}
         />
         <label className="label">
           <span className="label-text-alt opacity-70">

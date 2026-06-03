@@ -34,6 +34,39 @@ def verify_access_token(access_token: str) -> dict:
         )
 
 
+# Códigos de error de Stack Auth -> (status HTTP, mensaje claro en español)
+_SIGN_UP_ERRORS: dict[str, tuple[int, str]] = {
+    "USER_EMAIL_ALREADY_EXISTS": (
+        status.HTTP_409_CONFLICT,
+        "Ya existe una cuenta registrada con este correo electrónico",
+    ),
+    "PASSWORD_TOO_SHORT": (
+        status.HTTP_400_BAD_REQUEST,
+        "La contraseña es demasiado corta (mínimo 8 caracteres)",
+    ),
+    "PASSWORD_TOO_LONG": (
+        status.HTTP_400_BAD_REQUEST,
+        "La contraseña es demasiado larga",
+    ),
+    "PASSWORD_REQUIRES_DIGIT": (
+        status.HTTP_400_BAD_REQUEST,
+        "La contraseña debe incluir al menos un número",
+    ),
+    "PASSWORD_REQUIRES_LOWERCASE": (
+        status.HTTP_400_BAD_REQUEST,
+        "La contraseña debe incluir al menos una letra minúscula",
+    ),
+    "PASSWORD_REQUIRES_UPPERCASE": (
+        status.HTTP_400_BAD_REQUEST,
+        "La contraseña debe incluir al menos una letra mayúscula",
+    ),
+    "PASSWORD_REQUIRES_SPECIAL_CHAR": (
+        status.HTTP_400_BAD_REQUEST,
+        "La contraseña debe incluir al menos un carácter especial",
+    ),
+}
+
+
 async def sign_up(email: str, password: str) -> dict:
     async with httpx.AsyncClient() as client:
         response = await client.post(
@@ -42,8 +75,22 @@ async def sign_up(email: str, password: str) -> dict:
             json={"email": email, "password": password},
         )
     if response.status_code != 200:
-        detail = response.json() if response.status_code < 500 else "Error en Stack Auth"
-        raise HTTPException(status_code=response.status_code, detail=detail)
+        if response.status_code >= 500:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="El servicio de autenticación no está disponible. Intenta más tarde.",
+            )
+        body = response.json()
+        code = body.get("code") if isinstance(body, dict) else None
+        mapped = _SIGN_UP_ERRORS.get(code)
+        if mapped:
+            raise HTTPException(status_code=mapped[0], detail=mapped[1])
+        # Respaldo: usar el mensaje de Stack Auth si lo hay.
+        mensaje = body.get("error") if isinstance(body, dict) else None
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=mensaje or "No se pudo crear la cuenta. Verifica los datos e intenta de nuevo.",
+        )
     return response.json()
 
 

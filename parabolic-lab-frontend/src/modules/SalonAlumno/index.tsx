@@ -2,20 +2,38 @@
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "amvasdev-ui";
+import { useMemo } from "react";
 import { useMySalones } from "@/queries/useMySalones";
 import { useEscenariosBySalon } from "@/queries/useEscenario";
+import { Scenario } from "@/models/scenario";
 import ScenarioCard from "@/modules/ActividadDetalle/ScenarioCard";
 
 interface SalonAlumnoProps {
   classroomId: string;
 }
 
+// Dedup defensivo: si un escenario y su copia (mismo origen raíz) conviven
+// en el salón, mostrar solo el primero para que el alumno no lo vea doble.
+const dedupPorOrigen = (escenarios: Scenario[]): Scenario[] => {
+  const raicesVistas = new Set<string>();
+  return escenarios.filter((e) => {
+    const raiz = e.idescenario_origen ?? e.idescenario;
+    if (raicesVistas.has(raiz)) return false;
+    raicesVistas.add(raiz);
+    return true;
+  });
+};
+
 const SalonAlumno = ({ classroomId }: SalonAlumnoProps) => {
   const router = useRouter();
   const { data: salones, isLoading: loadingSalones } = useMySalones();
   const salon = salones?.find((s) => s.codigoacceso === classroomId);
-  const { data: escenarios, isLoading: loadingEscenarios } = useEscenariosBySalon(
+  const { data: escenariosRaw, isLoading: loadingEscenarios } = useEscenariosBySalon(
     salon?.idsalon ?? ""
+  );
+  const escenarios = useMemo(
+    () => (escenariosRaw ? dedupPorOrigen(escenariosRaw) : escenariosRaw),
+    [escenariosRaw]
   );
 
   if (loadingSalones) {

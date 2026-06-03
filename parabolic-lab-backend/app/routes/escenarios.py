@@ -155,10 +155,31 @@ async def asignar_escenario(
     # Verificar que el docente es dueño del salón destino
     await _verificar_salon_del_docente(data.idsalon, current_user.docente.iddocente, db)
 
+    # Determinar el escenario raíz (si el original ya es una copia, usar su origen)
+    idorigen_raiz = escenario_original.idescenario_origen or idescenario
+
+    # Evitar duplicados: si ya existe una copia activa del mismo origen
+    # (o el propio escenario raíz) en el salón destino, no crear otra.
+    duplicado = await db.execute(
+        select(Escenario)
+        .where(Escenario.idsalon == data.idsalon)
+        .where(Escenario.activo.is_(True))
+        .where(
+            (Escenario.idescenario_origen == idorigen_raiz)
+            | (Escenario.idescenario == idorigen_raiz)
+        )
+    )
+    escenario_existente = duplicado.scalars().first()
+    if escenario_existente:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Este escenario ya está asignado a ese salón",
+        )
+
     # Crear una copia ligada al original
     nuevo_escenario = Escenario(
         idsalon=data.idsalon,
-        idescenario_origen=idescenario,
+        idescenario_origen=idorigen_raiz,
         nombre=escenario_original.nombre,
         descripcion=escenario_original.descripcion,
         niveldificultad=escenario_original.niveldificultad,

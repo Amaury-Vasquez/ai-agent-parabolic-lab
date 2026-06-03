@@ -31,8 +31,12 @@ const SeleccionarEscenarioModal = ({
           setSelectedEscenario("");
           onClose();
         },
-        onError: () => {
-          setError("Error al asignar el escenario. Intenta de nuevo.");
+        onError: (err) => {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Error al asignar el escenario. Intenta de nuevo.",
+          );
         },
       },
     );

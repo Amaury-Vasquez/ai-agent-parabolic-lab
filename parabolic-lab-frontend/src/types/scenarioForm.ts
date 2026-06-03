@@ -10,7 +10,8 @@ export interface ScenarioFormData {
   objetivosaprendizaje?: string;
   instrucciones?: string;
   tiempolimite?: number;
-  intentospermitidos: number;
+  // Permite "" mientras el docente edita el campo; se valida al guardar.
+  intentospermitidos: number | "";
   configuracionescenario: ScenarioConfiguracion;
   activo: boolean;
 }

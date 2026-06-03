@@ -126,7 +126,10 @@ const ScenarioEditorForm = ({
       newErrors.tiempolimite = "El tiempo límite debe ser mayor a 0";
     }
 
-    if (formData.intentospermitidos < 1) {
+    if (
+      formData.intentospermitidos === "" ||
+      formData.intentospermitidos < 1
+    ) {
       newErrors.intentospermitidos = "Debe permitir al menos 1 intento";
     }
 
@@ -152,7 +155,8 @@ const ScenarioEditorForm = ({
         objetivosaprendizaje: formData.objetivosaprendizaje || undefined,
         instrucciones: formData.instrucciones || undefined,
         tiempolimite: formData.tiempolimite || undefined,
-        intentospermitidos: formData.intentospermitidos,
+        // validateForm garantiza que no llega vacío hasta aquí.
+        intentospermitidos: Number(formData.intentospermitidos),
         configuracionescenario:
           formData.configuracionescenario as Record<string, unknown>,
       };
@@ -380,12 +384,14 @@ const ScenarioEditorForm = ({
                 type="number"
                 placeholder="3"
                 value={formData.intentospermitidos}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const raw = e.currentTarget.value;
+                  const n = parseInt(raw, 10);
                   setFormData({
                     ...formData,
-                    intentospermitidos: parseInt(e.currentTarget.value) || 1,
-                  })
-                }
+                    intentospermitidos: raw === "" || isNaN(n) ? "" : n,
+                  });
+                }}
                 min={1}
                 className={errors.intentospermitidos ? "input-error" : ""}
               />

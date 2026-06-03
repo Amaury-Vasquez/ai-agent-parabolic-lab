@@ -2,6 +2,7 @@
 
 import { Input } from "amvasdev-ui";
 import { Lock, Unlock } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { PHYSICS_DEFAULTS } from "@/constants/physicsDefaults";
 import type { ParameterLock, PhysicsConfig, PhysicsLocks } from "@/types/physicsConfig";
 
@@ -49,16 +50,6 @@ const PhysicsConfigBuilder = ({
       ...config,
       [field]: value,
     });
-  };
-
-  const handleInputChange = (
-    field: keyof PhysicsConfig,
-    e: React.FormEvent<HTMLInputElement>
-  ) => {
-    const value = parseFloat(e.currentTarget.value);
-    if (!isNaN(value)) {
-      handleChange(field, value);
-    }
   };
 
   const handleCheckboxChange = (
@@ -118,7 +109,7 @@ const PhysicsConfigBuilder = ({
             min={PHYSICS_DEFAULTS.ANGLE_MIN}
             max={config.angleMax}
             step={PHYSICS_DEFAULTS.ANGLE_STEP}
-            onChange={(e) => handleInputChange("angleMin", e)}
+            onValueChange={(v) => handleChange("angleMin", v)}
           />
           <ParamInput
             id="angleMax"
@@ -127,7 +118,7 @@ const PhysicsConfigBuilder = ({
             min={config.angleMin}
             max={PHYSICS_DEFAULTS.ANGLE_MAX}
             step={PHYSICS_DEFAULTS.ANGLE_STEP}
-            onChange={(e) => handleInputChange("angleMax", e)}
+            onValueChange={(v) => handleChange("angleMax", v)}
           />
           <ParamInput
             id="angleDefault"
@@ -136,7 +127,7 @@ const PhysicsConfigBuilder = ({
             min={config.angleMin}
             max={config.angleMax}
             step={PHYSICS_DEFAULTS.ANGLE_STEP}
-            onChange={(e) => handleInputChange("angleDefault", e)}
+            onValueChange={(v) => handleChange("angleDefault", v)}
           />
         </div>
       </div>
@@ -155,7 +146,7 @@ const PhysicsConfigBuilder = ({
             min={PHYSICS_DEFAULTS.VELOCITY_MIN}
             max={config.velocityMax}
             step={PHYSICS_DEFAULTS.VELOCITY_STEP}
-            onChange={(e) => handleInputChange("velocityMin", e)}
+            onValueChange={(v) => handleChange("velocityMin", v)}
           />
           <ParamInput
             id="velocityMax"
@@ -164,7 +155,7 @@ const PhysicsConfigBuilder = ({
             min={config.velocityMin}
             max={PHYSICS_DEFAULTS.VELOCITY_MAX}
             step={PHYSICS_DEFAULTS.VELOCITY_STEP}
-            onChange={(e) => handleInputChange("velocityMax", e)}
+            onValueChange={(v) => handleChange("velocityMax", v)}
           />
           <ParamInput
             id="velocityDefault"
@@ -173,7 +164,7 @@ const PhysicsConfigBuilder = ({
             min={config.velocityMin}
             max={config.velocityMax}
             step={PHYSICS_DEFAULTS.VELOCITY_STEP}
-            onChange={(e) => handleInputChange("velocityDefault", e)}
+            onValueChange={(v) => handleChange("velocityDefault", v)}
           />
         </div>
       </div>
@@ -193,7 +184,7 @@ const PhysicsConfigBuilder = ({
             min={PHYSICS_DEFAULTS.CANNON_HEIGHT_MIN}
             max={PHYSICS_DEFAULTS.CANNON_HEIGHT_MAX}
             step={PHYSICS_DEFAULTS.CANNON_HEIGHT_STEP}
-            onChange={(e) => handleInputChange("cannonHeight", e)}
+            onValueChange={(v) => handleChange("cannonHeight", v)}
           />
           <ParamInput
             id="cannonHeightLockMin"
@@ -202,11 +193,7 @@ const PhysicsConfigBuilder = ({
             min={PHYSICS_DEFAULTS.CANNON_HEIGHT_MIN}
             max={(locks.cannonHeight ?? DEFAULT_LOCK_VALUES.cannonHeight).max}
             step={PHYSICS_DEFAULTS.CANNON_HEIGHT_STEP}
-            onChange={(e) =>
-              updateLock("cannonHeight", {
-                min: parseFloat(e.currentTarget.value),
-              })
-            }
+            onValueChange={(v) => updateLock("cannonHeight", { min: v })}
             disabled={!locks.cannonHeight?.enabled}
           />
           <ParamInput
@@ -216,11 +203,7 @@ const PhysicsConfigBuilder = ({
             min={(locks.cannonHeight ?? DEFAULT_LOCK_VALUES.cannonHeight).min}
             max={PHYSICS_DEFAULTS.CANNON_HEIGHT_MAX}
             step={PHYSICS_DEFAULTS.CANNON_HEIGHT_STEP}
-            onChange={(e) =>
-              updateLock("cannonHeight", {
-                max: parseFloat(e.currentTarget.value),
-              })
-            }
+            onValueChange={(v) => updateLock("cannonHeight", { max: v })}
             disabled={!locks.cannonHeight?.enabled}
           />
         </div>
@@ -241,11 +224,7 @@ const PhysicsConfigBuilder = ({
             min={0}
             max={(locks.cannonX ?? DEFAULT_LOCK_VALUES.cannonX).max}
             step={0.5}
-            onChange={(e) =>
-              updateLock("cannonX", {
-                min: parseFloat(e.currentTarget.value),
-              })
-            }
+            onValueChange={(v) => updateLock("cannonX", { min: v })}
             disabled={!locks.cannonX?.enabled}
           />
           <ParamInput
@@ -255,11 +234,7 @@ const PhysicsConfigBuilder = ({
             min={(locks.cannonX ?? DEFAULT_LOCK_VALUES.cannonX).min}
             max={config.targetDistance}
             step={0.5}
-            onChange={(e) =>
-              updateLock("cannonX", {
-                max: parseFloat(e.currentTarget.value),
-              })
-            }
+            onValueChange={(v) => updateLock("cannonX", { max: v })}
             disabled={!locks.cannonX?.enabled}
           />
         </div>
@@ -280,7 +255,7 @@ const PhysicsConfigBuilder = ({
             min={PHYSICS_DEFAULTS.TARGET_DISTANCE_MIN}
             max={PHYSICS_DEFAULTS.TARGET_DISTANCE_MAX}
             step={PHYSICS_DEFAULTS.TARGET_DISTANCE_STEP}
-            onChange={(e) => handleInputChange("targetDistance", e)}
+            onValueChange={(v) => handleChange("targetDistance", v)}
           />
           <ParamInput
             id="targetRadius"
@@ -289,7 +264,7 @@ const PhysicsConfigBuilder = ({
             min={PHYSICS_DEFAULTS.TARGET_RADIUS_MIN}
             max={PHYSICS_DEFAULTS.TARGET_RADIUS_MAX}
             step={PHYSICS_DEFAULTS.TARGET_RADIUS_STEP}
-            onChange={(e) => handleInputChange("targetRadius", e)}
+            onValueChange={(v) => handleChange("targetRadius", v)}
           />
           <ParamInput
             id="targetDistanceLockMin"
@@ -302,11 +277,7 @@ const PhysicsConfigBuilder = ({
               (locks.targetDistance ?? DEFAULT_LOCK_VALUES.targetDistance).max
             }
             step={PHYSICS_DEFAULTS.TARGET_DISTANCE_STEP}
-            onChange={(e) =>
-              updateLock("targetDistance", {
-                min: parseFloat(e.currentTarget.value),
-              })
-            }
+            onValueChange={(v) => updateLock("targetDistance", { min: v })}
             disabled={!locks.targetDistance?.enabled}
           />
           <ParamInput
@@ -320,11 +291,7 @@ const PhysicsConfigBuilder = ({
             }
             max={PHYSICS_DEFAULTS.TARGET_DISTANCE_MAX}
             step={PHYSICS_DEFAULTS.TARGET_DISTANCE_STEP}
-            onChange={(e) =>
-              updateLock("targetDistance", {
-                max: parseFloat(e.currentTarget.value),
-              })
-            }
+            onValueChange={(v) => updateLock("targetDistance", { max: v })}
             disabled={!locks.targetDistance?.enabled}
           />
         </div>
@@ -381,7 +348,7 @@ interface ParamInputProps {
   max?: number;
   step?: number;
   disabled?: boolean;
-  onChange: (e: React.FormEvent<HTMLInputElement>) => void;
+  onValueChange: (value: number) => void;
 }
 
 const ParamInput = ({
@@ -392,24 +359,53 @@ const ParamInput = ({
   max,
   step,
   disabled,
-  onChange,
-}: ParamInputProps) => (
-  <div>
-    <label className="label" htmlFor={id}>
-      <span className="label-text">{label}</span>
-    </label>
-    <Input
-      id={id}
-      type="number"
-      value={value}
-      onChange={onChange}
-      min={min}
-      max={max}
-      step={step}
-      disabled={disabled}
-    />
-  </div>
-);
+  onValueChange,
+}: ParamInputProps) => {
+  // Texto local: permite vaciar y reescribir el campo libremente.
+  // Solo se propaga un número cuando es válido; al perder el foco vacío,
+  // se restaura el último valor numérico.
+  const [text, setText] = useState(String(value));
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusedRef.current) setText(String(value));
+  }, [value]);
+
+  return (
+    <div>
+      <label className="label" htmlFor={id}>
+        <span className="label-text">{label}</span>
+      </label>
+      <Input
+        id={id}
+        type="number"
+        value={text}
+        onFocus={() => {
+          focusedRef.current = true;
+        }}
+        onBlur={() => {
+          focusedRef.current = false;
+          const n = parseFloat(text);
+          if (text.trim() === "" || isNaN(n)) {
+            setText(String(value));
+          }
+        }}
+        onChange={(e) => {
+          const raw = e.currentTarget.value;
+          setText(raw);
+          if (raw.trim() !== "") {
+            const n = parseFloat(raw);
+            if (!isNaN(n)) onValueChange(n);
+          }
+        }}
+        min={min}
+        max={max}
+        step={step}
+        disabled={disabled}
+      />
+    </div>
+  );
+};
 
 const LockBadge = ({ enabled }: { enabled: boolean }) =>
   enabled ? (
