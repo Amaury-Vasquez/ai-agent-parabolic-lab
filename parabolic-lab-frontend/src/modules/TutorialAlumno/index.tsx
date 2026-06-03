@@ -22,7 +22,9 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useMe } from "@/queries/useMe";
 
 const tutorialStorageKey = (idusuario: string) => `tutorial_visto_${idusuario}`;
@@ -59,6 +61,32 @@ const ImagenPlaceholder = ({ descripcion }: { descripcion: string }) => (
     <p className="text-sm opacity-40 italic">{descripcion}</p>
   </div>
 );
+
+interface TutorialImageProps {
+  src: string;
+  alt: string;
+  descripcion: string;
+}
+
+const TutorialImage = ({ src, alt, descripcion }: TutorialImageProps) => {
+  const [error, setError] = useState(false);
+
+  if (error) {
+    return <ImagenPlaceholder descripcion={`Imagen pendiente: ${descripcion}`} />;
+  }
+
+  return (
+    <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-base-300">
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className="object-cover"
+        onError={() => setError(true)}
+      />
+    </div>
+  );
+};
 
 const Tip = ({ texto }: { texto: string }) => (
   <div className="flex gap-2 bg-primary/10 border border-primary/20 rounded-xl p-3 text-sm">
@@ -171,7 +199,11 @@ const TutorialAlumno = () => {
             practicar en el simulador y ver cómo mejoras con cada intento. ¡Este tutorial
             te explica todo paso a paso!
           </p>
-          <ImagenPlaceholder descripcion="Imagen: pantalla principal de ParabolicLab con el simulador en acción" />
+          <TutorialImage
+            src="/tutorial/bienvenida.png"
+            alt="Pantalla principal de ParabolicLab"
+            descripcion="pantalla principal de ParabolicLab con el simulador en acción"
+          />
           <Tip texto="Puedes regresar a este tutorial en cualquier momento desde el menú lateral, en la sección 'Tutorial'." />
         </Seccion>
 
@@ -193,7 +225,11 @@ const TutorialAlumno = () => {
               <li>¡Listo! Ya verás el salón en tu pantalla.</li>
             </ol>
           </div>
-          <ImagenPlaceholder descripcion="Imagen: modal de 'Unirse a un Salón' con el campo del código de acceso" />
+          <TutorialImage
+            src="/tutorial/mis-salones.png"
+            alt="Vista de Mis Salones del alumno"
+            descripcion="vista de Mis Salones del alumno"
+          />
           <Tip texto="Si tu profe aún no te ha dado el código, escríbele. Sin el código no podrás unirte." />
         </Seccion>
 
@@ -214,7 +250,11 @@ const TutorialAlumno = () => {
               que debes completar. Las encontrarás en <strong>Mis Actividades</strong> del menú.
             </p>
           </div>
-          <ImagenPlaceholder descripcion="Imagen: lista de escenarios disponibles con su nivel de dificultad y estado" />
+          <TutorialImage
+            src="/tutorial/escenarios-actividades.png"
+            alt="Vista de Mis Escenarios y Actividades"
+            descripcion="vista de Mis Escenarios y Actividades"
+          />
           <Tip texto="Un escenario 'En progreso' significa que ya lo iniciaste pero no terminaste. ¡Puedes retomarlo cuando quieras!" />
         </Seccion>
 
@@ -246,7 +286,11 @@ const TutorialAlumno = () => {
             <strong className="text-primary">"Terminar actividad"</strong>. Esto marca
             el escenario como <strong>completado</strong> y genera tu reporte automáticamente.
           </p>
-          <ImagenPlaceholder descripcion="Imagen: interfaz del simulador mostrando el cañón, la trayectoria y los controles" />
+          <TutorialImage
+            src="/tutorial/simulador.png"
+            alt="Vista del simulador de tiro parabólico"
+            descripcion="vista del simulador de tiro parabólico"
+          />
           <Tip texto="¡No te preocupes si no aciertas al primer intento! El simulador guarda tu progreso automáticamente cada vez que disparas." />
         </Seccion>
 
@@ -271,7 +315,11 @@ const TutorialAlumno = () => {
             <span className="badge badge-outline badge-sm">📊 Descargar en Excel (XLSX)</span>
             <span className="badge badge-outline badge-sm">🖨️ Imprimir</span>
           </div>
-          <ImagenPlaceholder descripcion="Imagen: modal de reporte con la gráfica de trayectoria y tabla de análisis" />
+          <TutorialImage
+            src="/tutorial/reportes.png"
+            alt="Modal de reporte de intento"
+            descripcion="modal de reporte de intento"
+          />
           <Tip texto="Puedes revisitar tus reportes anteriores en 'Mi Progreso' haciendo clic en 'Ver reporte' en cualquier intento completado." />
         </Seccion>
 
@@ -296,7 +344,11 @@ const TutorialAlumno = () => {
               </div>
             ))}
           </div>
-          <ImagenPlaceholder descripcion="Imagen: página Mi Progreso con estadísticas y tabla de interacciones recientes" />
+          <TutorialImage
+            src="/tutorial/mi-progreso.png"
+            alt="Vista de Mi Progreso con métricas"
+            descripcion="vista de Mi Progreso con métricas"
+          />
           <Tip texto="La tabla de 'Interacciones recientes' muestra todos tus intentos. Los completados tienen el botón 'Ver reporte'." />
         </Seccion>
 
@@ -315,7 +367,11 @@ const TutorialAlumno = () => {
             <LogroMini icono={<Compass className="size-4" />} titulo="Explorador" condicion="Interactúa con 10 escenarios distintos" />
             <LogroMini icono={<Clock className="size-4" />} titulo="Hora de práctica" condicion="Acumula 60 minutos de práctica" />
           </div>
-          <ImagenPlaceholder descripcion="Imagen: página de Logros con las medallas desbloqueadas y las que faltan" />
+          <TutorialImage
+            src="/tutorial/logros-ranking.png"
+            alt="Vista de Logros y Ranking"
+            descripcion="vista de Logros y Ranking"
+          />
           <Tip texto="Los logros bloqueados se muestran en gris. ¡Ve completando escenarios para desbloquearlos todos!" />
         </Seccion>
 
@@ -335,7 +391,11 @@ const TutorialAlumno = () => {
               <li>🏆 Ver tus últimos logros desbloqueados</li>
             </ul>
           </div>
-          <ImagenPlaceholder descripcion="Imagen: página Mi Perfil con el formulario de edición y selector de tema" />
+          <TutorialImage
+            src="/tutorial/mi-perfil.png"
+            alt="Vista de Mi Perfil del alumno"
+            descripcion="vista de Mi Perfil del alumno"
+          />
           <Tip texto="El tema que elijas se guarda en tu cuenta. La próxima vez que entres, la app lo recordará." />
         </Seccion>
 
