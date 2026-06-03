@@ -44,6 +44,8 @@ export interface AssetSelection {
   cannon: string;
   projectile: string;
   target: string;
+  // Tema de fondo del simulador (día, atardecer, noche, etc.)
+  background?: string;
 }
 
 export interface ScenarioConfiguracion {

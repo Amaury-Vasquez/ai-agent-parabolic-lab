@@ -3,6 +3,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import {
@@ -10,6 +11,14 @@ import {
   SALON_ALUMNO_DESEMPENO_QUERY_KEY,
 } from "@/fetchers/salones";
 import EstudianteDetalle from "@/modules/EstudianteDetalle";
+import { buildMetadata } from "@/utils/metadata";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Desempeño del estudiante",
+  description:
+    "Revisa el desempeño detallado de un estudiante en los escenarios de tiro parabólico del salón.",
+  noindex: true,
+});
 
 interface EstudianteDetallePageProps {
   params: Promise<{

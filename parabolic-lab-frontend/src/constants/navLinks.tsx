@@ -41,6 +41,11 @@ export const TEACHER_NAV_LINKS: NavLink[] = [
     label: "Reportes y Progreso",
     icon: <BarChart3 className="size-5" />,
   },
+  {
+    href: "/docente/tutorial",
+    label: "Tutorial",
+    icon: <HelpCircle className="size-5" />,
+  },
 ];
 
 export const ADMIN_NAV_LINKS: NavLink[] = [
@@ -76,11 +81,6 @@ export const STUDENT_NAV_LINKS: NavLink[] = [
     href: "/alumno/actividades",
     label: "Mis Actividades",
     icon: <ClipboardList className="size-5" />,
-  },
-  {
-    href: "/alumno/escenarios",
-    label: "Mis Escenarios",
-    icon: <Rocket className="size-5" />,
   },
   {
     href: "/alumno/logros",

@@ -31,6 +31,7 @@ CORS_ORIGINS = [
     "http://localhost:3000",
     "https://parabolic-lab-frontend.vercel.app",
     "https://paraboliclab.app",
+    "https://www.paraboliclab.app",
 ]
 
 app.add_middleware(

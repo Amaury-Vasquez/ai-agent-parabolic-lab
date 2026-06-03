@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 from app.dependencies import get_current_user, get_db
 from app.models.escenario import Escenario
 from app.models.interaccion_escenario import InteraccionEscenario
+from app.models.salon import Salon
 from app.models.usuario import Usuario
 from app.schemas.interaccion_escenario import (
     AnalisisReporte,
@@ -177,23 +178,25 @@ async def _get_reporte_data(
     elif current_user.tipousuario == "docente":
         if not current_user.docente:
             raise HTTPException(status_code=403, detail="Acceso denegado")
+        # El escenario pertenece a un salón; verificamos que ese salón sea del
+        # docente con una consulta directa. No usamos current_user.docente.salones
+        # porque esa relación no se carga en get_current_user y un lazy-load en
+        # contexto async lanza MissingGreenlet.
         escenario_result = await db.execute(
             select(Escenario).where(Escenario.idescenario == interaccion.idescenario)
         )
         escenario_obj = escenario_result.scalar_one_or_none()
-        if not escenario_obj or str(escenario_obj.idsalon) not in [
-            str(s.idsalon) for s in (current_user.docente.salones if hasattr(current_user.docente, "salones") else [])
-        ]:
-            # Verificación más directa vía join
-            from app.models.salon import Salon
-            salon_result = await db.execute(
-                select(Salon).where(
-                    Salon.idsalon == escenario_obj.idsalon if escenario_obj else None,
-                    Salon.iddocente == current_user.docente.iddocente,
-                )
+        if not escenario_obj:
+            raise HTTPException(status_code=403, detail="No tienes acceso a este reporte")
+
+        salon_result = await db.execute(
+            select(Salon).where(
+                Salon.idsalon == escenario_obj.idsalon,
+                Salon.iddocente == current_user.docente.iddocente,
             )
-            if not salon_result.scalar_one_or_none():
-                raise HTTPException(status_code=403, detail="No tienes acceso a este reporte")
+        )
+        if not salon_result.scalar_one_or_none():
+            raise HTTPException(status_code=403, detail="No tienes acceso a este reporte")
     else:
         raise HTTPException(status_code=403, detail="Acceso denegado")
 

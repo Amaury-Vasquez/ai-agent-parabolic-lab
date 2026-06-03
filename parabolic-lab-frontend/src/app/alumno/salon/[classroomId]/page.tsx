@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
@@ -8,6 +9,14 @@ import {
   MIS_INTERACCIONES_QUERY_KEY,
 } from "@/fetchers/interaccionesAlumno";
 import SalonAlumno from "@/modules/SalonAlumno";
+import { buildMetadata } from "@/utils/metadata";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Mi salón",
+  description:
+    "Accede a las actividades y escenarios de tu salón de tiro parabólico.",
+  noindex: true,
+});
 
 interface SalonPageProps {
   params: Promise<{ classroomId: string }>;

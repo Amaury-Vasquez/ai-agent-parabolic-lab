@@ -260,7 +260,7 @@ const SimuladorWrapper = ({
     setReporteModalOpen(false);
     const fallbackBase = idactividad
       ? `/alumno/actividad/${idactividad}`
-      : `/alumno/escenarios`;
+      : `/alumno`;
     // Preservar la señal de "tiempo agotado" para que la página destino
     // muestre el aviso correspondiente (comportamiento heredado de main).
     const destino =

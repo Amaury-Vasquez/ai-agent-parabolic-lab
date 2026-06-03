@@ -29,6 +29,12 @@ import {
   type TargetAssetKey,
 } from "@/constants/simulatorAssets";
 import {
+  BACKGROUND_ASSET_KEYS,
+  BACKGROUND_LABELS,
+  BACKGROUND_THEMES,
+  type BackgroundAssetKey,
+} from "@/constants/simulatorBackgrounds";
+import {
   MUSIC_TRACK_KEYS,
   MUSIC_TRACK_LABELS,
   PLAYBACK_SPEEDS,
@@ -78,9 +84,11 @@ interface ControlPanelProps {
   cannonAsset: CannonAssetKey;
   projectileAsset: ProjectileAssetKey;
   targetAsset: TargetAssetKey;
+  backgroundAsset: BackgroundAssetKey;
   onCannonAssetChange: (key: CannonAssetKey) => void;
   onProjectileAssetChange: (key: ProjectileAssetKey) => void;
   onTargetAssetChange: (key: TargetAssetKey) => void;
+  onBackgroundAssetChange: (key: BackgroundAssetKey) => void;
   onResetAssetsToTeacherDefault: () => void;
   isAssetOverridden: boolean;
   hint: ContextualHint | null;
@@ -199,6 +207,54 @@ const AssetSelectorRow = <K extends string>({
   </div>
 );
 
+const BackgroundSelectorRow = ({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: BackgroundAssetKey;
+  onChange: (k: BackgroundAssetKey) => void;
+}) => (
+  <div className="flex flex-col gap-1">
+    <span className="text-[10px] uppercase opacity-60 font-semibold">
+      {label}
+    </span>
+    <div className="flex flex-wrap gap-1.5">
+      {BACKGROUND_ASSET_KEYS.map((k) => {
+        const selected = k === value;
+        const theme = BACKGROUND_THEMES[k];
+        return (
+          <Button
+            key={k}
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange(k)}
+            className={clsx(
+              "!h-auto min-h-0 rounded-md border-2 p-1 transition flex flex-col items-center gap-0.5",
+              selected
+                ? "border-primary bg-primary/10"
+                : "border-base-300 hover:border-base-content/30"
+            )}
+            title={BACKGROUND_LABELS[k]}
+          >
+            <span
+              className="block w-[42px] h-[42px] rounded"
+              style={{
+                background: `linear-gradient(to bottom, ${theme.sky[0]}, ${theme.sky[1]} 45%, ${theme.sky[2]} 62%, ${theme.ground[0]} 62%, ${theme.ground[1]} 80%, ${theme.ground[2]})`,
+              }}
+            />
+            <span className="text-[9px] font-medium leading-tight">
+              {BACKGROUND_LABELS[k]}
+            </span>
+          </Button>
+        );
+      })}
+    </div>
+  </div>
+);
+
 const ControlPanel = ({
   settings,
   onSettingsChange,
@@ -221,9 +277,11 @@ const ControlPanel = ({
   cannonAsset,
   projectileAsset,
   targetAsset,
+  backgroundAsset,
   onCannonAssetChange,
   onProjectileAssetChange,
   onTargetAssetChange,
+  onBackgroundAssetChange,
   onResetAssetsToTeacherDefault,
   isAssetOverridden,
   hint,
@@ -250,7 +308,7 @@ const ControlPanel = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 order-2 lg:order-none">
         <div className="bg-base-100 rounded-lg p-2 text-center">
           <div className="text-[10px] opacity-60">Auto-score</div>
           <div className="text-lg font-bold tabular-nums text-primary">
@@ -279,13 +337,13 @@ const ControlPanel = ({
       </div>
 
       {hint ? (
-        <div className="bg-info/10 border border-info/30 rounded-lg p-2 flex gap-2 items-start">
+        <div className="bg-info/10 border border-info/30 rounded-lg p-2 flex gap-2 items-start order-3 lg:order-none">
           <Lightbulb className="w-4 h-4 text-info shrink-0 mt-0.5" />
           <p className="text-xs leading-snug">{hint.message}</p>
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 order-1 lg:order-none">
         <Slider
           label="Ángulo"
           value={settings.angle}
@@ -331,7 +389,7 @@ const ControlPanel = ({
         />
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 order-4 lg:order-none">
         <Button
           variant="primary"
           className="w-full gap-2"
@@ -390,7 +448,7 @@ const ControlPanel = ({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 order-5 lg:order-none">
         <div className="flex items-center justify-between">
           <span className="text-[10px] uppercase opacity-60 font-semibold">
             Música
@@ -426,7 +484,7 @@ const ControlPanel = ({
         </div>
       </div>
 
-      <details className="bg-base-100 rounded-lg">
+      <details className="bg-base-100 rounded-lg order-6 lg:order-none">
         <summary className="cursor-pointer px-3 py-2 text-sm font-semibold flex items-center gap-2">
           <Wand2 className="w-4 h-4 text-secondary" />
           Personalizar visuales
@@ -455,6 +513,11 @@ const ControlPanel = ({
             labels={TARGET_LABELS}
             value={targetAsset}
             onChange={onTargetAssetChange}
+          />
+          <BackgroundSelectorRow
+            label="Fondo"
+            value={backgroundAsset}
+            onChange={onBackgroundAssetChange}
           />
           {isAssetOverridden ? (
             <button

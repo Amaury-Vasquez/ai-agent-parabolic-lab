@@ -4,6 +4,7 @@ import { Search, Users } from "lucide-react";
 import { ChangeEvent, useMemo, useState } from "react";
 import UsuarioCard from "./UsuarioCard";
 import UsuarioRow from "./UsuarioRow";
+import BackButton from "@/components/BackButton";
 import useIsMobileOrTablet from "@/hooks/useIsMobileOrTablet";
 import {
   useDesactivarUsuario,
@@ -74,7 +75,10 @@ const AdminUsuarios = () => {
   return (
     <div className="p-4 md:p-6 lg:p-8 flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl md:text-3xl font-bold">Usuarios</h1>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <h1 className="text-2xl md:text-3xl font-bold">Usuarios</h1>
+        </div>
         <p className="text-sm md:text-base opacity-70">
           Docentes, alumnos y administradores de tu institución
         </p>

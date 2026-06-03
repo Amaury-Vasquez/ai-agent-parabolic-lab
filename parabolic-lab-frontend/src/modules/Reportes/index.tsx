@@ -5,6 +5,7 @@ import { ArrowLeft, File, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useCookies } from "react-cookie";
+import ReporteAlumnoDocente from "./ReporteAlumnoDocente";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
 import { useMySalones } from "@/queries/useMySalones";
 import { useSalonProgreso } from "@/queries/useSalonProgreso";
@@ -21,6 +22,10 @@ const Reportes = () => {
   const [selectedSalonId, setSelectedSalonId] = useState("");
   const [loadingReport, setLoadingReport] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [alumnoSeleccionado, setAlumnoSeleccionado] = useState<{
+    idalumno: string;
+    nombre: string;
+  } | null>(null);
 
   const { data: estudiantes = [], isLoading: isLoadingEstudiantes } =
     useSalonProgreso(selectedSalonId);
@@ -43,31 +48,6 @@ const Reportes = () => {
     } catch {
       setDownloadError(
         `No se pudo descargar el reporte ${format.toUpperCase()}. Intenta de nuevo.`,
-      );
-    } finally {
-      setLoadingReport(null);
-    }
-  };
-
-  const handleDownloadStudentReport = async (
-    alumnoId: string,
-    alumnoNombre: string,
-    format: ReportFormat,
-  ) => {
-    if (!selectedSalonId || !token) return;
-
-    setLoadingReport(`student-${alumnoId}-${format}`);
-    setDownloadError(null);
-    try {
-      const filename = `expediente_${alumnoNombre.replace(/\s+/g, "_")}.${format}`;
-      await downloadReport(
-        `/reportes/estudiante/${alumnoId}/salon/${selectedSalonId}/${format}`,
-        token,
-        filename,
-      );
-    } catch {
-      setDownloadError(
-        `No se pudo descargar el expediente ${format.toUpperCase()}. Intenta de nuevo.`,
       );
     } finally {
       setLoadingReport(null);
@@ -196,14 +176,12 @@ const Reportes = () => {
                         <th className="text-center">Promedio</th>
                         <th className="text-center">Mejor</th>
                         <th className="text-center">Tiempo</th>
-                        <th className="text-center">Acciones</th>
+                        <th className="text-center">Reporte</th>
                       </tr>
                     </thead>
                     <tbody>
                       {estudiantes.map((estudiante) => {
                         const fullName = [estudiante.nombre, estudiante.apellidopaterno, estudiante.apellidomaterno].filter(Boolean).join(" ");
-                        const csvKey = `student-${estudiante.idalumno}-csv`;
-                        const pdfKey = `student-${estudiante.idalumno}-pdf`;
                         return (
                           <tr key={estudiante.idalumno} className="hover">
                             <td className="font-medium">{fullName}</td>
@@ -223,46 +201,18 @@ const Reportes = () => {
                               {estudiante.tiempo_total_minutos}m
                             </td>
                             <td className="text-center">
-                              <div className="flex justify-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="xs"
-                                  onClick={() =>
-                                    handleDownloadStudentReport(
-                                      estudiante.idalumno,
-                                      fullName,
-                                      "csv",
-                                    )
-                                  }
-                                  disabled={loadingReport === csvKey}
-                                  title="Descargar CSV"
-                                >
-                                  {loadingReport === csvKey ? (
-                                    <span className="loading loading-spinner loading-xs" />
-                                  ) : (
-                                    <File size={14} />
-                                  )}
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="xs"
-                                  onClick={() =>
-                                    handleDownloadStudentReport(
-                                      estudiante.idalumno,
-                                      fullName,
-                                      "pdf",
-                                    )
-                                  }
-                                  disabled={loadingReport === pdfKey}
-                                  title="Descargar PDF"
-                                >
-                                  {loadingReport === pdfKey ? (
-                                    <span className="loading loading-spinner loading-xs" />
-                                  ) : (
-                                    <FileText size={14} />
-                                  )}
-                                </Button>
-                              </div>
+                              <Button
+                                variant="ghost"
+                                size="xs"
+                                onClick={() =>
+                                  setAlumnoSeleccionado({
+                                    idalumno: estudiante.idalumno,
+                                    nombre: fullName,
+                                  })
+                                }
+                              >
+                                Ver reporte
+                              </Button>
                             </td>
                           </tr>
                         );
@@ -274,6 +224,19 @@ const Reportes = () => {
             </div>
           </div>
         </>
+      ) : null}
+
+      {alumnoSeleccionado ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-base-100 rounded-2xl shadow-2xl w-full max-w-2xl my-4 overflow-hidden">
+            <ReporteAlumnoDocente
+              idalumno={alumnoSeleccionado.idalumno}
+              idsalon={selectedSalonId}
+              nombreAlumno={alumnoSeleccionado.nombre}
+              onClose={() => setAlumnoSeleccionado(null)}
+            />
+          </div>
+        </div>
       ) : null}
     </div>
   );

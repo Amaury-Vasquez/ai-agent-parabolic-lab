@@ -1,6 +1,7 @@
 export interface Scenario {
   idescenario: string;
   idsalon: string;
+  idescenario_origen?: string | null;
   nombre: string;
   descripcion?: string | null;
   niveldificultad: string;

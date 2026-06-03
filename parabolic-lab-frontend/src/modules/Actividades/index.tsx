@@ -1,15 +1,17 @@
 "use client";
 import { Badge } from "amvasdev-ui";
 import { CheckCircle2 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import CustomLink from "@/components/CustomLink";
 import { useEscenarioCompletion } from "@/queries/useEscenarioCompletion";
 import { useMySalones } from "@/queries/useMySalones";
 
 interface EscenarioRowProps {
   escenario: { idescenario: string; nombre: string };
+  salonCodigo: string;
 }
 
-const EscenarioRow = ({ escenario }: EscenarioRowProps) => {
+const EscenarioRow = ({ escenario, salonCodigo }: EscenarioRowProps) => {
   const { completado, mejorPuntuacion } = useEscenarioCompletion(
     escenario.idescenario
   );
@@ -25,7 +27,7 @@ const EscenarioRow = ({ escenario }: EscenarioRowProps) => {
         ) : null}
       </div>
       <CustomLink
-        href={`/alumno/escenario/${escenario.idescenario}`}
+        href={`/alumno/salon/${salonCodigo}/escenario/${escenario.idescenario}`}
         variant={completado ? "ghost" : "primary"}
         size="sm"
         className="whitespace-nowrap"
@@ -65,11 +67,14 @@ const Actividades = () => {
 
   return (
     <div className="p-4 md:p-8 flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold">Mis actividades</h1>
-        <p className="mt-1 text-sm md:text-base opacity-70">
-          Todas las actividades asignadas en tus salones
-        </p>
+      <div className="flex items-center gap-3">
+        <BackButton />
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">Mis actividades</h1>
+          <p className="mt-1 text-sm md:text-base opacity-70">
+            Todas las actividades asignadas en tus salones
+          </p>
+        </div>
       </div>
 
       {salonesConEscenarios.length === 0 ? (
@@ -90,6 +95,7 @@ const Actividades = () => {
                     <EscenarioRow
                       key={escenario.idescenario}
                       escenario={escenario}
+                      salonCodigo={salon.codigoacceso}
                     />
                   ))}
                 </div>

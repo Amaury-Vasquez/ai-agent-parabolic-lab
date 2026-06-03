@@ -3,6 +3,7 @@ import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import SaveMessageBanner, {
   type SaveMessage,
 } from "@/components/SaveMessage";
+import BackButton from "@/components/BackButton";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import type { UpdateUsuarioPayload } from "@/models/user";
 import { useUpdateUsuario } from "@/mutations/useUpdateUsuario";
@@ -94,7 +95,10 @@ const PerfilAlumno = () => {
 
   return (
     <div className="px-4 py-6 md:p-8 max-w-5xl mx-auto w-full space-y-6">
-      <h1 className="text-2xl md:text-3xl font-bold">Mi Perfil</h1>
+      <div className="flex items-center gap-3">
+        <BackButton />
+        <h1 className="text-2xl md:text-3xl font-bold">Mi Perfil</h1>
+      </div>
 
       <SaveMessageBanner message={saveMessage} />
 

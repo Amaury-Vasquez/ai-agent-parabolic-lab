@@ -1,33 +1,9 @@
-import { cookies } from "next/headers";
-import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
-import { fetchEscenario } from "@/fetchers/escenarios";
-import SimuladorWrapper from "@/modules/SimuladorWrapper";
+import { redirect } from "next/navigation";
 
-interface SimuladorDirectoPageProps {
-  params: Promise<{ idescenario: string }>;
-}
-
-export default async function SimuladorDirectoPage({
-  params,
-}: SimuladorDirectoPageProps) {
-  const { idescenario } = await params;
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
-
-  let scenario = null;
-  if (token) {
-    try {
-      scenario = await fetchEscenario(token, idescenario);
-    } catch {
-      scenario = null;
-    }
-  }
-
-  return (
-    <SimuladorWrapper
-      idescenario={idescenario}
-      scenario={scenario}
-      returnUrl="/alumno/escenarios"
-    />
-  );
+// El alumno no interactúa con escenarios fuera del contexto de un salón.
+// El acceso al simulador ocurre desde su salón
+// (/alumno/salon/[classroomId]/escenario/[idescenario]) o desde una actividad,
+// así que esta ruta directa redirige a sus salones.
+export default function SimuladorDirectoPage() {
+  redirect("/alumno");
 }
