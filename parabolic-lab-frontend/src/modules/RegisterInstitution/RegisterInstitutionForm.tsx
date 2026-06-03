@@ -21,6 +21,7 @@ import {
   USER_TYPE_COOKIE,
 } from "@/constants/auth";
 import { useRegisterInstitution } from "@/mutations/useRegisterInstitution";
+import { ApiError } from "@/services/api";
 
 interface InstitutionFormValues {
   nombreInstitucion: string;
@@ -39,15 +40,37 @@ interface InstitutionFormValues {
   adminPassword: string;
 }
 
+// Mapea los nombres de campo del backend a los del formulario.
+const FIELD_MAP: Record<string, keyof InstitutionFormValues> = {
+  nombre_institucion: "nombreInstitucion",
+  clavect: "cct",
+  telefono: "telefono",
+  email_institucion: "emailInstitucion",
+  direccion: "calle",
+  colonia: "colonia",
+  codigopostal: "codigoPostal",
+  municipio: "municipio",
+  estado: "estado",
+  nombre: "adminNombre",
+  apellidopaterno: "adminApellidoPaterno",
+  apellidomaterno: "adminApellidoMaterno",
+  email: "adminEmail",
+  password: "adminPassword",
+};
+
 const RegisterInstitutionForm = () => {
   const router = useRouter();
   const [, setCookie] = useCookies();
   const { registerInst, isPending } = useRegisterInstitution();
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof InstitutionFormValues, string>>
+  >({});
   const { register, handleSubmit } = useForm<InstitutionFormValues>();
 
   const onSubmit = async (values: InstitutionFormValues) => {
     setError("");
+    setFieldErrors({});
     try {
       const data = await registerInst({
         nombre_institucion: values.nombreInstitucion,
@@ -70,7 +93,22 @@ const RegisterInstitutionForm = () => {
       setCookie(USER_TYPE_COOKIE, data.tipousuario, { path: "/" });
       router.push(AUTH_REDIRECT[data.tipousuario] ?? "/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al registrar institución");
+      if (err instanceof ApiError && Object.keys(err.fieldErrors).length > 0) {
+        const mapped: Partial<Record<keyof InstitutionFormValues, string>> = {};
+        for (const [campo, mensaje] of Object.entries(err.fieldErrors)) {
+          const formField = FIELD_MAP[campo];
+          if (formField) mapped[formField] = mensaje;
+        }
+        setFieldErrors(mapped);
+        const hayNoMapeados = Object.keys(err.fieldErrors).some(
+          (c) => !FIELD_MAP[c],
+        );
+        setError(hayNoMapeados ? err.message : "");
+      } else {
+        setError(
+          err instanceof Error ? err.message : "Error al registrar institución",
+        );
+      }
     }
   };
 
@@ -88,6 +126,8 @@ const RegisterInstitutionForm = () => {
           placeholder="Instituto Politécnico Nacional"
           leftIcon={<School2 className="size-4" />}
           required
+          variant={fieldErrors.nombreInstitucion ? "error" : undefined}
+          errorMessage={fieldErrors.nombreInstitucion}
           {...register("nombreInstitucion")}
         />
         <Input
@@ -96,6 +136,8 @@ const RegisterInstitutionForm = () => {
           type="text"
           placeholder="09DPR0001X"
           leftIcon={<FileKey className="size-4" />}
+          variant={fieldErrors.cct ? "error" : undefined}
+          errorMessage={fieldErrors.cct}
           {...register("cct")}
         />
         <Input
@@ -105,6 +147,8 @@ const RegisterInstitutionForm = () => {
           placeholder="55 1234 5678"
           leftIcon={<Phone className="size-4" />}
           required
+          variant={fieldErrors.telefono ? "error" : undefined}
+          errorMessage={fieldErrors.telefono}
           {...register("telefono")}
         />
         <Input
@@ -115,6 +159,8 @@ const RegisterInstitutionForm = () => {
           placeholder="contacto@institucion.edu.mx"
           leftIcon={<Mail className="size-4" />}
           required
+          variant={fieldErrors.emailInstitucion ? "error" : undefined}
+          errorMessage={fieldErrors.emailInstitucion}
           {...register("emailInstitucion")}
         />
       </div>
@@ -181,6 +227,8 @@ const RegisterInstitutionForm = () => {
           placeholder="Juan"
           leftIcon={<User className="size-4" />}
           required
+          variant={fieldErrors.adminNombre ? "error" : undefined}
+          errorMessage={fieldErrors.adminNombre}
           {...register("adminNombre")}
         />
         <Input
@@ -190,6 +238,8 @@ const RegisterInstitutionForm = () => {
           placeholder="Pérez"
           leftIcon={<User className="size-4" />}
           required
+          variant={fieldErrors.adminApellidoPaterno ? "error" : undefined}
+          errorMessage={fieldErrors.adminApellidoPaterno}
           {...register("adminApellidoPaterno")}
         />
         <Input
@@ -199,6 +249,8 @@ const RegisterInstitutionForm = () => {
           placeholder="López"
           leftIcon={<User className="size-4" />}
           required
+          variant={fieldErrors.adminApellidoMaterno ? "error" : undefined}
+          errorMessage={fieldErrors.adminApellidoMaterno}
           {...register("adminApellidoMaterno")}
         />
       </div>
@@ -210,6 +262,8 @@ const RegisterInstitutionForm = () => {
         placeholder="admin@institucion.edu.mx"
         leftIcon={<Mail className="size-4" />}
         required
+        variant={fieldErrors.adminEmail ? "error" : undefined}
+        errorMessage={fieldErrors.adminEmail}
         {...register("adminEmail")}
       />
 
@@ -219,6 +273,8 @@ const RegisterInstitutionForm = () => {
         placeholder="••••••••"
         leftIcon={<Lock className="size-4" />}
         required
+        variant={fieldErrors.adminPassword ? "error" : undefined}
+        errorMessage={fieldErrors.adminPassword}
         {...register("adminPassword")}
       />
 

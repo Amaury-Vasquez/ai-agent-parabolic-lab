@@ -748,45 +748,69 @@ class ReportService:
         )
         elements = []
 
-        elements.append(Paragraph("PARABOLIC LAB", title_style))
-        elements.append(Paragraph(f"Reporte de Intento — {reporte.nombre_escenario}", styles["Heading2"]))
-        elements.append(Spacer(1, 0.2 * inch))
-
         def fmt_val(v: float | None, decimales: int = 1) -> str:
-            return f"{v:.{decimales}f}" if v is not None else "N/A"
+            return f"{v:.{decimales}f}" if v is not None else "—"
 
         def fmt_dt(dt: datetime | None) -> str:
             return dt.strftime("%Y-%m-%d %H:%M") if dt else "—"
 
-        # --- Datos del intento ---
-        elements.append(Paragraph("Datos del Intento", heading_style))
-        info_data = [
-            ["Escenario:", reporte.nombre_escenario],
-            ["Nivel de dificultad:", reporte.niveldificultad],
-            ["Fecha inicio:", fmt_dt(reporte.fechainicio)],
-            ["Fecha fin:", fmt_dt(reporte.fechafin)],
-            ["Tiempo total:", f"{reporte.tiempototal or 0} s ({(reporte.tiempototal or 0) // 60} min)"],
-            ["Intentos realizados:", str(reporte.intentosrealizados or 0)],
-            ["Puntuación:", fmt_val(reporte.puntuacion, 1)],
-        ]
-        info_table = Table(info_data, colWidths=[2.2 * inch, 4 * inch])
-        info_table.setStyle(
+        def fmt_tiempo(seg: int | None) -> str:
+            seg = seg or 0
+            return f"{seg // 60}:{seg % 60:02d}"
+
+        # --- Cabecera (igual que el reporte en pantalla) ---
+        elements.append(Paragraph("PARABOLIC LAB", title_style))
+        elements.append(Paragraph(reporte.nombre_escenario, styles["Heading2"]))
+        elements.append(
+            Paragraph(
+                f"<font size=9 color='#6B7280'>Nivel: {reporte.niveldificultad} · "
+                f"Finalizado: {fmt_dt(reporte.fechafin)}</font>",
+                styles["Normal"],
+            )
+        )
+        elements.append(Spacer(1, 0.2 * inch))
+
+        # --- Resumen numérico (tarjetas) ---
+        aciertos = sum(1 for d in reporte.disparos if d.acierto)
+        card_label = ParagraphStyle(
+            "CardLabel", parent=styles["Normal"], fontSize=8, textColor=colors.HexColor("#6B7280")
+        )
+        card_value = ParagraphStyle(
+            "CardValue", parent=styles["Normal"], fontSize=16, leading=18,
+            textColor=colors.HexColor("#1F2937"), fontName="Helvetica-Bold",
+        )
+
+        def _card(label: str, value: str) -> list:
+            return [Paragraph(label.upper(), card_label), Paragraph(value, card_value)]
+
+        resumen_data = [[
+            _card("Puntuación", fmt_val(reporte.puntuacion, 1)),
+            _card("Tiempo", fmt_tiempo(reporte.tiempototal)),
+            _card("Intentos", str(reporte.intentosrealizados or 0)),
+            _card("Aciertos", f"{aciertos}/{len(reporte.disparos)}"),
+        ]]
+        resumen_table = Table(resumen_data, colWidths=[1.7 * inch] * 4)
+        resumen_table.setStyle(
             TableStyle([
-                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#E8F0F8")),
-                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F0F5FB")),
+                ("BOX", (0, 0), (0, -1), 0.5, colors.HexColor("#D1D9E6")),
+                ("BOX", (1, 0), (1, -1), 0.5, colors.HexColor("#D1D9E6")),
+                ("BOX", (2, 0), (2, -1), 0.5, colors.HexColor("#D1D9E6")),
+                ("BOX", (3, 0), (3, -1), 0.5, colors.HexColor("#D1D9E6")),
+                ("TOPPADDING", (0, 0), (-1, -1), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                ("LEFTPADDING", (0, 0), (-1, -1), 12),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ])
         )
-        elements.append(info_table)
+        elements.append(resumen_table)
         elements.append(Spacer(1, 0.25 * inch))
 
         # --- Análisis: comparación alumno vs solución ---
-        elements.append(Paragraph("Análisis — Alumno vs Solución Correcta", heading_style))
+        elements.append(Paragraph("Análisis — Tus respuestas vs la solución correcta", heading_style))
         analisis = reporte.analisis
         analisis_data = [
-            ["Variable", "Valor del alumno", "Valor correcto"],
+            ["Variable", "Tu respuesta", "Valor correcto"],
             ["Ángulo (°)", fmt_val(analisis.angulo_alumno), fmt_val(analisis.angulo_correcto)],
             ["Velocidad inicial (m/s)", fmt_val(analisis.velocidad_alumno), fmt_val(analisis.velocidad_correcta)],
             ["Alcance (m)", fmt_val(analisis.alcance_alumno), fmt_val(analisis.alcance_correcto)],
@@ -807,7 +831,36 @@ class ReportService:
             ])
         )
         elements.append(analisis_table)
-        elements.append(Spacer(1, 0.25 * inch))
+        elements.append(Spacer(1, 0.15 * inch))
+
+        # --- Procedimiento del alumno ---
+        if analisis.procedimiento:
+            proc_style = ParagraphStyle(
+                "Proc", parent=styles["Normal"], fontName="Courier", fontSize=9,
+                leading=12, backColor=colors.HexColor("#F0F5FB"),
+                borderPadding=8, leftIndent=2, rightIndent=2,
+            )
+            elements.append(Paragraph("<b>Procedimiento</b>", styles["Normal"]))
+            elements.append(Spacer(1, 0.05 * inch))
+            # Conservar saltos de línea del procedimiento del alumno.
+            proc_html = analisis.procedimiento.replace("&", "&amp;").replace("<", "&lt;").replace("\n", "<br/>")
+            elements.append(Paragraph(proc_html, proc_style))
+            elements.append(Spacer(1, 0.15 * inch))
+
+        # --- Notas del alumno ---
+        if analisis.notas:
+            notas_style = ParagraphStyle(
+                "Notas", parent=styles["Normal"], fontSize=9, leading=12,
+                backColor=colors.HexColor("#F0F5FB"), borderPadding=8,
+                leftIndent=2, rightIndent=2,
+            )
+            elements.append(Paragraph("<b>Notas</b>", styles["Normal"]))
+            elements.append(Spacer(1, 0.05 * inch))
+            notas_html = analisis.notas.replace("&", "&amp;").replace("<", "&lt;").replace("\n", "<br/>")
+            elements.append(Paragraph(notas_html, notas_style))
+            elements.append(Spacer(1, 0.15 * inch))
+
+        elements.append(Spacer(1, 0.1 * inch))
 
         # --- Disparos ---
         if reporte.disparos:
@@ -955,6 +1008,20 @@ class ReportService:
             ws.cell(row=r, column=3, value=correcto_val).alignment = CENTER
             r += 1
         r += 1
+
+        # Procedimiento y notas del alumno
+        if analisis.procedimiento:
+            r = write_section_header(r, "Procedimiento")
+            pc = ws.cell(row=r, column=1, value=analisis.procedimiento)
+            pc.alignment = Alignment(wrap_text=True, vertical="top")
+            ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=3)
+            r += 2
+        if analisis.notas:
+            r = write_section_header(r, "Notas")
+            nc = ws.cell(row=r, column=1, value=analisis.notas)
+            nc.alignment = Alignment(wrap_text=True, vertical="top")
+            ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=3)
+            r += 2
 
         # --- Hoja 2: Disparos ---
         if reporte.disparos:

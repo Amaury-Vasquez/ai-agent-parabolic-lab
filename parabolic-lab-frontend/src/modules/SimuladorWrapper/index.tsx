@@ -20,9 +20,11 @@ import type {
   ShotOutcome,
 } from "@/modules/SimuladorTiroParabolico/types";
 import {
+  CampoResolucion,
   DatosInteraccion,
   Disparo,
   EMPTY_RESOLUCION,
+  getCamposFaltantes,
   ResolucionAlumno,
 } from "@/types/datosInteraccion";
 
@@ -71,6 +73,9 @@ const SimuladorWrapper = ({
 
   const [completionOpen, setCompletionOpen] = useState(false);
   const [completionHit, setCompletionHit] = useState(false);
+  const [erroresResolucion, setErroresResolucion] = useState<
+    Set<CampoResolucion>
+  >(new Set());
 
   const disparosRef = useRef(disparos);
   const resolucionRef = useRef(resolucion);
@@ -180,6 +185,10 @@ const SimuladorWrapper = ({
   const handleResolucionChange = (r: ResolucionAlumno) => {
     dirtyRef.current = true;
     setResolucion(r);
+    // Si ya se mostraron errores, recalcular para limpiar los campos resueltos.
+    setErroresResolucion((prev) =>
+      prev.size > 0 ? getCamposFaltantes(r) : prev,
+    );
   };
 
   const handleScoreChange = (s: ScoreState) => {
@@ -261,10 +270,35 @@ const SimuladorWrapper = ({
     router.push(returnUrl ?? destino);
   };
 
-  const handleTerminar = () => finish("manual");
+  // Valida la solución antes de un cierre manual. Devuelve true si está completa.
+  // Si faltan campos, los marca en rojo y desplaza la vista al panel de solución.
+  const validarParaTerminar = (): boolean => {
+    const faltantes = getCamposFaltantes(resolucionRef.current);
+    setErroresResolucion(faltantes);
+    if (faltantes.size > 0) {
+      setCompletionOpen(false);
+      completionShownRef.current = false;
+      if (typeof document !== "undefined") {
+        document
+          .getElementById("panel-mi-solucion")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return false;
+    }
+    return true;
+  };
+
+  const handleTerminar = () => {
+    if (!validarParaTerminar()) return;
+    finish("manual");
+  };
+  // El cierre por tiempo agotado no se bloquea: se guarda lo que haya.
   const handleTiempoAgotado = () => finish("tiempo");
 
-  const handleCompletionContinue = () => finish("manual");
+  const handleCompletionContinue = () => {
+    if (!validarParaTerminar()) return;
+    finish("manual");
+  };
   const handleKeepPracticing = () => {
     setCompletionOpen(false);
   };
@@ -315,6 +349,7 @@ const SimuladorWrapper = ({
           scenario={scenario ?? undefined}
           resolucion={resolucion}
           onResolucionChange={handleResolucionChange}
+          erroresResolucion={erroresResolucion}
           onDisparo={handleDisparo}
           onScoreChange={handleScoreChange}
           onAutoScoreChange={handleAutoScoreChange}
@@ -322,6 +357,14 @@ const SimuladorWrapper = ({
           onTiempoAgotado={handleTiempoAgotado}
           startTime={startTimeRef.current}
         />
+        {erroresResolucion.size > 0 ? (
+          <div className="alert alert-warning">
+            <span>
+              Antes de terminar, completa tu procedimiento y todas las
+              respuestas en &quot;Mi solución&quot;.
+            </span>
+          </div>
+        ) : null}
         <div className="flex flex-col-reverse sm:flex-row items-end sm:items-center justify-between gap-2">
           <div>{saveIndicator}</div>
           <Button

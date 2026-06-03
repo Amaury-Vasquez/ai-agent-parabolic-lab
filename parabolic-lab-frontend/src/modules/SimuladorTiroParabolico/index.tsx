@@ -41,7 +41,11 @@ import {
   type PlaybackSpeed,
 } from "@/constants/simulatorPlayback";
 import { Scenario } from "@/models/scenario";
-import type { Disparo, ResolucionAlumno } from "@/types/datosInteraccion";
+import type {
+  CampoResolucion,
+  Disparo,
+  ResolucionAlumno,
+} from "@/types/datosInteraccion";
 import type {
   AssetSelection,
   ParameterLock,
@@ -52,6 +56,7 @@ interface SimuladorTiroParabolicoProps {
   scenario?: Scenario;
   resolucion?: ResolucionAlumno;
   onResolucionChange?: (next: ResolucionAlumno) => void;
+  erroresResolucion?: Set<CampoResolucion>;
   onDisparo?: (disparo: Disparo) => void;
   onScoreChange?: (score: ScoreState) => void;
   onAutoScoreChange?: (best: number) => void;
@@ -259,6 +264,7 @@ const SimuladorTiroParabolico = ({
   scenario,
   resolucion,
   onResolucionChange,
+  erroresResolucion,
   onDisparo,
   onScoreChange,
   onAutoScoreChange,
@@ -590,6 +596,7 @@ const SimuladorTiroParabolico = ({
         <ResolucionPanel
           resolucion={resolucion}
           onChange={onResolucionChange}
+          errores={erroresResolucion}
         />
       ) : null}
     </div>

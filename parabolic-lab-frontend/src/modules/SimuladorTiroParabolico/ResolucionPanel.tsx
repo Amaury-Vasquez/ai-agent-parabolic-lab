@@ -2,11 +2,15 @@
 
 import { Input } from "amvasdev-ui";
 import { Calculator, Pencil } from "lucide-react";
-import type { ResolucionAlumno } from "@/types/datosInteraccion";
+import type {
+  CampoResolucion,
+  ResolucionAlumno,
+} from "@/types/datosInteraccion";
 
 interface ResolucionPanelProps {
   resolucion: ResolucionAlumno;
   onChange: (next: ResolucionAlumno) => void;
+  errores?: Set<CampoResolucion>;
 }
 
 interface NumericFieldProps {
@@ -16,6 +20,7 @@ interface NumericFieldProps {
   placeholder: string;
   value: number | null;
   onChange: (n: number | null) => void;
+  error?: boolean;
 }
 
 const NumericField = ({
@@ -25,6 +30,7 @@ const NumericField = ({
   placeholder,
   value,
   onChange,
+  error = false,
 }: NumericFieldProps) => (
   <div>
     <label className="label py-1" htmlFor={id}>
@@ -38,6 +44,8 @@ const NumericField = ({
       step="0.1"
       placeholder={placeholder}
       value={value ?? ""}
+      variant={error ? "error" : undefined}
+      errorMessage={error ? "Obligatorio" : undefined}
       onChange={(e) => {
         const raw = e.currentTarget.value;
         onChange(raw === "" ? null : Number(raw));
@@ -46,7 +54,12 @@ const NumericField = ({
   </div>
 );
 
-const ResolucionPanel = ({ resolucion, onChange }: ResolucionPanelProps) => {
+const ResolucionPanel = ({
+  resolucion,
+  onChange,
+  errores,
+}: ResolucionPanelProps) => {
+  const tieneError = (campo: CampoResolucion) => errores?.has(campo) ?? false;
   const setRespuesta = <K extends keyof ResolucionAlumno["respuestas"]>(
     key: K,
     value: ResolucionAlumno["respuestas"][K]
@@ -57,7 +70,10 @@ const ResolucionPanel = ({ resolucion, onChange }: ResolucionPanelProps) => {
     });
 
   return (
-    <div className="bg-base-200 rounded-lg p-4 sm:p-5 flex flex-col gap-4">
+    <div
+      id="panel-mi-solucion"
+      className="bg-base-200 rounded-lg p-4 sm:p-5 flex flex-col gap-4"
+    >
       <div>
         <h3 className="text-lg font-bold flex items-center gap-2">
           <Pencil className="w-5 h-5 text-primary" />
@@ -77,7 +93,9 @@ const ResolucionPanel = ({ resolucion, onChange }: ResolucionPanelProps) => {
           </span>
         </label>
         <textarea
-          className="textarea textarea-bordered w-full font-mono text-sm"
+          className={`textarea textarea-bordered w-full font-mono text-sm ${
+            tieneError("procedimiento") ? "textarea-error" : ""
+          }`}
           rows={6}
           placeholder={"v₀² · sen(2θ) / g = alcance\n30² · sen(90°) / 9.81 ≈ 91.7 m"}
           value={resolucion.procedimiento}
@@ -85,6 +103,11 @@ const ResolucionPanel = ({ resolucion, onChange }: ResolucionPanelProps) => {
             onChange({ ...resolucion, procedimiento: e.currentTarget.value })
           }
         />
+        {tieneError("procedimiento") ? (
+          <span className="text-xs text-error mt-1 block">
+            Describe tu procedimiento antes de terminar.
+          </span>
+        ) : null}
       </div>
 
       <div>
@@ -97,6 +120,7 @@ const ResolucionPanel = ({ resolucion, onChange }: ResolucionPanelProps) => {
             placeholder="45"
             value={resolucion.respuestas.angulo}
             onChange={(v) => setRespuesta("angulo", v)}
+            error={tieneError("angulo")}
           />
           <NumericField
             id="resolucion-velocidad"
@@ -105,6 +129,7 @@ const ResolucionPanel = ({ resolucion, onChange }: ResolucionPanelProps) => {
             placeholder="30"
             value={resolucion.respuestas.velocidad}
             onChange={(v) => setRespuesta("velocidad", v)}
+            error={tieneError("velocidad")}
           />
           <NumericField
             id="resolucion-altura-maxima"
@@ -113,6 +138,7 @@ const ResolucionPanel = ({ resolucion, onChange }: ResolucionPanelProps) => {
             placeholder="22.9"
             value={resolucion.respuestas.alturaMaxima}
             onChange={(v) => setRespuesta("alturaMaxima", v)}
+            error={tieneError("alturaMaxima")}
           />
           <NumericField
             id="resolucion-alcance"
@@ -121,6 +147,7 @@ const ResolucionPanel = ({ resolucion, onChange }: ResolucionPanelProps) => {
             placeholder="91.7"
             value={resolucion.respuestas.alcance}
             onChange={(v) => setRespuesta("alcance", v)}
+            error={tieneError("alcance")}
           />
           <NumericField
             id="resolucion-tiempo-vuelo"
@@ -129,6 +156,7 @@ const ResolucionPanel = ({ resolucion, onChange }: ResolucionPanelProps) => {
             placeholder="4.3"
             value={resolucion.respuestas.tiempoVuelo}
             onChange={(v) => setRespuesta("tiempoVuelo", v)}
+            error={tieneError("tiempoVuelo")}
           />
         </div>
       </div>

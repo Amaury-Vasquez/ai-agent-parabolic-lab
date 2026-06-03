@@ -118,7 +118,11 @@ function buildScenarioStatuses(
   completedMap: Map<string, number>
 ): Record<string, ScenarioStatus[]> {
   const grouped: Record<string, ScenarioStatus[]> = {};
+  const vistos = new Set<string>();
   for (const escenario of escenarios) {
+    // Dedup defensivo: evita renderizar el mismo escenario dos veces
+    if (vistos.has(escenario.idescenario)) continue;
+    vistos.add(escenario.idescenario);
     const tier = escenario.niveldificultad;
     if (!grouped[tier]) grouped[tier] = [];
     grouped[tier].push({
