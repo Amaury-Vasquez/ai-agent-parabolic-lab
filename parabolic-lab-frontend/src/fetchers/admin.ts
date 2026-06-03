@@ -1,6 +1,7 @@
 import { get } from "@/services/api";
 import type {
   AdminAlumnoActividadRow,
+  AdminAlumnoInteraccion,
   AdminOverview,
   AdminSalonRow,
   AdminUsuarioRow,
@@ -29,4 +30,21 @@ export function fetchAdminAlumnosActividad(
   return get<AdminAlumnoActividadRow[]>("/admins/me/alumnos-actividad", {
     token,
   });
+}
+
+export const ADMIN_ALUMNO_INTERACCIONES_QUERY_KEY = (idalumno: string) => [
+  "admin",
+  "alumnos",
+  idalumno,
+  "interacciones",
+];
+
+export function fetchAdminAlumnoInteracciones(
+  token: string,
+  idalumno: string,
+): Promise<AdminAlumnoInteraccion[]> {
+  return get<AdminAlumnoInteraccion[]>(
+    `/admins/me/alumnos/${idalumno}/interacciones`,
+    { token },
+  );
 }

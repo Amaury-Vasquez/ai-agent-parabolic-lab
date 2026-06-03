@@ -40,6 +40,13 @@ export interface AdminSalonRow {
   total_escenarios: number;
 }
 
+export interface AdminAlumnoInteraccion {
+  idinteraccion: string;
+  idescenario: string;
+  completado?: boolean | null;
+  fechafin?: string | null;
+}
+
 export interface AdminAlumnoActividadRow {
   idalumno: string;
   idusuario: string;

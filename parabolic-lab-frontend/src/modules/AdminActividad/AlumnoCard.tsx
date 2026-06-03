@@ -1,8 +1,9 @@
-import { Badge } from "amvasdev-ui";
+import { Badge, Button } from "amvasdev-ui";
 import type { AdminAlumnoActividadRow } from "@/types/admin";
 
 interface AlumnoCardProps {
   alumno: AdminAlumnoActividadRow;
+  onVerReporte: (alumno: AdminAlumnoActividadRow) => void;
 }
 
 const formatPuntuacion = (value: number | null | undefined): string => {
@@ -10,7 +11,7 @@ const formatPuntuacion = (value: number | null | undefined): string => {
   return Number(value).toFixed(1);
 };
 
-const AlumnoCard = ({ alumno }: AlumnoCardProps) => {
+const AlumnoCard = ({ alumno, onVerReporte }: AlumnoCardProps) => {
   const isActivo = alumno.activo !== false;
   const fullName = [
     alumno.nombre,
@@ -60,6 +61,14 @@ const AlumnoCard = ({ alumno }: AlumnoCardProps) => {
           </dd>
         </div>
       </dl>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-full"
+        onClick={() => onVerReporte(alumno)}
+      >
+        Ver reporte
+      </Button>
     </article>
   );
 };

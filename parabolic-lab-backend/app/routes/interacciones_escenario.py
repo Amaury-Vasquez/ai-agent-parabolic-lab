@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.dependencies import get_current_user, get_db
+from app.models.alumno import Alumno
 from app.models.escenario import Escenario
 from app.models.interaccion_escenario import InteraccionEscenario
 from app.models.salon import Salon
@@ -171,7 +172,8 @@ async def _get_reporte_data(
     if not interaccion.completado:
         raise HTTPException(status_code=400, detail="El intento no ha sido completado aún")
 
-    # Autorización: alumno dueño o docente del salón al que pertenece el escenario
+    # Autorización: alumno dueño, docente del salón al que pertenece el
+    # escenario, o admin de la institución del alumno
     if current_user.tipousuario == "alumno":
         if not current_user.alumno or interaccion.idalumno != current_user.alumno.idalumno:
             raise HTTPException(status_code=403, detail="No tienes acceso a este reporte")
@@ -196,6 +198,20 @@ async def _get_reporte_data(
             )
         )
         if not salon_result.scalar_one_or_none():
+            raise HTTPException(status_code=403, detail="No tienes acceso a este reporte")
+    elif current_user.tipousuario == "admin":
+        if not current_user.admin:
+            raise HTTPException(status_code=403, detail="Acceso denegado")
+        # El alumno del intento debe pertenecer a la institución del admin.
+        alumno_result = await db.execute(
+            select(Alumno)
+            .join(Usuario, Alumno.idusuario == Usuario.idusuario)
+            .where(
+                Alumno.idalumno == interaccion.idalumno,
+                Usuario.idinstitucion == current_user.idinstitucion,
+            )
+        )
+        if not alumno_result.scalar_one_or_none():
             raise HTTPException(status_code=403, detail="No tienes acceso a este reporte")
     else:
         raise HTTPException(status_code=403, detail="Acceso denegado")

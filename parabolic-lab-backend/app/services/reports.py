@@ -833,32 +833,38 @@ class ReportService:
         elements.append(analisis_table)
         elements.append(Spacer(1, 0.15 * inch))
 
-        # --- Procedimiento del alumno ---
-        if analisis.procedimiento:
-            proc_style = ParagraphStyle(
-                "Proc", parent=styles["Normal"], fontName="Courier", fontSize=9,
-                leading=12, backColor=colors.HexColor("#F0F5FB"),
-                borderPadding=8, leftIndent=2, rightIndent=2,
-            )
-            elements.append(Paragraph("<b>Procedimiento</b>", styles["Normal"]))
-            elements.append(Spacer(1, 0.05 * inch))
-            # Conservar saltos de línea del procedimiento del alumno.
-            proc_html = analisis.procedimiento.replace("&", "&amp;").replace("<", "&lt;").replace("\n", "<br/>")
-            elements.append(Paragraph(proc_html, proc_style))
-            elements.append(Spacer(1, 0.15 * inch))
+        # --- Procedimiento y notas del alumno ---
+        def _bloque_texto(titulo: str, texto: str, font_name: str) -> list:
+            """Sección con título de encabezado y texto en una caja con fondo.
 
-        # --- Notas del alumno ---
-        if analisis.notas:
-            notas_style = ParagraphStyle(
-                "Notas", parent=styles["Normal"], fontSize=9, leading=12,
-                backColor=colors.HexColor("#F0F5FB"), borderPadding=8,
-                leftIndent=2, rightIndent=2,
+            El fondo se dibuja con una Table de una celda: usar backColor +
+            borderPadding en un Paragraph pinta el fondo fuera de su marco y
+            encima del título anterior, cortándolo visualmente.
+            """
+            body_style = ParagraphStyle(
+                f"Bloque{titulo}", parent=styles["Normal"], fontName=font_name,
+                fontSize=9, leading=12,
             )
-            elements.append(Paragraph("<b>Notas</b>", styles["Normal"]))
-            elements.append(Spacer(1, 0.05 * inch))
-            notas_html = analisis.notas.replace("&", "&amp;").replace("<", "&lt;").replace("\n", "<br/>")
-            elements.append(Paragraph(notas_html, notas_style))
-            elements.append(Spacer(1, 0.15 * inch))
+            # Conservar saltos de línea del texto del alumno.
+            html = texto.replace("&", "&amp;").replace("<", "&lt;").replace("\n", "<br/>")
+            caja = Table([[Paragraph(html, body_style)]], colWidths=[7.5 * inch])
+            caja.setStyle(
+                TableStyle([
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F0F5FB")),
+                    ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D9E6")),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ])
+            )
+            return [Paragraph(titulo, heading_style), caja, Spacer(1, 0.15 * inch)]
+
+        if analisis.procedimiento:
+            elements.extend(_bloque_texto("Procedimiento", analisis.procedimiento, "Courier"))
+
+        if analisis.notas:
+            elements.extend(_bloque_texto("Notas", analisis.notas, "Helvetica"))
 
         elements.append(Spacer(1, 0.1 * inch))
 

@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import case, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.functions import coalesce
 
 from app.auth import stack_auth
@@ -24,6 +25,7 @@ from app.schemas.admin import (
     AdminSalonRow,
     AdminUsuarioRow,
 )
+from app.schemas.interaccion_escenario import InteraccionEscenarioRead
 
 router = APIRouter(prefix="/admins", tags=["Admins"])
 
@@ -299,6 +301,45 @@ async def listar_actividad_alumnos(
         )
         for row in rows
     ]
+
+
+@router.get(
+    "/me/alumnos/{idalumno}/interacciones",
+    response_model=list[InteraccionEscenarioRead],
+)
+async def listar_interacciones_alumno(
+    idalumno: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """Lista las interacciones de un alumno de la institución del admin.
+
+    Permite al admin abrir el mismo reporte de intento que ven alumnos y
+    docentes, localizando el intento completado más reciente.
+    """
+    _require_admin(current_user)
+
+    alumno = (
+        await db.execute(
+            select(Alumno)
+            .join(Usuario, Alumno.idusuario == Usuario.idusuario)
+            .where(
+                Alumno.idalumno == idalumno,
+                Usuario.idinstitucion == current_user.idinstitucion,
+            )
+        )
+    ).scalar_one_or_none()
+    if not alumno:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Alumno no encontrado"
+        )
+
+    result = await db.execute(
+        select(InteraccionEscenario)
+        .where(InteraccionEscenario.idalumno == idalumno)
+        .options(selectinload(InteraccionEscenario.escenario))
+    )
+    return result.scalars().all()
 
 
 async def _load_usuario_for_admin_action(
