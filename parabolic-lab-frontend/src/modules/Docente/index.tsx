@@ -4,9 +4,11 @@ import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import EmptyState from "@/components/EmptyState";
 import TutorialModal from "@/components/TutorialModal";
+import TutorialPromptToast from "@/components/TutorialPromptToast";
 import SalonCard from "./SalonCard";
 import CreateClassroomModal from "@/components/CreateClassroomModal";
 import InstitutionIdCard from "@/components/InstitutionIdCard";
+import { TUTORIAL_PROMPT_STORAGE_KEYS } from "@/constants/tutorial";
 import { useInstitucion } from "@/queries/useInstitucion";
 import { useMe } from "@/queries/useMe";
 import { useMySalones } from "@/queries/useMySalones";
@@ -30,7 +32,6 @@ const Docente = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState("reciente");
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
-  const [showTutorialPrompt, setShowTutorialPrompt] = useState(true);
 
   const { data: salones, isLoading } = useMySalones();
   const { data: me } = useMe();
@@ -107,34 +108,10 @@ const Docente = () => {
 
       <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} />
 
-      {/* Floating tutorial prompt widget */}
-      {showTutorialPrompt && !isTutorialOpen ? (
-        <div className="fixed bottom-6 right-6 z-40 bg-base-100 shadow-xl border border-base-300 rounded-2xl p-4 max-w-sm animate-fade-in">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl select-none">🎓</span>
-            <p className="text-sm font-semibold text-base-content">
-              ¡Hola! ¿Deseas ver un recorrido rápido por el sistema?
-            </p>
-          </div>
-          <div className="flex gap-2 mt-3 justify-end">
-            <button
-              className="btn btn-ghost btn-sm text-base-content/60"
-              onClick={() => setShowTutorialPrompt(false)}
-            >
-              No, gracias
-            </button>
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => {
-                setShowTutorialPrompt(false);
-                setIsTutorialOpen(true);
-              }}
-            >
-              Sí, ver tutorial
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <TutorialPromptToast
+        storageKey={TUTORIAL_PROMPT_STORAGE_KEYS.docente}
+        onAccept={() => setIsTutorialOpen(true)}
+      />
     </div>
   );
 };

@@ -1,10 +1,18 @@
 "use client";
 import { GraduationCap, School, ShieldCheck, Users } from "lucide-react";
+import { useState } from "react";
 import StatCard from "./StatCard";
 import InstitutionIdCard from "@/components/InstitutionIdCard";
+import TutorialModal from "@/components/TutorialModal";
+import TutorialPromptToast from "@/components/TutorialPromptToast";
+import {
+  ADMIN_TUTORIAL_PASOS,
+  TUTORIAL_PROMPT_STORAGE_KEYS,
+} from "@/constants/tutorial";
 import { useAdminOverview } from "@/queries/useAdminOverview";
 
 const AdminOverview = () => {
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const { data, isLoading, error } = useAdminOverview();
 
   if (isLoading) {
@@ -69,6 +77,17 @@ const AdminOverview = () => {
           hint="Usuarios totales"
         />
       </div>
+
+      <TutorialModal
+        isOpen={isTutorialOpen}
+        onClose={() => setIsTutorialOpen(false)}
+        pasos={ADMIN_TUTORIAL_PASOS}
+      />
+
+      <TutorialPromptToast
+        storageKey={TUTORIAL_PROMPT_STORAGE_KEYS.admin}
+        onAccept={() => setIsTutorialOpen(true)}
+      />
     </div>
   );
 };
