@@ -40,6 +40,32 @@ export interface AdminSalonRow {
   total_escenarios: number;
 }
 
+export interface AdminSalonEstudiante {
+  idalumno: string;
+  nombre: string;
+  apellidopaterno: string;
+  apellidomaterno?: string | null;
+  email: string;
+  matricula: string;
+  fechainscripcion?: string | null;
+}
+
+export interface AdminSalonDetalle {
+  idsalon: string;
+  nombresalon: string;
+  codigoacceso: string;
+  activo?: boolean | null;
+  fechacreacion?: string | null;
+  iddocente: string;
+  docente_nombre: string;
+  docente_apellidopaterno: string;
+  docente_apellidomaterno?: string | null;
+  docente_email: string;
+  docente_gradoacademico?: string | null;
+  total_escenarios: number;
+  estudiantes: AdminSalonEstudiante[];
+}
+
 export interface AdminAlumnoInteraccion {
   idinteraccion: string;
   idescenario: string;

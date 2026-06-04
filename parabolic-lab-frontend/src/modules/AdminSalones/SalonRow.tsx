@@ -1,5 +1,6 @@
 import { Badge } from "amvasdev-ui";
 import { BookOpen, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type { AdminSalonRow } from "@/types/admin";
 
 interface SalonRowProps {
@@ -7,10 +8,14 @@ interface SalonRowProps {
 }
 
 const SalonListRow = ({ salon }: SalonRowProps) => {
+  const router = useRouter();
   const isActivo = salon.activo !== false;
 
   return (
-    <tr>
+    <tr
+      className="cursor-pointer hover:bg-base-200 transition-colors"
+      onClick={() => router.push(`/admin/salones/${salon.idsalon}`)}
+    >
       <td>
         <div className="flex flex-col">
           <span className="font-semibold">{salon.nombresalon}</span>

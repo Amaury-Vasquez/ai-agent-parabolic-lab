@@ -51,6 +51,32 @@ class AdminSalonRow(BaseModel):
     total_escenarios: int
 
 
+class AdminSalonEstudiante(BaseModel):
+    idalumno: UUID
+    nombre: str
+    apellidopaterno: str
+    apellidomaterno: str | None = None
+    email: str
+    matricula: str
+    fechainscripcion: datetime | None = None
+
+
+class AdminSalonDetalle(BaseModel):
+    idsalon: UUID
+    nombresalon: str
+    codigoacceso: str
+    activo: bool | None = None
+    fechacreacion: datetime | None = None
+    iddocente: UUID
+    docente_nombre: str
+    docente_apellidopaterno: str
+    docente_apellidomaterno: str | None = None
+    docente_email: str
+    docente_gradoacademico: str | None = None
+    total_escenarios: int
+    estudiantes: list[AdminSalonEstudiante]
+
+
 class AdminAlumnoActividadRow(BaseModel):
     idalumno: UUID
     idusuario: UUID
