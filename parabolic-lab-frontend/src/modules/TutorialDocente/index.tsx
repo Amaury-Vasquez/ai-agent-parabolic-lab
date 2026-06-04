@@ -6,12 +6,12 @@ import {
   BookOpen,
   CheckCircle,
   GraduationCap,
-  HelpCircle,
   Home,
   Lightbulb,
   User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import TutorialImage from "@/components/TutorialImage";
 
 /* ─── tipos ─────────────────────────────────────────────────── */
 
@@ -35,13 +35,6 @@ const SECCIONES: SeccionDef[] = [
 ];
 
 /* ─── sub-componentes ─────────────────────────────────────────── */
-
-const ImagenPlaceholder = ({ descripcion }: { descripcion: string }) => (
-  <div className="w-full rounded-xl bg-base-200 border border-dashed border-base-300 flex flex-col items-center justify-center gap-2 py-10 px-4 text-center">
-    <HelpCircle className="size-8 opacity-30" />
-    <p className="text-sm opacity-40 italic">{descripcion}</p>
-  </div>
-);
 
 const Tip = ({ texto }: { texto: string }) => (
   <div className="flex gap-2 bg-primary/10 border border-primary/20 rounded-xl p-3 text-sm">
@@ -106,7 +99,11 @@ const TutorialDocente = () => {
             Este tutorial le guiará a través de las herramientas de administración,
             creación de material didáctico y monitoreo del rendimiento estudiantil.
           </p>
-          <ImagenPlaceholder descripcion="Imagen: vista general del panel de administración docente" />
+          <TutorialImage
+            src="/tutorial/bienvenida.png"
+            alt="Vista general de ParabolicLab"
+            descripcion="vista general del panel de administración docente"
+          />
         </Seccion>
 
         {/* ② Gestión de Salones */}
@@ -116,7 +113,11 @@ const TutorialDocente = () => {
             principal puede crear nuevos espacios, generar <strong>códigos de acceso únicos</strong> para
             la matriculación de alumnos y administrar la estructura de sus clases.
           </p>
-          <ImagenPlaceholder descripcion="Imagen: panel de salones con tarjetas de grupo y código de acceso visible" />
+          <TutorialImage
+            src="/tutorial/mis-salones.png"
+            alt="Panel de salones con tarjetas de grupo"
+            descripcion="panel de salones con tarjetas de grupo y código de acceso visible"
+          />
           <Tip texto="Utilice el icono de engranaje en cada tarjeta de salón para editar su nombre o desvincular escenarios asignados." />
           <Button outlined className="mt-4 w-fit" onClick={() => router.push("/docente")}>
             Ir a Mis Salones
@@ -132,7 +133,11 @@ const TutorialDocente = () => {
             metas específicas. Una vez creados, puede asignarlos de forma individual o masiva
             a sus distintos salones.
           </p>
-          <ImagenPlaceholder descripcion="Imagen: biblioteca de escenarios con listado de escenarios creados y opciones de asignación" />
+          <TutorialImage
+            src="/tutorial/escenarios-actividades.png"
+            alt="Biblioteca de escenarios didácticos"
+            descripcion="biblioteca de escenarios con listado de escenarios creados y opciones de asignación"
+          />
           <Tip texto="Un escenario puede reutilizarse y asignarse a múltiples salones simultáneamente, optimizando su tiempo de planeación didáctica." />
           <Button outlined className="mt-4 w-fit" onClick={() => router.push("/docente/biblioteca")}>
             Ir a la Biblioteca
@@ -147,7 +152,11 @@ const TutorialDocente = () => {
             la cantidad de intentos, el tiempo invertido y las calificaciones
             de manera precisa y exportable.
           </p>
-          <ImagenPlaceholder descripcion="Imagen: panel de reportes con gráficas de rendimiento por salón y estudiante" />
+          <TutorialImage
+            src="/tutorial/reportes.png"
+            alt="Panel de reportes y analítica"
+            descripcion="panel de reportes con gráficas de rendimiento por salón y estudiante"
+          />
           <Tip texto="Puede exportar los resultados de cualquier estudiante o salón a formato PDF o CSV para integrarlos en sus registros de evaluación institucional." />
           <Button outlined className="mt-4 w-fit" onClick={() => router.push("/docente/reportes")}>
             Ir a Reportes
@@ -161,7 +170,11 @@ const TutorialDocente = () => {
             que imparte y personalice la apariencia de la plataforma mediante
             la selección de temas de interfaz adaptables al entorno académico.
           </p>
-          <ImagenPlaceholder descripcion="Imagen: página de perfil con formulario de datos personales y selector de tema" />
+          <TutorialImage
+            src="/tutorial/mi-perfil.png"
+            alt="Página de perfil del docente"
+            descripcion="página de perfil con formulario de datos personales y selector de tema"
+          />
           <Button outlined className="mt-4 w-fit" onClick={() => router.push("/docente/perfil")}>
             Ir a Mi Perfil
           </Button>
