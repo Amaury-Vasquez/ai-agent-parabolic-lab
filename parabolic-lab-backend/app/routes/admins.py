@@ -22,6 +22,8 @@ from app.schemas.admin import (
     AdminAlumnoActividadRow,
     AdminOverview,
     AdminRead,
+    AdminSalonDetalle,
+    AdminSalonEstudiante,
     AdminSalonRow,
     AdminUsuarioRow,
 )
@@ -219,6 +221,93 @@ async def listar_salones_institucion(
         )
         for row in rows
     ]
+
+
+@router.get("/me/salones/{idsalon}", response_model=AdminSalonDetalle)
+async def obtener_salon_institucion(
+    idsalon: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """Detalle de un salón de la institución del admin: docente y estudiantes inscritos."""
+    _require_admin(current_user)
+
+    # Salón + docente, acotado a la institución del admin
+    salon_result = await db.execute(
+        select(
+            Salon.idsalon,
+            Salon.nombresalon,
+            Salon.codigoacceso,
+            Salon.activo,
+            Salon.fechacreacion,
+            Salon.iddocente,
+            Usuario.nombre.label("docente_nombre"),
+            Usuario.apellidopaterno.label("docente_apellidopaterno"),
+            Usuario.apellidomaterno.label("docente_apellidomaterno"),
+            Usuario.email.label("docente_email"),
+            Docente.gradoacademico.label("docente_gradoacademico"),
+        )
+        .join(Docente, Salon.iddocente == Docente.iddocente)
+        .join(Usuario, Docente.idusuario == Usuario.idusuario)
+        .where(Salon.idsalon == idsalon)
+        .where(Salon.idinstitucion == current_user.idinstitucion)
+    )
+    salon = salon_result.first()
+    if not salon:
+        raise HTTPException(status_code=404, detail="Salon no encontrado")
+
+    total_escenarios = (
+        await db.execute(
+            select(func.count())
+            .select_from(Escenario)
+            .where(Escenario.idsalon == idsalon)
+            .where(Escenario.activo.is_(True))
+        )
+    ).scalar() or 0
+
+    estudiantes_result = await db.execute(
+        select(
+            Alumno.idalumno,
+            Alumno.matricula,
+            Usuario.nombre,
+            Usuario.apellidopaterno,
+            Usuario.apellidomaterno,
+            Usuario.email,
+            AlumnoEnSalon.fechainscripcion,
+        )
+        .join(AlumnoEnSalon, AlumnoEnSalon.idalumno == Alumno.idalumno)
+        .join(Usuario, Alumno.idusuario == Usuario.idusuario)
+        .where(AlumnoEnSalon.idsalon == idsalon)
+        .where(AlumnoEnSalon.activo.is_(True))
+        .order_by(Usuario.apellidopaterno, Usuario.nombre)
+    )
+
+    return AdminSalonDetalle(
+        idsalon=salon.idsalon,
+        nombresalon=salon.nombresalon,
+        codigoacceso=salon.codigoacceso,
+        activo=salon.activo,
+        fechacreacion=salon.fechacreacion,
+        iddocente=salon.iddocente,
+        docente_nombre=salon.docente_nombre,
+        docente_apellidopaterno=salon.docente_apellidopaterno,
+        docente_apellidomaterno=salon.docente_apellidomaterno,
+        docente_email=salon.docente_email,
+        docente_gradoacademico=salon.docente_gradoacademico,
+        total_escenarios=total_escenarios,
+        estudiantes=[
+            AdminSalonEstudiante(
+                idalumno=row.idalumno,
+                nombre=row.nombre,
+                apellidopaterno=row.apellidopaterno,
+                apellidomaterno=row.apellidomaterno,
+                email=row.email,
+                matricula=row.matricula,
+                fechainscripcion=row.fechainscripcion,
+            )
+            for row in estudiantes_result.all()
+        ],
+    )
 
 
 @router.get("/me/alumnos-actividad", response_model=list[AdminAlumnoActividadRow])

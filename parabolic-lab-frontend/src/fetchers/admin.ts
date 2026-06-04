@@ -3,6 +3,7 @@ import type {
   AdminAlumnoActividadRow,
   AdminAlumnoInteraccion,
   AdminOverview,
+  AdminSalonDetalle,
   AdminSalonRow,
   AdminUsuarioRow,
 } from "@/types/admin";
@@ -22,6 +23,19 @@ export function fetchAdminUsuarios(token: string): Promise<AdminUsuarioRow[]> {
 
 export function fetchAdminSalones(token: string): Promise<AdminSalonRow[]> {
   return get<AdminSalonRow[]>("/admins/me/salones", { token });
+}
+
+export const ADMIN_SALON_DETALLE_QUERY_KEY = (idsalon: string) => [
+  "admin",
+  "salones",
+  idsalon,
+];
+
+export function fetchAdminSalonDetalle(
+  token: string,
+  idsalon: string,
+): Promise<AdminSalonDetalle> {
+  return get<AdminSalonDetalle>(`/admins/me/salones/${idsalon}`, { token });
 }
 
 export function fetchAdminAlumnosActividad(
