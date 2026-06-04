@@ -65,13 +65,16 @@ async def obtener_progreso_alumno(
 @router.get("/", response_model=list[InteraccionEscenarioRead])
 async def listar_interacciones_escenario(
     db: AsyncSession = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(InteraccionEscenario).options(
-            selectinload(InteraccionEscenario.escenario)
-        )
-    )
+    query = select(InteraccionEscenario).options(selectinload(InteraccionEscenario.escenario))
+    # Un alumno solo puede ver sus propias interacciones; sin este filtro
+    # todos los alumnos verían las estadísticas agregadas de todos.
+    if current_user.tipousuario == "alumno":
+        if not current_user.alumno:
+            raise HTTPException(status_code=403, detail="Alumno no encontrado")
+        query = query.where(InteraccionEscenario.idalumno == current_user.alumno.idalumno)
+    result = await db.execute(query)
     return result.scalars().all()
 
 
@@ -141,11 +144,7 @@ async def actualizar_interaccion_escenario(
     for field, value in payload.items():
         # Las columnas DateTime del modelo son naive. Si el cliente manda ISO
         # con timezone (e.g. ...Z), lo convertimos a UTC naive antes de asignar.
-        if (
-            field == "fechafin"
-            and hasattr(value, "tzinfo")
-            and value.tzinfo is not None
-        ):
+        if field == "fechafin" and hasattr(value, "tzinfo") and value.tzinfo is not None:
             value = value.astimezone(UTC).replace(tzinfo=None)
         setattr(interaccion, field, value)
 
@@ -184,9 +183,7 @@ async def _get_reporte_data(
         # docente con una consulta directa. No usamos current_user.docente.salones
         # porque esa relación no se carga en get_current_user y un lazy-load en
         # contexto async lanza MissingGreenlet.
-        escenario_result = await db.execute(
-            select(Escenario).where(Escenario.idescenario == interaccion.idescenario)
-        )
+        escenario_result = await db.execute(select(Escenario).where(Escenario.idescenario == interaccion.idescenario))
         escenario_obj = escenario_result.scalar_one_or_none()
         if not escenario_obj:
             raise HTTPException(status_code=403, detail="No tienes acceso a este reporte")
