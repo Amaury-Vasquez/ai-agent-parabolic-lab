@@ -14,6 +14,25 @@ li {
   padding: 0;
 }
 
+/*
+ * iOS Safari hace zoom automático al enfocar campos de texto cuya fuente es
+ * menor a 16px, lo que descuadra la pantalla al escribir. Forzamos 16px en
+ * todos los inputs SOLO en dispositivos iOS: `-webkit-touch-callout` únicamente
+ * existe en WebKit de iOS, así que este @supports no afecta a Android ni a
+ * navegadores de escritorio. La regla queda fuera de @layer, por lo que gana
+ * sobre los tamaños de DaisyUI y las utilidades de Tailwind sin !important.
+ */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea,
+  .input,
+  .select,
+  .textarea {
+    font-size: 1rem; /* 16px */
+  }
+}
+
 @theme {
   @keyframes fade-in {
     from {

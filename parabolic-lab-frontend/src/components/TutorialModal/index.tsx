@@ -1,55 +1,26 @@
 "use client";
 import { Button } from "amvasdev-ui";
 import { useState } from "react";
-
-const PASOS = [
-  {
-    emoji: "🚀",
-    titulo: "¡Bienvenido a Parabolic-Lab!",
-    descripcion:
-      "La plataforma donde gestionar tus clases de física se vuelve interactivo. Aquí crearás salones, diseñarás simulaciones y seguirás el avance de cada estudiante.",
-  },
-  {
-    emoji: "🏫",
-    titulo: "Gestiona tus Salones",
-    descripcion:
-      "Crea salones con el botón '+'. Cada tarjeta tiene un engranaje para editar el nombre, ver y eliminar escenarios asignados, puedes ver los leaderboards de tus estudiantes inscritos en ese salón en VER PROGRESO.",
-  },
-  {
-    emoji: "👥",
-    titulo: "Ver Progreso",
-    descripcion:
-      "En VER PROGRESO puedes ver los leaderboards de tus estudiantes inscritos en ese salón, gestionar sus perfiles, presionando el boton de 👥 podras ver a detalle su fecha de inscripcion y datos del mismo, al igual que eliminar del salón con el botón de basura y agregar un estudiante manualmente mediante su correo registrado en el botón de +Agregar estudiante.",
-  },
-  {
-    emoji: "🔬",
-    titulo: "Biblioteca de Escenarios",
-    descripcion:
-      "Desde la Biblioteca creas escenarios de tiro parabólico: configuras física, dificultad e instrucciones para tus alumnos. Luego los asignas a los salones que elijas.",
-  },
-  {
-    emoji: "📊",
-    titulo: "Reportes y Progreso",
-    descripcion:
-      "Visualiza el avance de tus estudiantes por salón y descarga reportes oficiales en PDF y CSV con sus estadisticas y desempeños en las simulaciones.",
-  },
-  {
-    emoji: "💡",
-    titulo: "¿Necesitas recordar algo?",
-    descripcion:
-      "Puedes volver a ver este tutorial en cualquier momento entrando a tu Perfil y presionando el botón 'Ver tutorial'.",
-  },
-];
+import {
+  DOCENTE_TUTORIAL_PASOS,
+  type PasoTutorial,
+} from "@/constants/tutorial";
 
 interface TutorialModalProps {
   isOpen: boolean;
   onClose: () => void;
+  // Pasos a mostrar; por defecto, el recorrido del docente.
+  pasos?: PasoTutorial[];
 }
 
-const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
+const TutorialModal = ({
+  isOpen,
+  onClose,
+  pasos = DOCENTE_TUTORIAL_PASOS,
+}: TutorialModalProps) => {
   const [paso, setPaso] = useState(0);
-  const pasoActual = PASOS[paso];
-  const esUltimo = paso === PASOS.length - 1;
+  const pasoActual = pasos[paso];
+  const esUltimo = paso === pasos.length - 1;
 
   if (!isOpen) return null;
 
@@ -86,7 +57,7 @@ const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
 
         {/* Step indicators */}
         <div className="flex justify-center gap-2 mt-2">
-          {PASOS.map((_, i) => (
+          {pasos.map((_, i) => (
             <div
               key={i}
               className={`w-2 h-2 rounded-full transition-all duration-300 ${i === paso ? "bg-primary scale-125" : "bg-base-300"

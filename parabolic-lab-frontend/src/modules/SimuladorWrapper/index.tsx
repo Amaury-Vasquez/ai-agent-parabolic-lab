@@ -6,9 +6,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useCookies } from "react-cookie";
 import ReporteIntentoModal from "@/components/ReporteIntentoModal";
+import Toast, { ToastContainer } from "@/components/Toast";
 import { ACCESS_TOKEN_COOKIE } from "@/constants/auth";
+import { getLogrosDesbloqueados, type LogroDefinicion } from "@/constants/logros";
 import { createInteraccion, updateInteraccion } from "@/fetchers/interacciones";
 import {
+  fetchProgresoAlumno,
   MIS_INTERACCIONES_QUERY_KEY,
   PROGRESO_ALUMNO_QUERY_KEY,
 } from "@/fetchers/interaccionesAlumno";
@@ -73,6 +76,8 @@ const SimuladorWrapper = ({
 
   const [completionOpen, setCompletionOpen] = useState(false);
   const [completionHit, setCompletionHit] = useState(false);
+  // Logros desbloqueados al terminar este escenario (toasts descartables)
+  const [nuevosLogros, setNuevosLogros] = useState<LogroDefinicion[]>([]);
   const [erroresResolucion, setErroresResolucion] = useState<
     Set<CampoResolucion>
   >(new Set());
@@ -239,6 +244,19 @@ const SimuladorWrapper = ({
       }
       inFlightSaveRef.current = null;
     }
+
+    // Logros ya desbloqueados ANTES de registrar este escenario como
+    // completado, para detectar los nuevos después del guardado final.
+    let logrosPrevios: Set<string> | null = null;
+    try {
+      const progresoPrevio = await fetchProgresoAlumno(token);
+      logrosPrevios = new Set(
+        getLogrosDesbloqueados(progresoPrevio).map((l) => l.id),
+      );
+    } catch {
+      // sin baseline no podemos diferenciar logros nuevos; omitimos el toast
+    }
+
     const ok = await saveSnapshot(true);
     if (!ok) {
       setIsFinishing(false);
@@ -251,9 +269,26 @@ const SimuladorWrapper = ({
     await queryClient.invalidateQueries({
       queryKey: MIS_INTERACCIONES_QUERY_KEY,
     });
+
+    if (logrosPrevios) {
+      try {
+        const progresoActual = await fetchProgresoAlumno(token);
+        const desbloqueados = getLogrosDesbloqueados(progresoActual).filter(
+          (l) => !logrosPrevios.has(l.id),
+        );
+        if (desbloqueados.length > 0) setNuevosLogros(desbloqueados);
+      } catch {
+        // el escenario terminó bien; el toast de logros es solo informativo
+      }
+    }
+
     setReporteInteraccionId(interaccionId.current);
     setReporteModalOpen(true);
     setIsFinishing(false);
+  };
+
+  const handleCerrarLogro = (id: string) => {
+    setNuevosLogros((prev) => prev.filter((l) => l.id !== id));
   };
 
   const handleCerrarReporte = () => {
@@ -395,6 +430,21 @@ const SimuladorWrapper = ({
         onClose={handleCerrarReporte}
         idinteraccion={reporteInteraccionId}
       />
+
+      {/* Toasts de logros desbloqueados al terminar el escenario */}
+      {nuevosLogros.length > 0 ? (
+        <ToastContainer>
+          {nuevosLogros.map((logro) => (
+            <Toast
+              key={logro.id}
+              icon="🏆"
+              title="¡Logro desbloqueado!"
+              description={logro.titulo}
+              onClose={() => handleCerrarLogro(logro.id)}
+            />
+          ))}
+        </ToastContainer>
+      ) : null}
     </>
   );
 };

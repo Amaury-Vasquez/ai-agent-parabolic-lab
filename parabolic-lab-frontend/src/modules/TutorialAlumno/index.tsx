@@ -10,7 +10,6 @@ import {
   Compass,
   FileText,
   GraduationCap,
-  HelpCircle,
   Home,
   Lightbulb,
   Rocket,
@@ -22,9 +21,8 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import TutorialImage from "@/components/TutorialImage";
 import { useMe } from "@/queries/useMe";
 
 const tutorialStorageKey = (idusuario: string) => `tutorial_visto_${idusuario}`;
@@ -54,39 +52,6 @@ const SECCIONES: SeccionDef[] = [
 ];
 
 /* ─── sub-componentes ─────────────────────────────────────────── */
-
-const ImagenPlaceholder = ({ descripcion }: { descripcion: string }) => (
-  <div className="w-full rounded-xl bg-base-200 border border-dashed border-base-300 flex flex-col items-center justify-center gap-2 py-10 px-4 text-center">
-    <HelpCircle className="size-8 opacity-30" />
-    <p className="text-sm opacity-40 italic">{descripcion}</p>
-  </div>
-);
-
-interface TutorialImageProps {
-  src: string;
-  alt: string;
-  descripcion: string;
-}
-
-const TutorialImage = ({ src, alt, descripcion }: TutorialImageProps) => {
-  const [error, setError] = useState(false);
-
-  if (error) {
-    return <ImagenPlaceholder descripcion={`Imagen pendiente: ${descripcion}`} />;
-  }
-
-  return (
-    <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-base-300">
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        className="object-cover"
-        onError={() => setError(true)}
-      />
-    </div>
-  );
-};
 
 const Tip = ({ texto }: { texto: string }) => (
   <div className="flex gap-2 bg-primary/10 border border-primary/20 rounded-xl p-3 text-sm">

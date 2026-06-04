@@ -105,6 +105,7 @@ export const config = {
     "/docente/:path*",
     "/alumno/:path*",
     "/admin/:path*",
+    "/login",
     "/registro/:path*",
   ],
 };

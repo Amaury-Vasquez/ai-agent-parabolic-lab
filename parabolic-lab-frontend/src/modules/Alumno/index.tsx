@@ -1,12 +1,16 @@
 "use client";
 import { Button } from "amvasdev-ui";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ClassroomCard from "./ClassroomCard";
 import JoinClassroomModal from "@/components/JoinClassroomModal";
+import TutorialPromptToast from "@/components/TutorialPromptToast";
+import { TUTORIAL_PROMPT_STORAGE_KEYS } from "@/constants/tutorial";
 import { useMySalones } from "@/queries/useMySalones";
 
 const Alumno = () => {
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { data: salones, isLoading } = useMySalones();
 
@@ -52,6 +56,11 @@ const Alumno = () => {
       <JoinClassroomModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+      />
+
+      <TutorialPromptToast
+        storageKey={TUTORIAL_PROMPT_STORAGE_KEYS.alumno}
+        onAccept={() => router.push("/alumno/tutorial")}
       />
     </div>
   );
